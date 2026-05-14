@@ -1,7 +1,7 @@
 {
   "name": "yschimke-skills",
   "description": "Compose UI preview and PR-review skills for Claude Code, Codex, and Gemini.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Yuri Schimke",
     "url": "https://github.com/yschimke"
