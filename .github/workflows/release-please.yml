@@ -1,0 +1,31 @@
+name: Release Please
+
+# Opens / updates a Release PR that bumps the plugin version in
+# `.claude-plugin/plugin.json` from conventional-commit messages on `main`.
+# Merging that PR cuts a GitHub Release + tag.
+#
+# This is a content-only repo — no release assets are built or uploaded.
+# The tag is the artifact: consumers can pin to it via
+# `git ls-remote` or the GitHub archive URL.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
