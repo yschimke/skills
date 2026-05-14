@@ -35,17 +35,17 @@ Pick the workflow that matches the task:
 
 | Task | Read |
 |---|---|
-| Review a PR locally that touches UI | [design/AGENT_PR.md § Reviewing a PR](./design/AGENT_PR.md#reviewing-a-pr-agent-workflow) |
-| Author an agent-opened PR that touches UI | [design/AGENT_PR.md § Authoring an Agent PR](./design/AGENT_PR.md#authoring-an-agent-pr-body-structure) |
-| Wire `compose-preview/main` baselines + PR-comment CI for a project | [design/CI_PREVIEWS.md](./design/CI_PREVIEWS.md) |
-| Render previews on base and head and diff them | [design/AGENT_PR.md § Render base and head locally](./design/AGENT_PR.md#1-render-base-and-head-locally) |
+| Review a PR locally that touches UI | [references/agent-pr.md § Reviewing a PR](./references/agent-pr.md#reviewing-a-pr-agent-workflow) |
+| Author an agent-opened PR that touches UI | [references/agent-pr.md § Authoring an Agent PR](./references/agent-pr.md#authoring-an-agent-pr-body-structure) |
+| Wire `compose-preview/main` baselines + PR-comment CI for a project | [references/ci-previews.md](./references/ci-previews.md) |
+| Render previews on base and head and diff them | [references/agent-pr.md § Render base and head locally](./references/agent-pr.md#1-render-base-and-head-locally) |
 
 ## Quick reference: review a UI PR locally
 
 1. **Check whether the project has CI preview comments first.** If a
    sticky `<!-- preview-diff -->` comment is already on the PR, read it
    and cite it instead of re-rendering. See
-   [design/AGENT_PR.md § Optional: integrate with preview-comment CI](./design/AGENT_PR.md#6-optional-integrate-with-preview-comment-ci-rare).
+   [references/agent-pr.md § Optional: integrate with preview-comment CI](./references/agent-pr.md#6-optional-integrate-with-preview-comment-ci-rare).
 
 2. **Render base and head.** Use a worktree so the working copy stays put:
 
@@ -64,16 +64,16 @@ Pick the workflow that matches the task:
 
 5. **Post a text-only review comment** summarising deltas. Image upload
    only with explicit consent — see
-   [design/AGENT_PR.md § Uploading images](./design/AGENT_PR.md#3-uploading-images-only-with-explicit-consent).
+   [references/agent-pr.md § Uploading images](./references/agent-pr.md#3-uploading-images-only-with-explicit-consent).
 
 ## Reference docs
 
 | Path | When to read |
 |---|---|
-| [design/AGENT_PR.md](./design/AGENT_PR.md) | Full PR review + agent PR authoring guidance: comment structure, image hosting choices, things to flag, integration with `preview-comment` CI when present. |
-| [design/AGENT_AUDITS.md](./design/AGENT_AUDITS.md) | Agent audit recipes and data-product documentation clusters: accessibility, localisation, Wear clipping, resources, theme, traces, and failure triage. |
-| [design/CI_PREVIEWS.md](./design/CI_PREVIEWS.md) | `compose-preview/main` baselines branch + PR-comment GitHub Actions: workflow YAML, action inputs, branch durability. |
-| [design/MCP_REVIEW.md](./design/MCP_REVIEW.md) | Driving a PR review through the MCP server (two-workspace base+head flow, push notifications, edit-on-top iteration). |
+| [references/agent-pr.md](./references/agent-pr.md) | Full PR review + agent PR authoring guidance: comment structure, image hosting choices, things to flag, integration with `preview-comment` CI when present. |
+| [references/agent-audits.md](./references/agent-audits.md) | Agent audit recipes and data-product documentation clusters: accessibility, localisation, Wear clipping, resources, theme, traces, and failure triage. |
+| [references/ci-previews.md](./references/ci-previews.md) | `compose-preview/main` baselines branch + PR-comment GitHub Actions: workflow YAML, action inputs, branch durability. |
+| [references/mcp-review.md](./references/mcp-review.md) | Driving a PR review through the MCP server (two-workspace base+head flow, push notifications, edit-on-top iteration). |
 
 ## Related
 

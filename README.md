@@ -12,29 +12,36 @@ tell the agent how to drive it.
 
 ## Install
 
-The recommended path is the bootstrap installer in `compose-ai-tools`,
-which installs the CLI **and** drops these skill bundles into the
-shared `~/.agents/skills/` dir (with per-host symlinks for Claude Code
-and Codex):
+Three install paths — all of them end up with a working `compose-preview`
+CLI on `$PATH`. The two skill-marketplace paths ship a self-bootstrapping
+stub at `skills/compose-preview/scripts/compose-preview`; the first time
+that stub is invoked it runs the canonical installer (`--cli-only`) and
+re-execs into the real CLI.
+
+**Curl the installer directly** (gets CLI + both skill bundles + per-host
+symlinks for Claude Code and Codex into `~/.agents/skills/` in one shot):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yschimke/compose-ai-tools/main/scripts/install.sh \
+curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
   | bash
 ```
 
-If you only want the skill content (no CLI — useful for read-only
-agent setups), install as a Claude Code plugin:
+**Install as a Claude Code plugin** — drops the skill content (including
+the bootstrap stub) into `~/.claude/plugins/`:
 
 ```
 /plugin marketplace add yschimke/skills
 /plugin install yschimke-skills@yschimke-skills
 ```
 
-Or with the [skills CLI](https://skills.sh):
+**Or via the [skills CLI](https://skills.sh):**
 
 ```
 npx skills add yschimke/skills
 ```
+
+With the two marketplace paths, the CLI download happens on first
+invocation of the stub — there's no separate "now install the CLI" step.
 
 ## Skills
 

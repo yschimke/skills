@@ -44,6 +44,12 @@
 #   scripts/install.sh                         # install latest release
 #   scripts/install.sh 0.3.2                   # install a specific version
 #   VERSION=0.3.2 scripts/install.sh           # same, via env
+#   scripts/install.sh --cli-only              # skip skill-bundle install; use
+#                                              # when the skill content is
+#                                              # already on disk via a plugin /
+#                                              # marketplace install. The
+#                                              # bundled bin/compose-preview
+#                                              # stub passes this on first run.
 #   scripts/install.sh --android-sdk           # also install the Android SDK
 #                                              # (cmdline-tools + platforms;android-36
 #                                              # + platform-tools + build-tools;36.0.0)
@@ -108,6 +114,7 @@ PREFIX="${PREFIX:-$HOME/.local}"
 INSTALL_ANDROID_SDK="${INSTALL_ANDROID_SDK:-0}"
 JDKS_REQUESTED="${JDKS:-}"
 ANDROID_HOME_INPUT="${ANDROID_HOME:-}"
+CLI_ONLY="${CLI_ONLY:-0}"
 
 # Argument parsing — flags first, then positional VERSION. Flags can appear in
 # any order. Unknown flags are an error so typos don't get silently swallowed.
@@ -118,6 +125,7 @@ positional=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --android-sdk) INSTALL_ANDROID_SDK=1; shift ;;
+    --cli-only) CLI_ONLY=1; shift ;;
     --jdk|--jdks)
       [[ $# -ge 2 ]] || { echo "error: $1 requires a value" >&2; exit 1; }
       JDKS_REQUESTED="$2"; shift 2 ;;
@@ -657,21 +665,29 @@ install_skills_bundle() {
 
 if [[ "$INSTALLED_VERSION" == "$VERSION" && -x "$LAUNCHER" ]]; then
   log "compose-preview CLI $VERSION already installed"
-  install_skills_bundle || true
+  [[ "$CLI_ONLY" == 1 ]] || install_skills_bundle || true
   mkdir -p "$SKILL_DIR/bin" "$BIN_DIR"
   ln -sfn "../cli/compose-preview-${VERSION}/bin/compose-preview" "$SKILL_LAUNCHER"
   ln -sfn "$LAUNCHER" "$BIN_DIR/compose-preview"
   "$LAUNCHER" --help >/dev/null 2>&1 || die "installed launcher is broken: $LAUNCHER"
-  link_skills_for_detected_hosts
+  [[ "$CLI_ONLY" == 1 ]] || link_skills_for_detected_hosts
   maybe_write_env_file
   exit 0
 fi
 
 # ---- Skill bundles --------------------------------------------------------
 # Skill markdown lives in yschimke/skills (separate from the CLI). One fetch
-# covers both compose-preview and compose-preview-review.
+# covers both compose-preview and compose-preview-review. Skipped under
+# --cli-only — when the caller is the in-skill bootstrap stub, the bundles
+# are already on disk via the plugin / marketplace install path, and a
+# second copy at $SKILL_DIR would duplicate the entry into Claude / Codex
+# scan paths (issue #1005).
 
-install_skills_bundle || true
+if [[ "$CLI_ONLY" != 1 ]]; then
+  install_skills_bundle || true
+else
+  log "--cli-only: skipping skill-bundle install (already on disk)"
+fi
 
 # ---- CLI tarball ---------------------------------------------------------
 
@@ -761,8 +777,8 @@ EOF
     ;;
 esac
 
-link_skills_for_detected_hosts
+[[ "$CLI_ONLY" == 1 ]] || link_skills_for_detected_hosts
 
 log "installed compose-preview $VERSION"
-log "skill bundle: $SKILL_DIR"
+[[ "$CLI_ONLY" == 1 ]] || log "skill bundle: $SKILL_DIR"
 log "next: run 'compose-preview doctor' in your project to verify Gradle access"

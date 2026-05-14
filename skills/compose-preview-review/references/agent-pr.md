@@ -197,7 +197,7 @@ surfaces:
 ### 6. Optional: integrate with `preview-comment` CI (rare)
 
 A small number of repos wire up the `preview-comment` GitHub Action (see
-[CI_PREVIEWS.md](CI_PREVIEWS.md)). When it's installed, it posts a sticky
+[ci-previews.md](ci-previews.md)). When it's installed, it posts a sticky
 comment keyed by `<!-- preview-diff -->` with before/after images hosted
 on a shared `compose-preview/pr` branch, pinned to commit SHAs so they
 survive merge.
