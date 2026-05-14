@@ -43,7 +43,7 @@ how much confidence it supports.
 - Treat unavailable products as review context, not proof that the UI is
   correct.
 - Use
-  [`compose-preview-review/design/AGENT_AUDITS.md`](../../compose-preview-review/design/AGENT_AUDITS.md)
+  [`compose-preview-review/references/agent-audits.md`](../../compose-preview-review/references/agent-audits.md)
   for focused app-review checklists.
 
 ## Enabling a kind
@@ -61,7 +61,7 @@ composePreview {
 
 That switches on `a11y/atf` (findings) and `a11y/hierarchy` (semantic
 tree). Other kinds will gain their own toggles as they ship — see
-[A11Y.md](./A11Y.md) for the a11y-specific knobs.
+[a11y.md](./a11y.md) for the a11y-specific knobs.
 
 A daemon advertises only the kinds whose producers it has wired. An
 agent calling a kind that isn't advertised gets `DataProductUnknown`.
@@ -146,7 +146,7 @@ assistive-technology output.
 `compose/recomposition` is the agent-facing performance signal for
 unnecessary recomposition. For review guidance, bad examples, and direct
 composition-counter probes, use
-[`compose-preview-review/design/AGENT_AUDITS.md`](../../compose-preview-review/design/AGENT_AUDITS.md).
+[`compose-preview-review/references/agent-audits.md`](../../compose-preview-review/references/agent-audits.md).
 
 `test/failure` is daemon fetch-only. After a `renderFailed`
 notification, call `get_preview_data(..., kind = "test/failure")` to

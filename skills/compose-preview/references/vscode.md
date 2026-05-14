@@ -45,6 +45,6 @@ Two gotchas worth knowing:
   correctness, only first-call latency.
 
 For the protocol-level agent flow see
-[`design/MCP.md`](./MCP.md). For PR review with two worktrees attached as
+[`references/mcp.md`](./mcp.md). For PR review with two worktrees attached as
 two workspaces see
-[`compose-preview-review/design/MCP_REVIEW.md`](../../compose-preview-review/design/MCP_REVIEW.md).
+[`compose-preview-review/references/mcp-review.md`](../../compose-preview-review/references/mcp-review.md).

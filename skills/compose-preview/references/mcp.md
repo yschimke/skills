@@ -62,7 +62,7 @@ You want any of:
   loop where the user edits source and the agent reacts.
 - **Multi-workspace fan-out** — one MCP server serving previews from multiple
   projects, or two worktrees of the same repo at once (the bread-and-butter of
-  PR review; see [`compose-preview-review/design/MCP_REVIEW.md`](../../compose-preview-review/design/MCP_REVIEW.md)).
+  PR review; see [`compose-preview-review/references/mcp-review.md`](../../compose-preview-review/references/mcp-review.md)).
 
 If you just want a one-shot render or a CI diff comment, the CLI
 (`compose-preview show --json`) is simpler and has the same render engine
@@ -156,7 +156,7 @@ for the full table) cover the rest:
 - `list_data_products` / `get_preview_data` / `subscribe_preview_data` —
   fetch structured per-render data (a11y findings, layout tree, recomposition
   heat-map, …) alongside the PNG. See
-  [`design/DATA_PRODUCTS.md`](./DATA_PRODUCTS.md) for the kind catalogue.
+  [`references/data-products.md`](./data-products.md) for the kind catalogue.
 
 ## Multi-workspace and worktrees
 
@@ -170,7 +170,7 @@ same module run two independent daemon JVMs against their own `build/`
 output. No PNG or cache cross-contamination.
 
 For PR-review-style flows (base + head worktrees, render both, diff client-side)
-see the dedicated [`compose-preview-review/design/MCP_REVIEW.md`](../../compose-preview-review/design/MCP_REVIEW.md).
+see the dedicated [`compose-preview-review/references/mcp-review.md`](../../compose-preview-review/references/mcp-review.md).
 
 ## Lifecycle and operational notes
 
@@ -189,7 +189,7 @@ see the dedicated [`compose-preview-review/design/MCP_REVIEW.md`](../../compose-
 - **Cloud sandboxes.** The `install.sh` bootstrap covers the CLI; the MCP
   server runs out of the same launcher with no extra steps. JVM toolchain
   story is unchanged from the CLI — see
-  [`design/AGENT_CLOUD.md`](./AGENT_CLOUD.md).
+  [`references/agent-cloud.md`](./agent-cloud.md).
 
 ## See also
 
@@ -200,5 +200,5 @@ see the dedicated [`compose-preview-review/design/MCP_REVIEW.md`](../../compose-
   negotiation).
 - [`docs/daemon/PROTOCOL.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/daemon/PROTOCOL.md)
   — daemon JSON-RPC wire format the MCP shim translates from.
-- [`compose-preview-review/design/MCP_REVIEW.md`](../../compose-preview-review/design/MCP_REVIEW.md)
+- [`compose-preview-review/references/mcp-review.md`](../../compose-preview-review/references/mcp-review.md)
   — agent-driven PR review using two MCP workspaces (base + head).

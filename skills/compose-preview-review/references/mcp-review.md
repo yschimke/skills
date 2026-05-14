@@ -1,10 +1,10 @@
 # Reviewing a PR via the MCP server
 
-The default PR-review flow in [AGENT_PR.md](./AGENT_PR.md#reviewing-a-pr-agent-workflow)
+The default PR-review flow in [agent-pr.md](./agent-pr.md#reviewing-a-pr-agent-workflow)
 shells out to the CLI inside two worktrees. That works without any setup, but
 it pays Gradle's cold-config cost twice and gives the agent no way to react to
 edits while the review is open. When the agent is already attached to the
-[MCP server](../../compose-preview/design/MCP.md), prefer the flow below: same
+[MCP server](../../compose-preview/references/mcp.md), prefer the flow below: same
 two-worktree shape, but driven over MCP.
 
 ## When this is worth it
@@ -112,7 +112,7 @@ For a one-shot "render base, render head, post a comment, done" review,
 ## Posting the review
 
 Same as the CLI flow — see
-[AGENT_PR.md § Default: show the human the diffs inline, post a text comment](./AGENT_PR.md#2-default-show-the-human-the-diffs-inline-post-a-text-comment).
+[agent-pr.md § Default: show the human the diffs inline, post a text comment](./agent-pr.md#2-default-show-the-human-the-diffs-inline-post-a-text-comment).
 The MCP path saved you per-render Gradle re-bootstrap cost; it doesn't
 change what the human reading the comment sees.
 
@@ -148,9 +148,9 @@ hard-links the object database).
 
 ## See also
 
-- [`compose-preview/design/MCP.md`](../../compose-preview/design/MCP.md) —
+- [`compose-preview/references/mcp.md`](../../compose-preview/references/mcp.md) —
   setup of the MCP server itself, `compose-preview mcp install/serve/doctor`.
-- [`AGENT_PR.md`](./AGENT_PR.md) — CLI-driven review, agent-authored PRs,
+- [`agent-pr.md`](./agent-pr.md) — CLI-driven review, agent-authored PRs,
   comment style, image hosting choices.
-- [`CI_PREVIEWS.md`](./CI_PREVIEWS.md) — `compose-preview/main` baselines
+- [`ci-previews.md`](./ci-previews.md) — `compose-preview/main` baselines
   branch + PR-comment GitHub Actions for the no-agent path.

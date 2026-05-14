@@ -35,7 +35,7 @@ Applied to each module that declares the plugin:
 |------|---------|
 | `:<module>:discoverPreviews` | Scan compiled classes, emit `build/compose-previews/previews.json`. |
 | `:<module>:renderAllPreviews` | Discover + render every `@Preview` to PNG under `build/compose-previews/`. |
-| `:<module>:discoverAndroidResources` | Walk `res/drawable*` + `res/mipmap*`, parse `AndroidManifest.xml`, emit `build/compose-previews/resources.json`. See [design/RESOURCE_PREVIEWS.md](./design/RESOURCE_PREVIEWS.md). |
+| `:<module>:discoverAndroidResources` | Walk `res/drawable*` + `res/mipmap*`, parse `AndroidManifest.xml`, emit `build/compose-previews/resources.json`. See [references/resource-previews.md](./references/resource-previews.md). |
 | `:<module>:renderAndroidResources` | Render every discovered XML drawable / mipmap to PNG / GIF under `build/compose-previews/renders/resources/`. |
 
 All Gradle-cacheable with strict configuration caching — unchanged inputs
@@ -107,7 +107,7 @@ fixtures.
 ViewModel or injected dependency, first propose extracting a stateless
 inner composable and preview that. The one-time extraction unlocks the
 fast `compose-preview` iteration loop for every future change on that
-screen. See [design/STATE_HOISTING.md](./design/STATE_HOISTING.md) for
+screen. See [references/state-hoisting.md](./references/state-hoisting.md) for
 the pattern with code.
 
 ## Setup
@@ -121,11 +121,24 @@ is already available — if it is, you're done. Don't blindly re-run the
 installer between previews; the script is idempotent for same-version runs
 but still does network probes.
 
-If the CLI is missing, surface this command to the user and let them run
-it (or copy it back to you):
+If `compose-preview` isn't on `$PATH`, this skill ships a self-bootstrapping
+stub. Invoking it once downloads the real CLI and re-execs:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yschimke/compose-ai-tools/main/scripts/install.sh \
+bash "$SKILL_DIR/scripts/compose-preview" --version
+```
+
+(replace `$SKILL_DIR` with the absolute path to this skill bundle, e.g.
+`~/.claude/plugins/yschimke-skills/skills/compose-preview/` or
+`~/.claude/skills/compose-preview/`). Subsequent invocations of
+`compose-preview` find the installed CLI on `$PATH` and skip the
+bootstrap.
+
+To install (or upgrade) explicitly, point any consumer at the canonical
+installer:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
   | bash
 compose-preview doctor
 ```
@@ -148,7 +161,7 @@ compose-preview mcp install --antigravity    # force the Antigravity config writ
 re-run it and do **not** kill the daemon — run `compose-preview mcp doctor`
 first and follow the verdict it prints. The supervisor respawns daemons
 automatically on classpath changes. See
-[design/MCP.md § Troubleshooting](./design/MCP.md#troubleshooting-first--when-not-to-act).
+[references/mcp.md § Troubleshooting](./references/mcp.md#troubleshooting-first--when-not-to-act).
 
 Apply the plugin in `<module>/build.gradle.kts` (replace the version with
 the latest from
@@ -219,19 +232,19 @@ Loaded on demand. Read only what the current task needs.
 
 | Path | When to read |
 |---|---|
-| [design/PERMISSIONS.md](./design/PERMISSIONS.md) | Setting up agent allowlists; staging PNGs outside `build/`. |
-| [design/STATE_HOISTING.md](./design/STATE_HOISTING.md) | Full state-hoisting pattern with code examples. |
-| [design/CAPTURE_MODES.md](./design/CAPTURE_MODES.md) | Multi-preview annotations, `@AnimatedPreview` GIFs, MCP scripted recordings, paused-clock snapshots, scrolling captures. |
-| [design/A11Y.md](./design/A11Y.md) | ATF accessibility checks (`compose-preview a11y`). |
-| [design/DATA_PRODUCTS.md](./design/DATA_PRODUCTS.md) | Structured per-render data (a11y findings + hierarchy, layout tree, recomposition heat-map, …) via MCP tools and on-disk Gradle output. |
-| [design/MCP.md](./design/MCP.md) | Driving compose-preview from an MCP-aware agent host (push notifications, multi-workspace, in-process server bundled in the CLI). |
-| [design/CMP_SHARED.md](./design/CMP_SHARED.md) | Compose Multiplatform `:shared` modules (`commonMain` previews via Desktop pipeline). |
-| [design/RESOURCE_PREVIEWS.md](./design/RESOURCE_PREVIEWS.md) | Android XML resources (`<vector>`, `<animated-vector>`, `<adaptive-icon>`). |
-| [design/WEAR_UI.md](./design/WEAR_UI.md) | Wear OS Material 3 Expressive design. |
-| [design/WEAR_TILES.md](./design/WEAR_TILES.md) | Wear Tiles (protolayout, not Compose). |
-| [design/REMOTE_COMPOSE.md](./design/REMOTE_COMPOSE.md) | Remote Compose dialect + `RemoteDocument`. |
-| [design/AGENT_CLOUD.md](./design/AGENT_CLOUD.md) | Running compose-preview in Claude Code cloud sandboxes (allowlist, JDK, install paths). |
-| [design/VSCODE.md](./design/VSCODE.md) | VS Code extension (humans, not agents). |
+| [references/permissions.md](./references/permissions.md) | Setting up agent allowlists; staging PNGs outside `build/`. |
+| [references/state-hoisting.md](./references/state-hoisting.md) | Full state-hoisting pattern with code examples. |
+| [references/capture-modes.md](./references/capture-modes.md) | Multi-preview annotations, `@AnimatedPreview` GIFs, MCP scripted recordings, paused-clock snapshots, scrolling captures. |
+| [references/a11y.md](./references/a11y.md) | ATF accessibility checks (`compose-preview a11y`). |
+| [references/data-products.md](./references/data-products.md) | Structured per-render data (a11y findings + hierarchy, layout tree, recomposition heat-map, …) via MCP tools and on-disk Gradle output. |
+| [references/mcp.md](./references/mcp.md) | Driving compose-preview from an MCP-aware agent host (push notifications, multi-workspace, in-process server bundled in the CLI). |
+| [references/cmp-shared.md](./references/cmp-shared.md) | Compose Multiplatform `:shared` modules (`commonMain` previews via Desktop pipeline). |
+| [references/resource-previews.md](./references/resource-previews.md) | Android XML resources (`<vector>`, `<animated-vector>`, `<adaptive-icon>`). |
+| [references/wear-ui.md](./references/wear-ui.md) | Wear OS Material 3 Expressive design. |
+| [references/wear-tiles.md](./references/wear-tiles.md) | Wear Tiles (protolayout, not Compose). |
+| [references/remote-compose.md](./references/remote-compose.md) | Remote Compose dialect + `RemoteDocument`. |
+| [references/agent-cloud.md](./references/agent-cloud.md) | Running compose-preview in Claude Code cloud sandboxes (allowlist, JDK, install paths). |
+| [references/vscode.md](./references/vscode.md) | VS Code extension (humans, not agents). |
 
 ## Related skill
 
