@@ -21,25 +21,19 @@ and overlay annotation path enabled, then appends the annotated PNGs and
 `findings.json` to `compose-preview/a11y/main`. On pull requests it writes
 to `compose-preview/a11y/pr` and upserts a `<!-- a11y-report -->` comment.
 
-A11y is opt-in — pass the same Gradle property the CLI's `compose-preview a11y` /
-`--with-extension a11y` paths set, so the renderer writes ATF artefacts alongside the clean PNG:
+A11y is opt-in and daemon-only — invoke the CLI directly so it can spin up the
+short-lived preview daemon that writes the ATF artefacts alongside the clean PNG:
 
 ```bash
-./gradlew ":samples:wear:renderAllPreviews" \
-  -PcomposePreview.previewExtensions.a11y.enableAllChecks=true
+./gradlew :cli:installDist
+cli/build/install/compose-preview/bin/compose-preview a11y --module :samples:wear
 ```
 
-Or pin it for the module in `build.gradle.kts`:
-
-```kotlin
-composePreview {
-    previewExtensions { a11y { enableAllChecks() } }
-}
-```
-
-Every preview then gets its `.a11y.png` annotated overlay next to the clean PNG. A populated a11y
-baseline branch should contain `.a11y.png` files next to the clean PNGs; if the README only links
-clean PNGs, the a11y render path didn't run (most likely the property/DSL opt-in is missing).
+Every preview then gets its `.a11y.png` annotated overlay next to the clean PNG, and the
+artifact set on disk (`build/compose-previews/accessibility.json` plus
+`build/compose-previews/data/<id>/a11y-overlay.png`) is unchanged — existing CI scripts that
+read those paths keep working. A populated a11y baseline branch should contain `.a11y.png`
+files next to the clean PNGs; if the README only links clean PNGs, the a11y CLI didn't run.
 
 ## Workflow 1 — update baselines on push to `main`
 
