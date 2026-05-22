@@ -159,7 +159,7 @@ fun GreetingPreview() {
 Run from the project root:
 
 ```sh
-./gradlew :shared:renderAllPreviews
+./gradlew :shared:composePreviewRenderAll
 ```
 
 Outputs land at `shared/build/compose-previews/renders/<id>.png`, identical
@@ -169,9 +169,9 @@ discover and surface them with no additional configuration.
 ## Limitations
 
 - **Previews in androidMain only are not rendered.** The plugin's
-  `discoverPreviews` task scans the JVM target's compile output
+  `composePreviewDiscover` task scans the JVM target's compile output
   (`build/classes/kotlin/<targetName>/main`); androidMain-only sources
-  don't compile into that tree. `discoverPreviews` will report 0 previews
+  don't compile into that tree. `composePreviewDiscover` will report 0 previews
   for them, and CI will fail on `failOnEmpty = true` if that's the only
   preview surface in the module. Move them to commonMain or render them
   via an AGP `:composeApp` shell.

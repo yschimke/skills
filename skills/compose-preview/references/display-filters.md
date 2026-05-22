@@ -34,7 +34,7 @@ the renderer subprocess as the `composeai.displayfilter.filters`
 sysprop):
 
 ```sh
-./gradlew :samples:cmp:renderAllPreviews \
+./gradlew :samples:cmp:composePreviewRenderAll \
     -PcomposePreview.displayFilter.filters=grayscale,deuteranopia
 ```
 

@@ -33,10 +33,10 @@ Applied to each module that declares the plugin:
 
 | Task | Purpose |
 |------|---------|
-| `:<module>:discoverPreviews` | Scan compiled classes, emit `build/compose-previews/previews.json`. |
-| `:<module>:renderAllPreviews` | Discover + render every `@Preview` to PNG under `build/compose-previews/`. |
-| `:<module>:discoverAndroidResources` | Walk `res/drawable*` + `res/mipmap*`, parse `AndroidManifest.xml`, emit `build/compose-previews/resources.json`. See [references/resource-previews.md](./references/resource-previews.md). |
-| `:<module>:renderAndroidResources` | Render every discovered XML drawable / mipmap to PNG / GIF under `build/compose-previews/renders/resources/`. |
+| `:<module>:composePreviewDiscover` | Scan compiled classes, emit `build/compose-previews/previews.json`. |
+| `:<module>:composePreviewRenderAll` | Discover + render every `@Preview` to PNG under `build/compose-previews/`. |
+| `:<module>:composePreviewDiscoverAndroidResources` | Walk `res/drawable*` + `res/mipmap*`, parse `AndroidManifest.xml`, emit `build/compose-previews/resources.json`. See [references/resource-previews.md](./references/resource-previews.md). |
+| `:<module>:composePreviewRenderAndroidResources` | Render every discovered XML drawable / mipmap to PNG / GIF under `build/compose-previews/renders/resources/`. |
 
 All Gradle-cacheable with strict configuration caching — unchanged inputs
 produce no re-work.

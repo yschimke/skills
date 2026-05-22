@@ -158,7 +158,7 @@ A working end-to-end example lives in [`samples/remotecompose/`](../../../sample
   BOM (Remote Compose alphas pull in a newer Compose runtime than the BOM
   currently pins).
 
-`./gradlew :samples:remotecompose:renderAllPreviews` produces PNGs for both
+`./gradlew :samples:remotecompose:composePreviewRenderAll` produces PNGs for both
 shapes, so you can see that the capture-and-replay path works end-to-end in
 the plugin's renderer.
 

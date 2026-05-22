@@ -119,7 +119,7 @@ compose-preview doctor || true
 Optional Android verification:
 
 ```bash
-./gradlew :samples:android:renderAllPreviews || true
+./gradlew :samples:android:composePreviewRenderAll || true
 ```
 
 ## Provider-specific hints
