@@ -5,10 +5,10 @@ XML drawables and mipmaps that change between releases — vector logos,
 adaptive launcher icons, animated splash transitions. The plugin renders
 those alongside your composables, with no extra config.
 
-`:<module>:discoverAndroidResources` walks every `res/drawable*/` and
+`:<module>:composePreviewDiscoverAndroidResources` walks every `res/drawable*/` and
 `res/mipmap*/` directory in your variant's source set, classifies each XML
 by root tag, and emits `build/compose-previews/resources.json` next to the
-existing `previews.json`. `:<module>:renderAndroidResources` then renders
+existing `previews.json`. `:<module>:composePreviewRenderAndroidResources` then renders
 each capture to PNG / GIF under `build/compose-previews/renders/resources/`.
 
 Modules with no matching XML resources self-no-op (a single empty

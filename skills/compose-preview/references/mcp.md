@@ -112,7 +112,7 @@ Beyond host registration, `mcp install` does three things behind the scenes:
    `composePreview.daemon { enabled = true }` is intentionally
    not propagated via `-P`, so the on-disk patch is the canonical way to flip
    it from outside the build script.)
-3. Runs `discoverPreviews` so `previews.json` sits alongside.
+3. Runs `composePreviewDiscover` so `previews.json` sits alongside.
 
 `mcp doctor` reads the descriptors back without mutating, and exits non-zero
 if any module's descriptor is missing or has `enabled: false`. Use it from a
