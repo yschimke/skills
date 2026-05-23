@@ -398,6 +398,22 @@ def install_and_discover() -> None:
     run([str(CLI), "mcp", "install", "--project", str(ROOT), "--module", "samples:android"], timeout=600)
 
 
+def extract_a11y_findings(preview: dict[str, Any]) -> list[dict[str, Any]]:
+    """Pull a11y findings from a preview entry, preferring the v2 carrier.
+
+    compose-ai-tools#1392 moved findings under
+    ``dataExtensions["a11y"].payload.findings``. Pre-#1392 CLI builds still
+    expose the v1 ``a11yFindings`` field at the top of the preview entry.
+    """
+    a11y_payload = (
+        ((preview.get("dataExtensions") or {}).get("a11y") or {}).get("payload") or {}
+    )
+    v2_findings = a11y_payload.get("findings")
+    if v2_findings is not None:
+        return v2_findings
+    return preview.get("a11yFindings") or []
+
+
 def test_accessibility_cli() -> None:
     result = run(
         [
@@ -431,15 +447,7 @@ def test_accessibility_cli() -> None:
         )
     else:
         preview = previews[0]
-    a11y_payload = (
-        ((preview.get("dataExtensions") or {}).get("a11y") or {}).get("payload") or {}
-    )
-    v2_findings = a11y_payload.get("findings")
-    if v2_findings is not None:
-        findings = v2_findings
-    else:
-        # Pre-#1392 CLI builds still expose v1 a11yFindings on the preview entry.
-        findings = preview.get("a11yFindings") or []
+    findings = extract_a11y_findings(preview)
     if result.returncode == 0:
         assert not findings, "expected no findings when --fail-on warnings exits 0"
     else:
