@@ -166,10 +166,10 @@ will actually read. Optimise for scanning:
   (`<repo>/blob/<sha>/<path>#L<line>`).
 - **Group by module** and collapse with `<details><summary>` when there are
   more than ~5 previews in a bucket. First group expanded, rest collapsed.
-- **Flag a11y regressions separately.** Diff `a11yFindings[]` against the
-  base; a finding new on this PR is worth a 🔴 callout even if the PNG diff
-  is cosmetic. Link the annotated PNG (or include its local path if no
-  hosting).
+- **Flag a11y regressions separately.** Diff
+  `dataExtensions["a11y"].payload.findings[]` against the base; a finding new
+  on this PR is worth a 🔴 callout even if the PNG diff is cosmetic. Link the
+  `annotatedPath` PNG (or include its local path if no hosting).
 - **Caption with `sha256` (first 8 chars) and byte size** under each image.
   Lets the reviewer confirm what they're looking at matches the manifest.
 - **Respect the 65 536-char comment limit.** If the body would overflow,

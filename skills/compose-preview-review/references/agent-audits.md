@@ -39,15 +39,23 @@ Issue-identifying output:
 ```json
 {
   "previewId": "com.example.SaveToolbarPreview",
-  "a11yFindings": [
-    {
-      "level": "WARNING",
-      "type": "SpeakableTextPresentCheck",
-      "message": "This item may not have a label readable by screen readers.",
-      "viewDescription": "IconButton"
+  "dataExtensions": {
+    "a11y": {
+      "schema": "compose-preview-a11y/v2",
+      "payload": {
+        "previewId": "com.example.SaveToolbarPreview",
+        "findings": [
+          {
+            "level": "WARNING",
+            "type": "SpeakableTextPresentCheck",
+            "message": "This item may not have a label readable by screen readers.",
+            "viewDescription": "IconButton"
+          }
+        ],
+        "annotatedPath": "build/compose-previews/renders/com.example.SaveToolbarPreview.a11y.png"
+      }
     }
-  ],
-  "a11yAnnotatedPath": "build/compose-previews/renders/com.example.SaveToolbarPreview.a11y.png"
+  }
 }
 ```
 
