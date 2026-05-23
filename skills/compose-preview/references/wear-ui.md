@@ -332,7 +332,7 @@ from a phone's. Specifically watch for:
 - **Edge-clipped touch targets** — round-face renders crop content at the
   capsule mask; an apparently-large element may have a much smaller
   effective hit region after clipping. Read both the regular PNG and the
-  `a11yAnnotatedPath` overlay to spot this.
+  `dataExtensions["a11y"].payload.annotatedPath` overlay to spot this.
 
 The annotated overlay for round Wear devices uses a stacked legend layout
 (screenshot on top, legend below) so the badges remain readable on small

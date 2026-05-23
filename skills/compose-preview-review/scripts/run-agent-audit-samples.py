@@ -431,7 +431,15 @@ def test_accessibility_cli() -> None:
         )
     else:
         preview = previews[0]
-    findings = preview.get("a11yFindings") or []
+    a11y_payload = (
+        ((preview.get("dataExtensions") or {}).get("a11y") or {}).get("payload") or {}
+    )
+    v2_findings = a11y_payload.get("findings")
+    if v2_findings is not None:
+        findings = v2_findings
+    else:
+        # Pre-#1392 CLI builds still expose v1 a11yFindings on the preview entry.
+        findings = preview.get("a11yFindings") or []
     if result.returncode == 0:
         assert not findings, "expected no findings when --fail-on warnings exits 0"
     else:
