@@ -1,28 +1,54 @@
 # CI preview baselines (`compose-preview/main` branch)
 
-Projects that use the Gradle plugin can wire up two GitHub Actions
-workflows to maintain a `compose-preview/main` branch with rendered PNGs
-and a `baselines.json` file (preview ID → SHA-256). This serves two
+Projects that use the Gradle plugin can wire up a single GitHub Actions
+workflow that maintains a `compose-preview/main` branch with rendered
+PNGs and a `baselines.json` file (preview ID → SHA-256), and posts
+before/after diff comments on pull requests. The branch serves two
 purposes:
 
 1. **Browsable gallery** — the branch has a `README.md` with inline images,
    viewable directly on GitHub.
-2. **PR diff comments** — a companion workflow renders previews on each PR,
+2. **PR diff comments** — on PRs the same action renders previews,
    compares against the baselines, and posts a before/after comment.
 
-Both workflows ship from this repo as composite actions. Add two
-workflow files to your project; you're done.
+The action ships from
+[yschimke/compose-ai-tools](https://github.com/yschimke/compose-ai-tools)
+as a composite action. Add one workflow file to your project; you're done.
 
-## Optional a11y overlay report
+## Upgrade notice — proactively migrate to `apply`
 
-Use `.github/actions/a11y-report` when you want a separate accessibility
-gallery. On pushes it renders with the built-in a11y hierarchy, ATF checks,
-and overlay annotation path enabled, then appends the annotated PNGs and
-`findings.json` to `compose-preview/a11y/main`. On pull requests it writes
-to `compose-preview/a11y/pr` and upserts a `<!-- a11y-report -->` comment.
+As of `v0.11.6` the four legacy composite actions —
+`preview-baselines`, `preview-comment`, `a11y-report`, and
+`notification-previews` — have been replaced by a single unified
+`apply` action that auto-selects baseline vs comment mode from the
+event and runs all four pipelines (compose / resources / a11y /
+notifications) back-to-back.
 
-A11y is opt-in and daemon-only — invoke the CLI directly so it can spin up the
-short-lived preview daemon that writes the ATF artefacts alongside the clean PNG:
+The legacy actions are **kept for one release as deprecation shims
+that forward to `apply`**, then removed. If you encounter a project
+still wired to any of them, **proactively migrate** to `apply` (and
+collapse separate `preview-baselines.yml` / `preview-comment.yml` /
+`a11y.yml` / `notifications.yml` workflows into a single
+`compose-preview.yml`) as part of the next change touching CI. The
+migration is mechanical and removes four workflow files plus their
+duplicated checkout / Java / Gradle setup.
+
+See [Migrating from the legacy actions](#migrating-from-the-legacy-actions)
+below for a concrete before/after.
+
+## Optional pipelines: a11y and notifications
+
+`apply` runs all four pipelines (`compose`, `resources`, `a11y`,
+`notifications`) by default. The a11y and notifications pipelines are
+no-ops unless you point them at a Gradle module via `a11y-module` /
+`notifications-module`. Use `only:` / `skip:` to narrow what runs.
+
+A11y renders the built-in a11y hierarchy, ATF checks, and overlay
+annotation path enabled, then appends the annotated PNGs and
+`findings.json` to `compose-preview/a11y/main` on push, or
+`compose-preview/a11y/pr` with a `<!-- a11y-report -->` comment on PRs.
+
+A11y is daemon-only — to drive the CLI directly outside CI:
 
 ```bash
 ./gradlew :cli:installDist
@@ -35,57 +61,27 @@ artifact set on disk (`build/compose-previews/accessibility.json` plus
 read those paths keep working. A populated a11y baseline branch should contain `.a11y.png`
 files next to the clean PNGs; if the README only links clean PNGs, the a11y CLI didn't run.
 
-## Workflow 1 — update baselines on push to `main`
+## Single workflow — `compose-preview.yml`
 
 ```yaml
-# .github/workflows/preview-baselines.yml
-name: Preview Baselines
+# .github/workflows/compose-preview.yml
+name: Compose Preview
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-permissions:
-  contents: write
-concurrency:
-  group: preview-baselines
-  cancel-in-progress: true
-jobs:
-  update:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-      - uses: gradle/actions/setup-gradle@v6
-      - uses: yschimke/compose-ai-tools/.github/actions/preview-baselines@v0.10.10
-        with:
-          cli-version: catalog   # or "latest", or a literal "0.10.10"
-```
-
-## Workflow 2 — post before/after comments on PRs
-
-```yaml
-# .github/workflows/preview-comment.yml
-name: Preview Comment
-on:
   pull_request:
     branches: [main]
     types: [opened, synchronize]
+  workflow_dispatch:
 permissions:
-  contents: read
+  contents: write          # baselines push + compose-preview/pr branch
+  pull-requests: write     # upserts the PR comment
 concurrency:
-  group: preview-comment-${{ github.event.pull_request.number }}
+  group: compose-preview-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  compare:
+  apply:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write          # appends to compose-preview/pr branch
-      pull-requests: write     # upserts the PR comment
     steps:
       - uses: actions/checkout@v6
         with:
@@ -95,48 +91,76 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v6
-      - uses: yschimke/compose-ai-tools/.github/actions/preview-comment@v0.10.10
+      - uses: yschimke/compose-ai-tools/.github/actions/apply@v0.11.6
         with:
-          cli-version: catalog
+          cli-version: catalog   # or "latest", or a literal "0.11.6"
+          a11y-module: samples:wear            # optional — empty skips
+          notifications-module: samples:android # optional — empty skips
 ```
+
+`mode` defaults to `auto` and is picked from the event (`push` →
+`baseline`, `pull_request` → `comment`). Override with
+`mode: baseline | comment | skip` for one-off `workflow_dispatch`
+runs.
 
 ## Pinning the CLI version
 
 `cli-version` accepts:
 
-- A literal string (e.g. `"0.8.2"`) — pinned, deterministic.
+- A literal string (e.g. `"0.11.6"`) — pinned, deterministic.
 - `latest` — resolved via the GitHub releases API on each run.
 - `catalog` — read the `composePreviewCli` key from
   `gradle/libs.versions.toml`. Pair with the Renovate `customManager`
   snippet in the [README](../../../README.md#on-github-actions) to keep
   the version bumped on releases.
+- `none` — assume `compose-preview` is already on `PATH`.
+- `source` — build from the current checkout (internal CI only).
 
 `catalog-path` and `catalog-key` override the catalog location and key
 when needed.
 
-## Inputs at a glance
-
-`preview-baselines`:
+## `apply` inputs
 
 | Input | Default | Purpose |
 | --- | --- | --- |
-| `cli-version` | `latest` | CLI version (literal / `latest` / `catalog`). |
+| `cli-version` | `latest` | CLI version (`latest` / `catalog` / literal / `none` / `source`). |
 | `catalog-path` | `gradle/libs.versions.toml` | Catalog file when `cli-version=catalog`. |
 | `catalog-key` | `composePreviewCli` | `[versions]` key when `cli-version=catalog`. |
 | `timeout` | `600` | CLI render timeout in seconds. |
-| `branch` | `compose-preview/main` | Branch the baselines push to. |
+| `development-branch` | `main` | Long-lived branch that drives baseline pushes. |
+| `only` | `` | Comma-separated subset of `compose,resources,a11y,notifications`. Empty = all. |
+| `skip` | `` | Comma-separated pipelines to skip after `only` is resolved. |
+| `a11y-module` | `` | Gradle module path for the a11y pipeline. Empty skips silently. |
+| `notifications-module` | `` | Gradle module path for the notifications pipeline. |
+| `pr-number` | `` | Override for PR number when context is ambiguous. |
+| `comment-on-empty-diff` | `false` | Post an empty-diff sticky comment instead of staying silent. |
+| `skip-render` | `false` | Reuse pre-staged `_previews.json` / `_resources.json` instead of invoking the CLI. |
+| `mode` | `auto` | Event-based selector override: `auto` / `baseline` / `comment` / `skip`. |
 
-`preview-comment`:
+## Migrating from the legacy actions
 
-| Input | Default | Purpose |
-| --- | --- | --- |
-| `cli-version` | `latest` | CLI version (literal / `latest` / `catalog`). |
-| `catalog-path` | `gradle/libs.versions.toml` | Catalog file when `cli-version=catalog`. |
-| `catalog-key` | `composePreviewCli` | `[versions]` key when `cli-version=catalog`. |
-| `timeout` | `600` | CLI render timeout in seconds. |
-| `base-branch` | `compose-preview/main` | Branch the baselines were pushed to. |
-| `head-branch` | `compose-preview/pr` | Shared branch for per-PR render commits. |
-| `pr-number` | (event) | PR number, auto-detected from the `pull_request` event. |
+The four previous workflows collapse into one. The shims still work
+for one release, so you can do this in a single PR.
+
+**Before** — four files:
+
+| File | Action used |
+| --- | --- |
+| `.github/workflows/preview-baselines.yml` | `…/actions/preview-baselines@v0.10.10` |
+| `.github/workflows/preview-comment.yml`   | `…/actions/preview-comment@v0.10.10` |
+| `.github/workflows/a11y-report.yml`       | `…/actions/a11y-report@v0.10.10` |
+| `.github/workflows/notification-previews.yml` | `…/actions/notification-previews@v0.10.10` |
+
+**After** — one `.github/workflows/compose-preview.yml` using
+`…/actions/apply@v0.11.6` (see the YAML above). Delete the four old
+workflow files. If a project only wants a subset of pipelines, use
+`only:` / `skip:` rather than reintroducing separate workflows.
+
+Inputs map 1:1: the `cli-version`, `catalog-path`, `catalog-key`, and
+`timeout` inputs keep their names and defaults. `branch` /
+`base-branch` / `head-branch` on the legacy actions are no longer
+overridable from the workflow — the new action standardises on
+`compose-preview/main` and `compose-preview/pr`.
 
 ## Mobile readability
 
@@ -180,11 +204,11 @@ consume every capture row rather than only the top-level `pngPath`.
 
 Both `compose-preview/main` and `compose-preview/pr` are append-only:
 
-- `preview-baselines` adds one commit per push to `main` (parented on
-  the previous tip; skipped when the rendered tree is unchanged). A
-  fast-forward push on a serialised concurrency group means no
-  rewrites.
-- `preview-comment` appends one commit per PR push to
+- In `baseline` mode `apply` adds one commit per push to `main`
+  (parented on the previous tip; skipped when the rendered tree is
+  unchanged). A fast-forward push on a serialised concurrency group
+  means no rewrites.
+- In `comment` mode `apply` appends one commit per PR push to
   `compose-preview/pr` (tree = that PR's changed PNGs). The PR comment
   pins `<img>` URLs to commit SHAs on `compose-preview/main` and
   `compose-preview/pr`, not branch names — so images keep resolving
