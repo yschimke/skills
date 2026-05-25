@@ -128,8 +128,8 @@ destination before acting:
   DIR [--branch compose-preview/pr] [--remote origin] [--pr-number N]
   [--json]`). Pushes the staging directory's contents as a single commit
   on the shared `compose-preview/pr` branch, mirroring what the
-  `preview-comment` CI integration does — same retry-on-race loop for
-  parallel pushes from sibling PRs. Output is the resulting commit SHA
+  `apply` action (`mode: comment`) does in CI — same retry-on-race
+  loop for parallel pushes from sibling PRs. Output is the resulting commit SHA
   and a raw URL pattern
   (`https://raw.githubusercontent.com/<owner>/<repo>/<sha>/{path}`) that
   pins images to the SHA so they survive merges. `--json` emits a
@@ -194,13 +194,17 @@ surfaces:
   run-to-run without code changes, the preview is non-deterministic; flag
   it rather than rubber-stamp the diff.
 
-### 6. Optional: integrate with `preview-comment` CI (rare)
+### 6. Optional: integrate with `apply` CI in `comment` mode (rare)
 
-A small number of repos wire up the `preview-comment` GitHub Action (see
-[ci-previews.md](ci-previews.md)). When it's installed, it posts a sticky
-comment keyed by `<!-- preview-diff -->` with before/after images hosted
-on a shared `compose-preview/pr` branch, pinned to commit SHAs so they
-survive merge.
+A small number of repos wire up the unified `apply` GitHub Action
+(see [ci-previews.md](ci-previews.md)). On pull requests it runs in
+`comment` mode and posts a sticky comment keyed by
+`<!-- preview-diff -->` with before/after images hosted on a shared
+`compose-preview/pr` branch, pinned to commit SHAs so they survive
+merge. (If you find a project still wired to the legacy
+`preview-comment` / `preview-baselines` / `a11y-report` /
+`notification-previews` actions, proactively migrate it to `apply` —
+the shims are scheduled for removal after one release.)
 
 Only do this if you've already confirmed it exists:
 
