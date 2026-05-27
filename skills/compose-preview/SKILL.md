@@ -233,6 +233,7 @@ Loaded on demand. Read only what the current task needs.
 | Path | When to read |
 |---|---|
 | [references/permissions.md](./references/permissions.md) | Setting up agent allowlists; staging PNGs outside `build/`. |
+| [references/runtime-permissions.md](./references/runtime-permissions.md) | Pinning Android runtime permissions per render via `renderNow.overrides.permissions`; reading the `compose/permissions` data product. |
 | [references/state-hoisting.md](./references/state-hoisting.md) | Full state-hoisting pattern with code examples. |
 | [references/capture-modes.md](./references/capture-modes.md) | Multi-preview annotations, `@AnimatedPreview` GIFs, MCP scripted recordings, paused-clock snapshots, scrolling captures. |
 | [references/a11y.md](./references/a11y.md) | ATF accessibility checks (`compose-preview a11y`). |
