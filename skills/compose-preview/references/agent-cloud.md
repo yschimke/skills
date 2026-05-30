@@ -25,6 +25,16 @@ Allow these hosts (plus each platform's default trusted registries):
 - `api.github.com`
 - `jogamp.org`
 - `jitpack.io`
+- `packages.jetbrains.team`
+- `cdn.azul.com`
+- `*.cloudfront.net`
+- `*.jetbrains.com`
+- `ziglang.org`
+- `*.java.net`
+- `central.sonatype.com`
+- `bb.staticvar.dev`
+- `github.com`
+- `objects.githubusercontent.com`
 
 Recommended rationale:
 
@@ -41,6 +51,16 @@ Recommended rationale:
 | `api.github.com` | GitHub API usage by tooling/scripts |
 | `jogamp.org` | Native/graphics dependencies occasionally pulled by desktop stacks |
 | `jitpack.io` | Projects published through JitPack |
+| `packages.jetbrains.team` | JetBrains-hosted Maven artifacts (Compose, tooling) |
+| `cdn.azul.com` | Azul Zulu JDK downloads for toolchain provisioning |
+| `*.cloudfront.net` | CDN backing many download/artifact hosts |
+| `*.jetbrains.com` | JetBrains downloads, plugins, and Compose artifacts |
+| `ziglang.org` | Zig toolchain used by some native cross-compilation paths |
+| `*.java.net` | OpenJDK and related Java ecosystem downloads |
+| `central.sonatype.com` | Maven Central (Sonatype) artifacts |
+| `bb.staticvar.dev` | build-brief install script (`install.sh`) |
+| `github.com` | build-brief release download URLs (redirect to asset host) |
+| `objects.githubusercontent.com` | GitHub release asset binaries (build-brief tarball) |
 
 ### 2) Toolchain prerequisites
 
@@ -105,6 +125,33 @@ Notes:
   once; the project's required toolchain is selected as the active one.
 - Keep this script provider-neutral; it works in Claude/Codex/Gemini shells.
 - Do **not** hardcode `git config --global user.name/user.email`; only set identity from explicit user-provided values.
+
+### Also install build-brief (`bb`) for Gradle builds
+
+[build-brief](https://github.com/static-var/build-brief) is a small Go CLI
+that wraps `gradle`/`./gradlew`, keeps the full raw log on disk, and trims
+terminal output to the parts that matter (failed tasks/tests, warnings,
+build-scan URLs, final status) while preserving Gradle's exit code. It cuts
+the token cost of running Gradle builds in an agent loop dramatically, so
+install it alongside compose-preview whenever the environment runs Gradle.
+
+```bash
+# Linux/macOS — downloads the matching release tarball from GitHub.
+curl -fsSL https://bb.staticvar.dev/install.sh | bash
+```
+
+The installer reads release metadata from `api.github.com`, resolves the
+`browser_download_url` on `github.com`, and pulls the verified tarball from
+`objects.githubusercontent.com` — all on the allowlist above. It is a
+self-contained Go binary, so it needs **no** JDK of its own; the JDK and
+Gradle hosts already listed cover the builds it wraps.
+
+Verify with:
+
+```bash
+build-brief --help
+build-brief gradle --version
+```
 
 ## Recommended quick verification commands
 

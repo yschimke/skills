@@ -94,6 +94,33 @@ caching means re-renders only redo what changed; the `changed` flag lets
 agents skip reading PNGs that didn't move. Always read the PNG after a UI
 change — don't assume the change looks correct.
 
+## Running other Gradle builds (use build-brief)
+
+`compose-preview` is the right tool for **rendering previews** — prefer it
+whenever the goal is to see a composable. For any **other** Gradle work an
+agent needs to run directly (`build`, `assemble`, `test`,
+`connectedCheck`, a custom task), reach for
+[build-brief](https://github.com/static-var/build-brief) (`bb`) instead of
+raw `./gradlew`. It wraps `gradle`/`./gradlew`, preserves the exit code,
+keeps the full raw log on disk, and trims terminal output to failed
+tasks/tests, warnings, build-scan URLs, and final status — typically a
+90%+ token reduction on noisy builds.
+
+```sh
+# Install once (Linux/macOS); self-contained Go binary, no JDK of its own.
+curl -fsSL https://bb.staticvar.dev/install.sh | bash
+
+build-brief test
+build-brief ./gradlew assembleDebug
+build-brief gradle build
+```
+
+Guidance for agents: **prefer `compose-preview` for previews**; use
+`build-brief` whenever you'd otherwise invoke Gradle directly so the build
+output stays cheap to read. See
+[references/agent-cloud.md](./references/agent-cloud.md) for the cloud
+install/allowlist details.
+
 ## Designing composables for previewability
 
 `@Preview` only calls composables with zero arguments (or all-default), so
