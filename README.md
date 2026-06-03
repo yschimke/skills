@@ -58,6 +58,12 @@ invocation of the stub — there's no separate "now install the CLI" step.
   `compose-preview`; covers agent-authored PRs, local review
   workflows, and wiring `compose-preview/main` baselines + PR-comment
   GitHub Actions.
+- [`compose-preview-design-board`](skills/compose-preview-design-board/SKILL.md)
+  — assemble rendered `@Preview` PNGs into a single self-contained HTML
+  design board (categories, groups, captions, layout) for import into
+  Claude Design and other design tools. Pairs with `compose-preview`;
+  turns a set of renders into one coherent brief rather than loose
+  screenshots.
 
 The CLI, Gradle plugin, renderer, MCP server, and VS Code extension
 live in [yschimke/compose-ai-tools]; this repo is content-only.
