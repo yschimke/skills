@@ -50,8 +50,9 @@ invocation of the stub — there's no separate "now install the CLI" step.
   (Jetpack Compose via Robolectric) and Compose Multiplatform Desktop
   (`ImageComposeScene` + Skia), with design notes on capture modes,
   multi-preview annotations, paused-clock animations, accessibility
-  checks, display filters, Wear UI, resource previews, and cloud
-  sandbox setup.
+  checks, display filters, Wear UI, resource previews, a Playwright-style
+  token-frugal agent loop (semantic-ref targeting, `observe`/`diff_semantics`,
+  record-to-test), and cloud sandbox setup.
 - [`compose-preview-review`](skills/compose-preview-review/SKILL.md) —
   review pull requests that change Compose UI by rendering `@Preview`
   composables on base and head and diffing them. Pairs with
