@@ -94,6 +94,11 @@ caching means re-renders only redo what changed; the `changed` flag lets
 agents skip reading PNGs that didn't move. Always read the PNG after a UI
 change — don't assume the change looks correct.
 
+For a long-lived **interaction** loop — clicking/typing by semantic ref
+(not pixels), checking "did it change?" without reading a PNG, and diffing
+semantics instead of pixels — see the Playwright-style, token-frugal
+[references/agent-loop.md](./references/agent-loop.md).
+
 ## Running other Gradle builds (use build-brief)
 
 `compose-preview` is the right tool for **rendering previews** — prefer it
@@ -266,6 +271,7 @@ Loaded on demand. Read only what the current task needs.
 | [references/a11y.md](./references/a11y.md) | ATF accessibility checks (`compose-preview a11y`). |
 | [references/data-products.md](./references/data-products.md) | Structured per-render data (a11y findings + hierarchy, layout tree, recomposition heat-map, …) via MCP tools and on-disk Gradle output. |
 | [references/mcp.md](./references/mcp.md) | Driving compose-preview from an MCP-aware agent host (push notifications, multi-workspace, in-process server bundled in the CLI). |
+| [references/agent-loop.md](./references/agent-loop.md) | Playwright-style, token-frugal interaction loop: target by semantic ref (not pixels), `observe=semantics\|hash`, `diff_semantics`, `render_matrix`, and `record_preview emitTest=true`. |
 | [references/cmp-shared.md](./references/cmp-shared.md) | Compose Multiplatform `:shared` modules (`commonMain` previews via Desktop pipeline). |
 | [references/resource-previews.md](./references/resource-previews.md) | Android XML resources (`<vector>`, `<animated-vector>`, `<adaptive-icon>`). |
 | [references/wear-ui.md](./references/wear-ui.md) | Wear OS Material 3 Expressive design. |
