@@ -170,6 +170,33 @@ is content-only and documents tools that live elsewhere (the same way
              done
    ```
 
+### Extraction runbook (skills → coo-ee-env)
+
+This directory is the staging source. To graduate it into its own repo with
+Vercel Git integration:
+
+```bash
+# 1. Copy the self-contained service out of the skills checkout.
+cp -a scripts/env/. ../coo-ee-env/
+cd ../coo-ee-env
+
+# 2. Add the CI workflow shown above at .github/workflows/render.yml.
+
+# 3. Create the repo and push (uses your gh login, not this session).
+git init -b main && git add . && git commit -m "Initial import: coo.ee/env service"
+gh repo create yschimke/coo-ee-env --public --source=. --remote=origin --push
+
+# 4. Vercel Git integration: import the repo at https://vercel.com/new
+#    (push-to-main then auto-deploys; PRs get preview URLs).
+
+# 5. Domain: Vercel project -> Settings -> Domains -> add env.coo.ee,
+#    then DNS: CNAME  env -> cname.vercel-dns.com
+```
+
+Once `coo-ee-env` is live, slim this directory back to the M1 demo
+(`java,android` + a short README that links to the new repo) so the fragments
+have a single home.
+
 ## Domain
 
 `env.coo.ee/<modules>` is the recommended shape:
