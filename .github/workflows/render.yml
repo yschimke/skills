@@ -1,0 +1,15 @@
+name: render
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: render every module set and syntax-check the output
+        run: |
+          for m in base java android java,android; do
+            echo "== $m =="
+            node -e "process.stdout.write(require('./api/env/render').render('$m').body)" | bash -n -
+          done
