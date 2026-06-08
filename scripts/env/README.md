@@ -1,4 +1,4 @@
-# `coo.ee/env` — demo snapshot
+# `coo.ee/env` — composable environment bootstrapper
 
 A [gitignore.io](https://www.toptal.com/developers/gitignore)-style service for
 **dev environments**: you ask for a set of modules in the URL and get back a
@@ -8,28 +8,20 @@ single `bash` script that installs them.
 curl -fsSL https://env.coo.ee/java,android | bash
 ```
 
-The path after the host is a comma-separated module list; the service renders a
-script by concatenating a fixed preamble with each requested module.
+The path after the host is a comma-separated module list (order is
+canonicalized server-side). The script installs [Nix](https://determinate.systems/)
+(daemonless) as a base, then each requested module — e.g. `java` (Temurin JDK
+17 + 21) and `android` (`android-tools`, `ANDROID_HOME`). It probes the hosts
+each module needs and prints exactly which to allow before doing anything, and
+it is idempotent, so re-running is a no-op on a warm box and a repair on a cold
+one.
 
-## This directory is just a runnable demo
+## Source
 
-The service itself — the `modules/` fragments, the Vercel renderer, and the
-routing — now lives in its own repo, which is the single source of truth:
+The service — module fragments, the renderer, routing, and CI — lives in its
+own repo, which is the single source of truth:
 
 > **→ [`yschimke/coo-ee-env`](https://github.com/yschimke/coo-ee-env)**
-
-What remains here is one **pre-rendered** artifact, [`java,android`](./java,android),
-so you can see and run the idea straight from a `skills` checkout:
-
-```bash
-./scripts/env/java,android
-```
-
-It installs [Nix](https://determinate.systems/) (daemonless) as a base, then the
-`java` (Temurin JDK 17 + 21) and `android` (`android-tools`, `ANDROID_HOME`)
-modules. It checks host reachability first and is idempotent, so re-running is a
-no-op on a warm box and a repair on a cold one. This snapshot can drift from the
-live service — treat `coo-ee-env` as authoritative.
 
 ## Wiring it into an agent environment
 
