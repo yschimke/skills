@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/env/:modules", "destination": "/api/env/:modules" },
+    { "source": "/:modules", "destination": "/api/env/:modules" }
+  ],
+  "functions": {
+    "api/env/[modules].js": {
+      "includeFiles": "scripts/env/modules/**"
+    }
+  }
+}
