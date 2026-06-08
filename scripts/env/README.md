@@ -172,24 +172,26 @@ is content-only and documents tools that live elsewhere (the same way
 
 ### Extraction runbook (skills → coo-ee-env)
 
-This directory is the staging source. To graduate it into its own repo with
-Vercel Git integration:
+This directory is the staging source and is push-ready as-is — it already
+carries `.github/workflows/render.yml` and `.gitignore`. The repo
+[`yschimke/coo-ee-env`](https://github.com/yschimke/coo-ee-env) exists, so
+clone it and copy this directory in:
 
 ```bash
-# 1. Copy the self-contained service out of the skills checkout.
-cp -a scripts/env/. ../coo-ee-env/
+# 1. Clone the (already-created) target and copy the service in.
+git clone https://github.com/yschimke/coo-ee-env.git ../coo-ee-env
+cp -a scripts/env/. ../coo-ee-env/        # README, modules, api, vercel.json, CI
 cd ../coo-ee-env
 
-# 2. Add the CI workflow shown above at .github/workflows/render.yml.
+# 2. Commit and push (uses your gh login, not this session).
+git add .
+git commit -m "Initial import: coo.ee/env service"
+git push
 
-# 3. Create the repo and push (uses your gh login, not this session).
-git init -b main && git add . && git commit -m "Initial import: coo.ee/env service"
-gh repo create yschimke/coo-ee-env --public --source=. --remote=origin --push
-
-# 4. Vercel Git integration: import the repo at https://vercel.com/new
+# 3. Vercel Git integration: import the repo at https://vercel.com/new
 #    (push-to-main then auto-deploys; PRs get preview URLs).
 
-# 5. Domain: Vercel project -> Settings -> Domains -> add env.coo.ee,
+# 4. Domain: Vercel project -> Settings -> Domains -> add env.coo.ee,
 #    then DNS: CNAME  env -> cname.vercel-dns.com
 ```
 
