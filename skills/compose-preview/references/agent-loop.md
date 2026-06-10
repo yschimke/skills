@@ -21,8 +21,10 @@ installer if you're behind.
 
 All of the tools below are exposed both through the MCP server (see
 [mcp.md](./mcp.md)) and the `compose-preview` CLI. Semantic *input*
-(clicking/typing by ref) is **desktop-first** in this release; Android
-follows separately.
+(clicking/typing by ref) resolves on **both Desktop (Skiko) and Android
+(Robolectric)** as of v0.14.0 — a target that resolves to no node (or
+more than one) is reported unmatched and the input is dropped, so check
+state afterward rather than assuming the click landed.
 
 ## Why it's token-frugal
 
@@ -36,6 +38,7 @@ PNG read for a structured signal:
 | "Did it change?" | read PNG (~1.5k tok) | `observe="hash"` — SHA256 + dimensions (~minimal) |
 | "What's on screen?" | read PNG + eyeball it | `observe="semantics"` — semantics tree + hash (~few hundred tok) |
 | "What changed vs. before?" | read 2 PNGs + compare | `diff_semantics` — structured delta (~few hundred tok/changed preview, no PNG reads) |
+| "Let me *see* the one element that moved" | read the whole PNG (~1.5k tok) | `render_preview crop` — just that element's rectangle (~few hundred tok) |
 | Multi-state coverage (device × locale × …) | read N PNGs (N × ~1.5k) | `render_matrix` — per-cell hashes (~`cellCount × 40` tok, 24-cell cap) |
 
 Read a PNG only when a delta says something visual moved and you need to
@@ -49,7 +52,8 @@ loop, extended to interaction and semantics.
 | `getByRole` / `getByTestId` locators | target by `ref` / `testTag` / `role`+`text` |
 | `toMatchAriaSnapshot` | `diff_semantics` (pixel-free semantics regression) |
 | aria snapshot | `render_preview observe="semantics"` |
-| `screenshot()` | `render_preview observe="png"` (the default) |
+| `page.screenshot()` (full page) | `render_preview observe="png"` (the default) |
+| `locator.screenshot()` (one element) | `render_preview crop={ ref \| testTag \| role+text }` |
 | codegen (record → script) | `record_preview emitTest=true` (record → Compose UI test) |
 
 ## The capabilities
@@ -144,7 +148,32 @@ tokens, no PNG reads — suitable as the default regression check in a loop,
 reserving full visual-diff PNG reads for when the semantics delta is empty
 but you still suspect a purely visual change.
 
-### 5. Record → Compose UI test
+### 5. Crop to one element
+
+`render_preview` takes an optional `crop` that returns **only one
+element's rectangle** instead of the full frame — the Compose analogue of
+Playwright's `locator.screenshot()`. Set *either* a semantic target or
+explicit render-pixel bounds:
+
+```json
+{ "uri": "compose-preview://...", "crop": { "ref": "btn:save" } }        // by ref
+{ "uri": "compose-preview://...", "crop": { "testTag": "save-button" } } // by tag
+{ "uri": "compose-preview://...", "crop": { "left": 0, "top": 0, "right": 200, "bottom": 80 } }
+```
+
+`crop` honours `observe`: the default `png` returns the cropped image plus
+a small metadata block (resolved region, `ref`, source dimensions, sha);
+`hash`/`semantics` return the crop's sha + dimensions (a region-scoped
+change signal), and `semantics` also includes the matched node's subtree.
+
+This is the **natural partner to `diff_semantics`**: when the diff says
+"ref X changed", crop just ref X to look — a "one label moved" review goes
+from a ~3k-token full-frame PNG pair to a few-hundred-token crop pair.
+Reach for `crop` whenever you need to *see* a change but already know
+which element moved; reserve the full-frame `observe="png"` for layout-wide
+or "I don't know where it moved" cases.
+
+### 6. Record → Compose UI test
 
 `record_preview` gains `emitTest=true`: instead of an ephemeral
 video/image, it emits a **durable, compilable Compose UI test** from the
@@ -166,13 +195,34 @@ recorded interaction.
 This is codegen: drive the preview once by semantic target, get a
 regression test that pins the behaviour you just exercised.
 
-### 6. Matrix render (multi-state, per-cell hashes)
+### 7. Matrix render (multi-state, per-cell hashes)
 
 `render_matrix` sweeps a preview across `device × locale × uiMode ×
 fontScale` and returns **per-cell hashes** rather than N full PNGs —
 roughly `cellCount × ~40` tokens instead of `cellCount × ~1.5k` PNG reads,
 capped at 24 cells. Use it to confirm a change is stable across the state
 matrix; pull the PNG for only the cells whose hash moved.
+
+### 8. Structured render failures (typed `kind` + fix hint)
+
+When a render fails, the daemon doesn't hand back an opaque stack trace —
+it classifies the failure into a typed `kind` and, for recognized skew
+signatures, a one-line fix hint. Read the `kind`/hint instead of parsing
+the throwable:
+
+| `kind` | Means | Typical fix hint |
+|---|---|---|
+| `compile` | Source didn't compile | Fix the compile error the daemon surfaces. |
+| `runtime` | Threw while composing/rendering | e.g. "preview must be a `@Composable` with no required params"; Robolectric SDK below `compileSdk` → set `composePreview.sdkVersion`. |
+| `capture` | Robolectric capture path failed | e.g. allow `$HOME/.robolectric-download-lock` in a restricted sandbox; usually a Robolectric × `compileSdk` skew. |
+| `timeout` | Render exceeded the deadline | Retry / widen the timeout; check for an infinite recomposition. |
+| `internal` | Unclassified daemon error | Report it. |
+
+Act on the `kind` directly — a `capture` lock failure is a sandbox
+allowlist fix, not a code change; a `runtime` "not `@Composable`" is a
+state-hoisting fix (extract a zero-arg preview). Don't re-run the
+installer or kill the daemon on a failed render — see
+[mcp.md § Troubleshooting](./mcp.md#troubleshooting-first--when-not-to-act).
 
 ## Putting it together — a loop
 
@@ -183,13 +233,16 @@ matrix; pull the PNG for only the cells whose hash moved.
    anything move?
 4. **Explain.** If it moved, `diff_semantics(before, after)` for the
    structured delta.
-5. **See.** Read `observe="png"` only for the previews/cells the delta
-   flags as visually interesting.
+5. **See.** When the delta names a `ref`, `render_preview crop={ ref }` to
+   see just that element; reserve a full `observe="png"` for layout-wide
+   changes or when you don't yet know where it moved.
 6. **Pin.** When the behaviour is right, `record_preview emitTest=true` to
    capture it as a Compose UI test.
 
-Every step before #5 avoids a PNG read, which is where the token budget
-goes.
+Every step before #5 avoids a PNG read entirely, and #5 reads a cropped
+element rather than the full frame where it can — that's where the token
+budget goes. A failed render short-circuits to its typed `kind` + fix hint
+(§8) rather than a stack trace.
 
 ## See also
 

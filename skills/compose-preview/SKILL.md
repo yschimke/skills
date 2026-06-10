@@ -271,7 +271,7 @@ Loaded on demand. Read only what the current task needs.
 | [references/a11y.md](./references/a11y.md) | ATF accessibility checks (`compose-preview a11y`). |
 | [references/data-products.md](./references/data-products.md) | Structured per-render data (a11y findings + hierarchy, layout tree, recomposition heat-map, …) via MCP tools and on-disk Gradle output. |
 | [references/mcp.md](./references/mcp.md) | Driving compose-preview from an MCP-aware agent host (push notifications, multi-workspace, in-process server bundled in the CLI). |
-| [references/agent-loop.md](./references/agent-loop.md) | Playwright-style, token-frugal interaction loop: target by semantic ref (not pixels), `observe=semantics\|hash`, `diff_semantics`, `render_matrix`, and `record_preview emitTest=true`. |
+| [references/agent-loop.md](./references/agent-loop.md) | Playwright-style, token-frugal interaction loop: target by semantic ref (not pixels, Desktop + Android), `observe=semantics\|hash`, `diff_semantics`, `render_preview crop` (one element), `render_matrix`, `record_preview emitTest=true`, and typed render-failure `kind`s. |
 | [references/cmp-shared.md](./references/cmp-shared.md) | Compose Multiplatform `:shared` modules (`commonMain` previews via Desktop pipeline). |
 | [references/resource-previews.md](./references/resource-previews.md) | Android XML resources (`<vector>`, `<animated-vector>`, `<adaptive-icon>`). |
 | [references/wear-ui.md](./references/wear-ui.md) | Wear OS Material 3 Expressive design. |
