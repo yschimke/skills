@@ -132,7 +132,7 @@ Once the host is wired, the agent gets a stable resource catalogue:
 - `notifications/resources/list_changed` fires when the discovery set or the
   workspace set mutates.
 
-Tool calls (12 today, see [`mcp/README.md` § Tool reference](https://github.com/yschimke/compose-ai-tools/blob/main/mcp/README.md#tool-reference)
+Tool calls (see [`mcp/README.md` § Tool reference](https://github.com/yschimke/compose-ai-tools/blob/main/mcp/README.md#tool-reference)
 for the full table) cover the rest:
 
 - `register_project`, `unregister_project`, `list_projects` — manage
@@ -146,11 +146,19 @@ for the full table) cover the rest:
   view (e.g. the agent invoked the Edit tool from a different process). The
   daemon's classloader-swap fast path picks up bytecode changes without a
   full reboot.
-- `render_preview(uri, overrides?, force?)` — render bypassing the in-memory
-  render cache. Use `overrides` to flip device, locale, fontScale, uiMode,
-  orientation, or density per call without editing the `@Preview` annotation.
-  `force = { reason }` is the sanctioned escape hatch for stale renders —
-  see the "do not delete `build/classes/`" note above.
+- `render_preview(uri, overrides?, observe?, crop?, force?)` — render
+  bypassing the in-memory render cache. Use `overrides` to flip device,
+  locale, fontScale, uiMode, orientation, or density per call without editing
+  the `@Preview` annotation. `observe` (`png` default / `semantics` / `hash`)
+  and `crop` (one element's rectangle by `ref`/`testTag`/`role`+`text` or
+  explicit pixel bounds) are the token-frugal knobs — see
+  [`references/agent-loop.md`](./agent-loop.md). `force = { reason }` is the
+  sanctioned escape hatch for stale renders — see the "do not delete
+  `build/classes/`" note above.
+- `render_matrix`, `diff_semantics`, `record_preview` — the Playwright-style
+  interaction/regression tools (matrix sweep, pixel-free semantics diff,
+  record-to-Compose-UI-test). Covered in
+  [`references/agent-loop.md`](./agent-loop.md).
 - `history_list` / `history_diff` — proxy the daemon's history feature for
   comparing rendered output across runs.
 - `list_data_products` / `get_preview_data` / `subscribe_preview_data` —
