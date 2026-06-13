@@ -97,10 +97,11 @@ JSON, top-down:
 
 ## The builder script
 
-This skill defines the board's spec + output **contract** rather than bundling a
-fixed implementation — `build-design-board.py` is **not shipped beside this
-`SKILL.md`**. Run your project's copy if it has one; otherwise generate a small
-builder that meets the contract:
+A reference builder ships beside this `SKILL.md` at
+[`scripts/build-design-board.py`](scripts/build-design-board.py) — a small,
+dependency-free Python 3 script (no `pip install`). It reads the spec, inlines
+every image, and writes one self-contained HTML file. Swap in your project's own
+builder if you have one, as long as it holds the same contract:
 
 - reads the spec from `--spec <file>` **or** stdin, and writes to `--out <file>`
   **or** stdout;
@@ -110,15 +111,9 @@ builder that meets the contract:
   the build;
 - emits **deterministic** HTML — no timestamps, random ids, or absolute paths —
   so re-runs diff cleanly;
-- resolves item `src` paths **relative to the repo root or a `--base` argument**;
-  never hardcode an absolute checkout path like `/home/user/<project>`, or the
-  board breaks in every other checkout.
-
-Where the builder lives is a project choice: **beside this `SKILL.md`** for a
-small, self-contained script (this content repo permits scripts next to a skill —
-see `compose-preview-review`), or **upstream in
-[compose-ai-tools](https://github.com/yschimke/compose-ai-tools)** if it grows
-into a first-class CLI command.
+- resolves item `src` paths against `--base` (default: the current directory),
+  so a spec stays portable — never hardcode an absolute checkout path like
+  `/home/user/<project>`, or the board breaks in every other checkout.
 
 ## Related
 
