@@ -56,15 +56,16 @@ skill is the export/presentation step that sits on top of those.
    (categories → groups → items, each item pointing at a PNG path). See
    [Board spec schema](#board-spec-schema) below.
 
-3. **Generate the HTML.** Run the builder to inline every referenced PNG as
-   base64 and emit one self-contained file. Missing PNGs render as visible
-   placeholders rather than failing the build:
+3. **Generate the HTML.** Build one self-contained file from the spec — every
+   referenced PNG inlined as base64, missing PNGs shown as visible placeholders
+   rather than failing the build, and **deterministic output** (no timestamps or
+   random ids, so re-runs diff cleanly). Run your project's builder if it ships
+   one; otherwise generate it from the [contract below](#the-builder-script):
 
    ```sh
+   # spec may also be piped on stdin instead of --spec
    python3 scripts/build-design-board.py --spec board-spec.json --out design-board.html
    ```
-
-   (The spec can also be piped on stdin instead of `--spec`.)
 
 4. **Import to Claude Design.** Pick the route that fits:
    - **Web capture (best fidelity)** — open `design-board.html` in a browser, or
@@ -96,18 +97,23 @@ JSON, top-down:
 
 ## The builder script
 
-`build-design-board.py` turns a spec into HTML with all images inlined (no
-external file dependencies). Where the script itself should live is a project
-choice:
+A reference builder ships beside this `SKILL.md` at
+[`scripts/build-design-board.py`](scripts/build-design-board.py) — a small,
+dependency-free Python 3 script (no `pip install`). It reads the spec, inlines
+every image, and writes one self-contained HTML file. Swap in your project's own
+builder if you have one, as long as it holds the same contract:
 
-- **Alongside this `SKILL.md`** as a supporting script — fine for a small,
-  self-contained builder (this content repo permits scripts beside a skill).
-- **Upstream in [compose-ai-tools](https://github.com/yschimke/compose-ai-tools)**
-  next to the CLI/renderer if it grows into a first-class command.
-
-Either way, keep paths in any example spec generator **relative to the repo root
-or passed as arguments** — do not hardcode an absolute checkout path like
-`/home/user/<project>`, or the spec breaks in every other checkout.
+- reads the spec from `--spec <file>` **or** stdin, and writes to `--out <file>`
+  **or** stdout;
+- inlines every item `src` PNG as a `data:image/png;base64,…` URI, so the output
+  is one file with **no external dependencies**;
+- renders a missing or unreadable PNG as a **visible placeholder** — never fails
+  the build;
+- emits **deterministic** HTML — no timestamps, random ids, or absolute paths —
+  so re-runs diff cleanly;
+- resolves item `src` paths against `--base` (default: the current directory),
+  so a spec stays portable — never hardcode an absolute checkout path like
+  `/home/user/<project>`, or the board breaks in every other checkout.
 
 ## Related
 
