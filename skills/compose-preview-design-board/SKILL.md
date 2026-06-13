@@ -56,15 +56,16 @@ skill is the export/presentation step that sits on top of those.
    (categories → groups → items, each item pointing at a PNG path). See
    [Board spec schema](#board-spec-schema) below.
 
-3. **Generate the HTML.** Run the builder to inline every referenced PNG as
-   base64 and emit one self-contained file. Missing PNGs render as visible
-   placeholders rather than failing the build:
+3. **Generate the HTML.** Build one self-contained file from the spec — every
+   referenced PNG inlined as base64, missing PNGs shown as visible placeholders
+   rather than failing the build, and **deterministic output** (no timestamps or
+   random ids, so re-runs diff cleanly). Run your project's builder if it ships
+   one; otherwise generate it from the [contract below](#the-builder-script):
 
    ```sh
+   # spec may also be piped on stdin instead of --spec
    python3 scripts/build-design-board.py --spec board-spec.json --out design-board.html
    ```
-
-   (The spec can also be piped on stdin instead of `--spec`.)
 
 4. **Import to Claude Design.** Pick the route that fits:
    - **Web capture (best fidelity)** — open `design-board.html` in a browser, or
@@ -96,18 +97,28 @@ JSON, top-down:
 
 ## The builder script
 
-`build-design-board.py` turns a spec into HTML with all images inlined (no
-external file dependencies). Where the script itself should live is a project
-choice:
+This skill defines the board's spec + output **contract** rather than bundling a
+fixed implementation — `build-design-board.py` is **not shipped beside this
+`SKILL.md`**. Run your project's copy if it has one; otherwise generate a small
+builder that meets the contract:
 
-- **Alongside this `SKILL.md`** as a supporting script — fine for a small,
-  self-contained builder (this content repo permits scripts beside a skill).
-- **Upstream in [compose-ai-tools](https://github.com/yschimke/compose-ai-tools)**
-  next to the CLI/renderer if it grows into a first-class command.
+- reads the spec from `--spec <file>` **or** stdin, and writes to `--out <file>`
+  **or** stdout;
+- inlines every item `src` PNG as a `data:image/png;base64,…` URI, so the output
+  is one file with **no external dependencies**;
+- renders a missing or unreadable PNG as a **visible placeholder** — never fails
+  the build;
+- emits **deterministic** HTML — no timestamps, random ids, or absolute paths —
+  so re-runs diff cleanly;
+- resolves item `src` paths **relative to the repo root or a `--base` argument**;
+  never hardcode an absolute checkout path like `/home/user/<project>`, or the
+  board breaks in every other checkout.
 
-Either way, keep paths in any example spec generator **relative to the repo root
-or passed as arguments** — do not hardcode an absolute checkout path like
-`/home/user/<project>`, or the spec breaks in every other checkout.
+Where the builder lives is a project choice: **beside this `SKILL.md`** for a
+small, self-contained script (this content repo permits scripts next to a skill —
+see `compose-preview-review`), or **upstream in
+[compose-ai-tools](https://github.com/yschimke/compose-ai-tools)** if it grows
+into a first-class CLI command.
 
 ## Related
 
