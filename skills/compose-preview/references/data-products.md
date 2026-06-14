@@ -148,6 +148,20 @@ unnecessary recomposition. For review guidance, bad examples, and direct
 composition-counter probes, use
 [`compose-preview-review/references/agent-audits.md`](../../compose-preview-review/references/agent-audits.md).
 
+`compose/theme` resolves the active Material 3 design system: `resolvedTokens`
+(the `colorScheme`, `typography`, and `shapes`, keyed by role) plus `consumers`
+— a per-node `{ nodeId, tokens }` list of which theme tokens each node actually
+read. `nodeId` is the same id space as `compose/semantics`, so **join the two by
+`nodeId`** to attribute an element to the exact code attribute it drew with
+(e.g. `onSurface`, `bodyLarge`) and resolve its value via `resolvedTokens` —
+instead of guessing from a rendered colour. Attribution is resolved-value, not
+compiler-exact: typography is matched precisely, while a colour several roles
+share is reported as the candidate role set (an `on*` role is pinned when the
+node's container background identifies it). `consumers` is populated as of
+compose-preview **v0.15.2** (schema v2); older producers return `consumers: []`,
+in which case fall back to reading `resolvedTokens` and reverse-matching a
+node's resolved colour yourself.
+
 `test/failure` is daemon fetch-only. After a `renderFailed`
 notification, call `get_preview_data(..., kind = "test/failure")` to
 retrieve the latest failed-render postmortem for that preview: error
