@@ -51,8 +51,8 @@ loop, extended to interaction and semantics.
 |---|---|
 | `getByRole` / `getByTestId` locators | target by `ref` / `testTag` / `role`+`text` |
 | `toMatchAriaSnapshot` | `diff_semantics` (pixel-free semantics regression) |
-| aria snapshot | `render_preview observe="semantics"` |
-| `page.screenshot()` (full page) | `render_preview observe="png"` (the default) |
+| aria snapshot | `render_preview observe="semantics"` (the default) |
+| `page.screenshot()` (full page) | `render_preview observe="png"` (opt in for pixels) |
 | `locator.screenshot()` (one element) | `render_preview crop={ ref \| testTag \| role+text }` |
 | codegen (record → script) | `record_preview emitTest=true` (record → Compose UI test) |
 
@@ -101,27 +101,33 @@ the moment padding or font scale changes; a `testTag` doesn't.
 
 ### 3. Token-frugal `observe` modes
 
-`render_preview` gains an opt-in `observe` argument with three modes:
+`render_preview` takes an `observe` argument with three modes:
 
 | `observe` | Returns | Cost | Use for |
 |---|---|---|---|
-| `"png"` (default) | base64 PNG | ~1.5k tok | when you actually need to *see* it |
-| `"semantics"` | semantics tree + SHA256 + width/height, **no base64** | ~few hundred tok | inspecting structure, grabbing refs to target |
+| `"semantics"` (default) | semantics tree + SHA256 + width/height, **no base64** | ~few hundred tok | inspecting structure, grabbing refs to target |
 | `"hash"` | SHA256 + dimensions only | ~minimal | a cheap "did it change?" gate |
+| `"png"` | base64 PNG | ~1.5k tok | when you actually need to *see* it |
 
 Dimensions come straight from the PNG `IHDR` header without decoding the
-image, so even `hash` is cheap. The default stays `"png"` for back-compat
-with published skills — **opt into `semantics`/`hash` explicitly** in a
-loop:
+image, so even `hash` is cheap. **The default is `"semantics"`** — the
+snapshot-default / screenshot-on-demand split that makes the MCP loop
+token-frugal (issue #1787). A bare `render_preview` returns the structured
+snapshot; **opt into `"png"` explicitly** when you need pixels:
 
 ```json
-{ "uri": "compose-preview://...", "observe": "hash" }    // gate
-{ "uri": "compose-preview://...", "observe": "semantics" } // inspect + get refs
+{ "uri": "compose-preview://..." }                       // default: semantics snapshot
+{ "uri": "compose-preview://...", "observe": "hash" }    // gate: did it change?
+{ "uri": "compose-preview://...", "observe": "png" }     // pixels, on demand
 ```
 
-A good loop: `observe="hash"` after an edit → if the hash moved,
-`observe="semantics"` (or `diff_semantics`) to learn *what* moved → read
-`observe="png"` only if something visual needs eyeballing.
+`resources/read` still returns the PNG blob unchanged, so the VS Code panel
+and other pixel consumers are unaffected — only the agent-loop *tool*
+default went structured-first.
+
+A good loop: a bare `render_preview` (or `observe="hash"`) after an edit →
+if it moved, the `semantics` snapshot (or `diff_semantics`) tells you *what*
+moved → request `observe="png"` only if something visual needs eyeballing.
 
 ### 4. `diff_semantics` — pixel-free regression
 

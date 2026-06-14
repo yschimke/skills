@@ -149,7 +149,8 @@ for the full table) cover the rest:
 - `render_preview(uri, overrides?, observe?, crop?, force?)` — render
   bypassing the in-memory render cache. Use `overrides` to flip device,
   locale, fontScale, uiMode, orientation, or density per call without editing
-  the `@Preview` annotation. `observe` (`png` default / `semantics` / `hash`)
+  the `@Preview` annotation. `observe` (`semantics` default / `hash` /
+  `png` for pixels on demand — issue #1787)
   and `crop` (one element's rectangle by `ref`/`testTag`/`role`+`text` or
   explicit pixel bounds) are the token-frugal knobs — see
   [`references/agent-loop.md`](./agent-loop.md). `force = { reason }` is the
