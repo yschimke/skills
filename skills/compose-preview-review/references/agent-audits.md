@@ -386,6 +386,17 @@ theme token or resource is absent, ask for the design-system token
 instead of a literal. If the visual diff is intentionally unchanged, the PR
 should explain why the provenance changed.
 
+For **theme-token** provenance specifically — which `MaterialTheme` token an
+element drew with, not an `R.*` resource — fetch `compose/theme` and join its
+`consumers` (`{ nodeId, tokens }`) to the matching `compose/semantics` node by
+`nodeId`. That names the exact token a node read (e.g. `onSurface`, `bodyLarge`)
+alongside its resolved value from `resolvedTokens`, so you can prove a literal
+hex should have been a token, or that a refactor changed which token a node
+reads. Populated as of compose-preview v0.15.2; on older producers `consumers`
+is empty — reverse-match the node's resolved colour against
+`resolvedTokens.colorScheme` instead, accepting that values several roles share
+stay ambiguous.
+
 Check:
 
 - Colors, typography, dimensions, strings, images, and fonts come from the
