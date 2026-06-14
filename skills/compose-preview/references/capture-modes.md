@@ -162,9 +162,15 @@ Non-input script event ids are namespaced and must be advertised under
 `capabilities.dataExtensions[].recordingScriptEvents[]` with
 `supported = true`.
 
-The response includes `recordingId`, `mimeType`, `sizeBytes`, `frameCount`,
-`durationMs`, `frameWidthPx`, `frameHeightPx`, `frames[]`, and `scriptEvents[]`.
-Raw frames are also written under:
+`observe` controls how much rides back. The default `observe="frames"` returns
+the structured per-frame observation only — `recordingId`, `mimeType`,
+`sizeBytes`, `frameCount`, `durationMs`, `frameWidthPx`, `frameHeightPx`,
+`frames[]` (per-frame sha256 + changed-pixel counts), `changedFrameCount`, and
+`scriptEvents[]` — with **no inline media**, since a recording's base64 bytes
+scale with `fps × duration` and can dwarf a single PNG (compose-ai-tools#1860).
+The encoded artifact is still on disk at `videoPath`; pass `observe="media"`
+only when you need the encoded bytes inline (APNG as an image block, mp4/webm as
+an embedded resource). Raw frames are also written under:
 
 ```text
 <module>/build/compose-previews/daemon-recordings/frames/<recordingId>/frame-00000.png
