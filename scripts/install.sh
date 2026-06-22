@@ -512,15 +512,25 @@ INSTALLED_VERSION="$(cat "$CLI_VERSION_FILE" 2>/dev/null || true)"
 
 if [[ -z "$VERSION" ]]; then
   log "resolving latest release of $REPO"
-  # Use the public HTML redirect rather than api.github.com; the API is
-  # rate-limited on shared sandbox IPs and would 403 for unauthenticated
-  # callers. The redirect target is /releases/tag/v<VER>.
-  RESOLVED="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
-    "https://github.com/$REPO/releases/latest")" \
-    || die "could not reach github.com/$REPO/releases/latest"
-  VERSION="${RESOLVED##*/v}"
-  [[ -n "$VERSION" && "$VERSION" != "$RESOLVED" ]] \
-    || die "could not parse version from $RESOLVED"
+  # Resolve the newest CLI release from the public releases.atom feed.
+  #
+  # NOT /releases/latest: this is a release-please monorepo where the CLI ships
+  # on v<X.Y.Z> tags and the mobile/wear apps ship on clients-v<X.Y.Z> tags.
+  # Whichever publishes last owns GitHub's single "latest" pointer, so
+  # /releases/latest can resolve to a clients-v* tag -- which has no "/v" to
+  # strip and produced "could not parse version from .../tag/clients-v0.2.0".
+  #
+  # The atom feed lists every release newest-first and, like the HTML redirect,
+  # isn't the rate-limited api.github.com. We take the newest tag of the form
+  # v<MAJOR.MINOR.PATCH>; a "releases/tag/clients-v..." href does not match
+  # "releases/tag/v...", so component releases are skipped for free.
+  FEED="$(curl -fsSL "https://github.com/$REPO/releases.atom")" \
+    || die "could not reach github.com/$REPO/releases.atom"
+  VERSION="$(printf '%s\n' "$FEED" \
+    | grep -oE 'releases/tag/v[0-9]+\.[0-9]+\.[0-9]+' \
+    | head -n1 | sed 's#.*/tag/v##')"
+  [[ -n "$VERSION" ]] \
+    || die "no v<MAJOR.MINOR.PATCH> CLI release found in $REPO releases.atom"
 fi
 
 CLI_ASSET="compose-preview-${VERSION}.tar.gz"
