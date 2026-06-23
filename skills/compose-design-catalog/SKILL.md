@@ -60,7 +60,7 @@ Wear). See the `samples/design-catalog-*` modules in
    captures plus the wireframe, theme, semantics, and a11y products:
 
    ```sh
-   compose-preview show --module design-catalog-m3 \
+   compose-preview show --module samples:design-catalog-m3 \
      --with-extension a11y,theme,semantics,semantics-wireframe --json \
      > /tmp/m3-show.json
    ```
