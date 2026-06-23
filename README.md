@@ -66,6 +66,14 @@ invocation of the stub — there's no separate "now install the CLI" step.
   Claude Design and other design tools. Pairs with `compose-preview`;
   turns a set of renders into one coherent brief rather than loose
   screenshots.
+- [`compose-design-catalog`](skills/compose-design-catalog/SKILL.md) —
+  generate an importable design-artifact **sticker sheet** for a whole
+  Compose component system (Compose M3, Wear Compose M3, Glimmer,
+  Glance/Wear widgets): each component in its primary modes, in two
+  variants (ideal render + bordered layout), with extracted design
+  tokens and accessibility greenlines, laid out for Figma / Stitch /
+  Claude Design import. Code-led — the published Figma kits are seed
+  only. Pairs with `compose-preview` and `compose-preview-design-board`.
 
 The CLI, Gradle plugin, renderer, MCP server, and VS Code extension
 live in [yschimke/compose-ai-tools]; this repo is content-only.
