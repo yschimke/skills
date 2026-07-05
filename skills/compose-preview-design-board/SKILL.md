@@ -78,6 +78,13 @@ skill is the export/presentation step that sits on top of those.
    Grouping, captions, and flow order travel with the images, so the board reads
    as one brief rather than a pile of screenshots.
 
+   **Targeting Figma instead?** Don't hand-place these renders into Figma from
+   here — use the [**figma-catalog-import**](../figma-catalog-import/SKILL.md)
+   skill. It owns the Figma side (the `@design-parity/figma-plugin`, reconcile
+   by `componentId`, mode-awareness) and takes either a whole-system catalog or
+   this board's curated render set. Claude Design is a light HTML/PNG drop-in and
+   stays here; Figma is the one heavy destination and lives there.
+
 ## Board spec schema
 
 JSON, top-down:
@@ -121,3 +128,9 @@ builder if you have one, as long as it holds the same contract:
   `@Preview` PNGs this board is built from: CLI, Gradle plugin, capture modes.
 - [**compose-preview-review** skill](../compose-preview-review/SKILL.md) —
   review a UI PR by rendering base and head and diffing them.
+- [**compose-design-catalog** skill](../compose-design-catalog/SKILL.md) — the
+  whole-system sibling of this skill: instead of a curated subset, catalog an
+  entire component system into a durable, tool-neutral bundle.
+- [**figma-catalog-import** skill](../figma-catalog-import/SKILL.md) — take a
+  board or catalog **into Figma** (plugin + reconcile). The Figma destination
+  adapter for both arrangers.

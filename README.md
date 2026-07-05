@@ -74,9 +74,48 @@ invocation of the stub — there's no separate "now install the CLI" step.
   tokens and accessibility greenlines, laid out for Figma / Stitch /
   Claude Design import. Code-led — the published Figma kits are seed
   only. Pairs with `compose-preview` and `compose-preview-design-board`.
+- [`figma-catalog-import`](skills/figma-catalog-import/SKILL.md) — import
+  a published `design-artifacts/<system>` catalog (from
+  `compose-design-catalog`) into a **Figma** file as authoritative,
+  code-derived renders: grouped, with a11y greenlines, spacing redlines,
+  a token→variable collection, and a `design-map.json` correspondence.
+  Decides the import case first (code-led vs design-led × new vs existing
+  file), never delete-and-rebuilds, and reconciles in place keyed by
+  `componentId`. Prefers the `@design-parity/figma-plugin`; documents the
+  Figma-MCP runbook as fallback. Pairs with `compose-design-catalog`.
 
 The CLI, Gradle plugin, renderer, MCP server, and VS Code extension
 live in [yschimke/compose-ai-tools]; this repo is content-only.
+
+### How these relate
+
+Two stages — **render**, then **arrange & deliver**. `compose-preview` is the
+shared foundation; the rest split by *what you're arranging* (a curated subset
+vs a whole system) and *where it lands*:
+
+```
+render              arrange                        deliver
+──────              ───────                        ───────
+compose-preview ─┬─ compose-preview-review ──────→ a PR base/head diff
+                 │
+                 ├─ compose-preview-design-board ─┐  (curated subset → HTML)
+                 │                                 ├─→ Claude Design  (light HTML/PNG
+                 └─ compose-design-catalog ───────┤                    drop-in, in-skill)
+                    (whole system → bundle)        └─→ Figma → figma-catalog-import
+                                                            (the one heavy destination:
+                                                             plugin + in-place reconcile
+                                                             + design-map correspondence)
+```
+
+- **board vs catalog** — `design-board` arranges a *curated subset* of renders
+  for a feature/PR into one HTML brief; `compose-design-catalog` catalogs a
+  *whole component system* into a durable, tool-neutral bundle. Different
+  granularity, same next step.
+- **Claude Design vs Figma** — Claude Design is a light drop-in (open the HTML /
+  upload the PNGs), so it stays a *step inside* board/catalog. Figma is heavy (a
+  plugin, reconcile-by-`componentId`, a `design-map.json`), so it's factored out
+  into **`figma-catalog-import`** — the single Figma delegate for *both*
+  arrangers, never duplicated in either.
 
 ## Contributing
 
