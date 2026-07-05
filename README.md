@@ -74,6 +74,15 @@ invocation of the stub — there's no separate "now install the CLI" step.
   tokens and accessibility greenlines, laid out for Figma / Stitch /
   Claude Design import. Code-led — the published Figma kits are seed
   only. Pairs with `compose-preview` and `compose-preview-design-board`.
+- [`figma-catalog-import`](skills/figma-catalog-import/SKILL.md) — import
+  a published `design-artifacts/<system>` catalog (from
+  `compose-design-catalog`) into a **Figma** file as authoritative,
+  code-derived renders: grouped, with a11y greenlines, spacing redlines,
+  a token→variable collection, and a `design-map.json` correspondence.
+  Decides the import case first (code-led vs design-led × new vs existing
+  file), never delete-and-rebuilds, and reconciles in place keyed by
+  `componentId`. Prefers the `@design-parity/figma-plugin`; documents the
+  Figma-MCP runbook as fallback. Pairs with `compose-design-catalog`.
 
 The CLI, Gradle plugin, renderer, MCP server, and VS Code extension
 live in [yschimke/compose-ai-tools]; this repo is content-only.

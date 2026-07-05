@@ -107,7 +107,11 @@ Wear). See the `samples/design-catalog-*` modules in
      renders as a browsable HTML brief.
    - **Figma** — import `tokens.dtcg.json` via a DTCG/Tokens-Studio plugin, or
      create variables from `figma-variables.json`; place the variant PNGs as the
-     sticker-sheet frames.
+     sticker-sheet frames. The maintained path for this is the
+     **figma-catalog-import** skill (the import-hop sibling of this one): it
+     drives the `@design-parity/figma-plugin`, decides the import case
+     (code-led vs design-led × new vs existing file), and reconciles in place
+     instead of delete-and-rebuild.
 
 4. **Deliver on a per-system branch.** Commit the bundle to a
    `design-artifacts/<system>` branch (`design-artifacts/compose-m3`,
