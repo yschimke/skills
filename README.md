@@ -58,8 +58,9 @@ invocation of the stub — there's no separate "now install the CLI" step.
   review pull requests that change Compose UI by rendering `@Preview`
   composables on base and head and diffing them. Pairs with
   `compose-preview`; covers agent-authored PRs, local review
-  workflows, and wiring `compose-preview/main` baselines + PR-comment
-  GitHub Actions.
+  workflows, mention-triggered CI agent sessions (`claude.yml`),
+  triaging flaky/unstable previews, and wiring `compose-preview/main`
+  baselines + PR-comment GitHub Actions.
 - [`compose-preview-design-board`](skills/compose-preview-design-board/SKILL.md)
   — assemble rendered `@Preview` PNGs into a single self-contained HTML
   design board (categories, groups, captions, layout) for import into

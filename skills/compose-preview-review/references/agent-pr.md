@@ -50,9 +50,14 @@ sticky comment carries the visuals.
 
 When asked to review a PR — especially one opened by another agent — your job
 is to make the UI change legible to a *human* reviewer, not to re-do the
-agent's work. Most repos will **not** have any preview-diff CI set up, so
-assume you're rendering locally and that the human who invoked you is the
-primary audience.
+agent's work. Check `.github/workflows/` for preview-diff CI before
+rendering (see
+[ci-agent-sessions.md § Discover the repo's preview CI](./ci-agent-sessions.md#discover-the-repos-preview-ci-before-rendering-anything));
+when none exists, assume you're rendering locally and that the human who
+invoked you is the primary audience. If you're running *inside* a
+mention-triggered CI session (`claude.yml` on an Actions runner), several
+defaults below change — read
+[ci-agent-sessions.md](./ci-agent-sessions.md) first.
 
 ### 1. Render base and head locally
 
@@ -190,9 +195,15 @@ surfaces:
   variant that hits the new path.
 - **A11y findings grew** → often a regression from hard-coded colours,
   missing `contentDescription`, or touch targets shrunk to match a redesign.
+- **Preview changed but the PR doesn't touch its source** → suspect an
+  unstable preview (clock, randomness, animation frame, network image)
+  rather than a regression. Triage with [stability.md](./stability.md):
+  render twice on the same commit; if the hashes differ run-to-run, say
+  so in the review and propose the stabilizing fixture fix.
 - **Scroll/animation flakes** in `captures[]` — if `changed: true` toggles
   run-to-run without code changes, the preview is non-deterministic; flag
-  it rather than rubber-stamp the diff.
+  it rather than rubber-stamp the diff ([stability.md](./stability.md)
+  has the full cause/fix table).
 
 ### 6. Optional: integrate with `apply` CI in `comment` mode (rare)
 
