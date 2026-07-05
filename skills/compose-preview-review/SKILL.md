@@ -1,6 +1,6 @@
 ---
 name: compose-preview-review
-description: Review pull requests that change Compose UI by rendering @Preview composables on base and head and diffing them. Use when reviewing a UI PR locally, authoring an agent-opened PR that touches UI, or wiring compose-preview/main baselines and PR-comment GitHub Actions for a project. Pairs with the compose-preview skill.
+description: Review pull requests that change Compose UI by rendering @Preview composables on base and head and diffing them. Use when reviewing a UI PR locally or from a CI agent session (@claude mention), authoring an agent-opened PR that touches UI, triaging flaky or unstable previews (time/random/animation), or wiring compose-preview/main baselines and PR-comment GitHub Actions for a project. Pairs with the compose-preview skill.
 ---
 
 # Compose Preview — Review
@@ -36,15 +36,21 @@ Pick the workflow that matches the task:
 | Task | Read |
 |---|---|
 | Review a PR locally that touches UI | [references/agent-pr.md § Reviewing a PR](./references/agent-pr.md#reviewing-a-pr-agent-workflow) |
+| Review or author from a **CI agent session** (`@claude` mention / `claude.yml` on an Actions runner) | [references/ci-agent-sessions.md](./references/ci-agent-sessions.md) |
 | Author an agent-opened PR that touches UI | [references/agent-pr.md § Authoring an Agent PR](./references/agent-pr.md#authoring-an-agent-pr-body-structure) |
+| Triage a flaky or unstable preview (time, randomness, animation, network images) | [references/stability.md](./references/stability.md) |
 | Wire `compose-preview/main` baselines + PR-comment CI for a project (or migrate from the legacy four-action setup) | [references/ci-previews.md](./references/ci-previews.md) |
 | Render previews on base and head and diff them | [references/agent-pr.md § Render base and head locally](./references/agent-pr.md#1-render-base-and-head-locally) |
 
 ## Quick reference: review a UI PR locally
 
-1. **Check whether the project has CI preview comments first.** If a
-   sticky `<!-- preview-diff -->` comment is already on the PR, read it
-   and cite it instead of re-rendering. See
+1. **Check what preview CI the project already has, first.** Scan
+   `.github/workflows/` for `compose-preview.yml` (the `apply` action),
+   legacy preview actions, and design-parity/design-artifacts pipelines
+   — see
+   [references/ci-agent-sessions.md § Discover the repo's preview CI](./references/ci-agent-sessions.md#discover-the-repos-preview-ci-before-rendering-anything).
+   If a sticky `<!-- preview-diff -->` comment is already on the PR,
+   read it and cite it instead of re-rendering. See
    [references/agent-pr.md § Optional: integrate with apply CI in comment mode](./references/agent-pr.md#6-optional-integrate-with-apply-ci-in-comment-mode-rare).
 
 2. **Render base and head.** Use a worktree so the working copy stays put:
@@ -71,6 +77,8 @@ Pick the workflow that matches the task:
 | Path | When to read |
 |---|---|
 | [references/agent-pr.md](./references/agent-pr.md) | Full PR review + agent PR authoring guidance: comment structure, image hosting choices, things to flag, integration with the unified `apply` CI action when present. |
+| [references/ci-agent-sessions.md](./references/ci-agent-sessions.md) | Running this skill inside a mention-triggered CI agent session (`claude.yml`): Gradle-only rendering, commit-SHA-pinned image embedding, discovering and reusing the repo's existing preview-diff CI. |
+| [references/stability.md](./references/stability.md) | Flaky / unstable previews: detection (render twice, CI symptoms), common causes (clock, randomness, animations, network images, locale), fixes, and how to review a suspect diff. |
 | [references/agent-audits.md](./references/agent-audits.md) | Agent audit recipes and data-product documentation clusters: accessibility, localisation, Wear clipping, resources, theme, traces, and failure triage. |
 | [references/ci-previews.md](./references/ci-previews.md) | `compose-preview/main` baselines branch + PR-comment GitHub Actions: unified `apply` workflow YAML, action inputs, branch durability, and migration from the legacy `preview-baselines` / `preview-comment` / `a11y-report` / `notification-previews` actions. |
 | [references/mcp-review.md](./references/mcp-review.md) | Driving a PR review through the MCP server (two-workspace base+head flow, push notifications, edit-on-top iteration). |
