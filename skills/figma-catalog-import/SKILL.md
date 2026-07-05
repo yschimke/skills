@@ -10,9 +10,13 @@ bundle that [`compose-design-catalog`](../compose-design-catalog/SKILL.md)
 produces (`catalog.json` + DTCG tokens + `images/` + `wireframes/`) — and import
 it into **Figma** as authoritative, code-derived renders.
 
-This is the **import hop**. `compose-design-catalog` is the *produce* hop; this
-skill is what happens on the Figma side. It assumes a bundle already exists on a
-`design-artifacts/<system>` branch (or a `compose-preview serve` host).
+This is the **import hop** — the **Figma destination adapter**. It consumes
+either arranger's output: a whole-system bundle from **compose-design-catalog**
+(a `design-artifacts/<system>` branch or a `compose-preview serve` host) *or* a
+curated render set from **compose-preview-design-board**. Both arrangers delegate
+the Figma side here rather than duplicating it, because Figma is the one *heavy*
+destination (a plugin, in-place reconcile, a `design-map.json` correspondence);
+Claude Design is a light HTML/PNG drop-in that stays in those skills.
 
 ## Code is the source of truth
 
