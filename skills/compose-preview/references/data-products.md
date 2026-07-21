@@ -162,6 +162,27 @@ compose-preview **v0.15.2** (schema v2); older producers return `consumers: []`,
 in which case fall back to reading `resolvedTokens` and reverse-matching a
 node's resolved colour yourself.
 
+**SVG vector output** — two kinds export a preview as scalable vector art
+instead of a fixed raster, both built from the same captured trees as the PNG:
+
+- `compose/semantics-wireframe` — a schematic 2D wireframe of the semantics
+  tree (SVG primary, baked PNG as a `png` extra). Structural truth: depth-cycled
+  strokes, clickable stops accented, `clearAndSet` dashed. This is the `layout`
+  (bordered) variant the design-catalog/Figma pipelines pair with spacing
+  redlines.
+- `compose/figma-svg` — a **layered, editable** design-fidelity SVG
+  (`compose-figma.svg`). Every composable becomes a named `<g id="…">` group
+  nested exactly as the code nests (so a Figma import lands each component as a
+  named layer), with real fills/strokes from container tokens, editable rounded
+  corners, editable `<text>` carrying the captured family/size/weight/colour,
+  and `data-token` bindings for pairing with `figma-variables.json`. Opaque
+  subtrees (`Image`/`Icon`/`Canvas`/charts) ride as `<image>` layers over a
+  cropped raster so the vector stays whole. Fonts are opt-in
+  (`-Dcomposeai.figma.embedFonts=true`) — embeds each face as a WOFF2 data URI
+  so the true typeface renders instead of a substituted `sans-serif`. This is
+  the vector that **figma-catalog-import** inserts as an SVG (scales crisply)
+  and that **compose-design-catalog** bakes into the bundle.
+
 `test/failure` is daemon fetch-only. After a `renderFailed`
 notification, call `get_preview_data(..., kind = "test/failure")` to
 retrieve the latest failed-render postmortem for that preview: error
