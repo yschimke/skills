@@ -177,11 +177,15 @@ instead of a fixed raster, both built from the same captured trees as the PNG:
   corners, editable `<text>` carrying the captured family/size/weight/colour,
   and `data-token` bindings for pairing with `figma-variables.json`. Opaque
   subtrees (`Image`/`Icon`/`Canvas`/charts) ride as `<image>` layers over a
-  cropped raster so the vector stays whole. Fonts are opt-in
-  (`-Dcomposeai.figma.embedFonts=true`) — embeds each face as a WOFF2 data URI
-  so the true typeface renders instead of a substituted `sans-serif`. This is
-  the vector that **figma-catalog-import** inserts as an SVG (scales crisply)
-  and that **compose-design-catalog** bakes into the bundle.
+  cropped raster so the vector stays whole. Fonts are embedded **by default** —
+  each face rides as a WOFF2 data URI so the true typeface renders instead of a
+  substituted `sans-serif`; generic faces (e.g. Roboto) are fetched from Google
+  Fonts, degrading right back to `sans-serif` when a face can't be resolved
+  (offline / network error). Opt out with `-Dcomposeai.svg.embedFonts=false`
+  (renamed from `composeai.figma.embedFonts` — embedding applies to the SVG for
+  any viewer, not just Figma) for a smaller vector-only SVG. This is the vector
+  that **figma-catalog-import** inserts as an SVG (scales crisply) and that
+  **compose-design-catalog** bakes into the bundle.
 
 `test/failure` is daemon fetch-only. After a `renderFailed`
 notification, call `get_preview_data(..., kind = "test/failure")` to
