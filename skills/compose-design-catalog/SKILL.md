@@ -83,7 +83,7 @@ Wear). See the `samples/design-catalog-*` modules in
    const catalog = buildCatalog(
      { system: "compose-m3", title: "Compose Material 3",
        library: ["androidx.compose.material3:material3"],
-       renderer: "compose-preview 0.16.2" },
+       renderer: "compose-preview 0.17.2" },
      sources, // one ComponentSource per component (ideal+layout images, tokens,
               // semantics, findings) from the mappers above
    );
@@ -96,10 +96,11 @@ Wear). See the `samples/design-catalog-*` modules in
 3. **Import.** The bundle is tool-neutral first, Figma second:
 
    ```
-   catalog.json            # index: components, both variants, greenlines
+   catalog.json            # index: components, both variants, greenlines, optional screen graph
    tokens.dtcg.json        # W3C DTCG token set — Figma Variables / Tokens Studio / Style Dictionary / Claude Design
    figma-variables.json    # Figma variable-collection projection (light/dark as modes)
    images/<component>/<variant>__<state>[__theme][__size].png
+   wireframes/<component>.svg  # baked structural vector — placed as a true vector node on Figma import
    ```
 
    - **Claude Design / Stitch** — import the PNGs + `catalog.json`; the DTCG file
@@ -111,7 +112,9 @@ Wear). See the `samples/design-catalog-*` modules in
      **figma-catalog-import** skill (the import-hop sibling of this one): it
      drives the `@design-parity/figma-plugin`, decides the import case
      (code-led vs design-led × new vs existing file), and reconciles in place
-     instead of delete-and-rebuild.
+     instead of delete-and-rebuild. Declaring a screen graph in the catalog
+     spec (`screens: [{ id, title?, related }]`) turns a code-led import into
+     structured per-screen diff pages rather than one flat sheet.
 
 4. **Deliver on a per-system branch.** Commit the bundle to a
    `design-artifacts/<system>` branch (`design-artifacts/compose-m3`,
