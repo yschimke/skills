@@ -95,28 +95,44 @@ Bootstrapping older boards: the reconcile also matches by layer name
 ### A. The `@design-parity/figma-plugin` (preferred, durable)
 
 The [`@design-parity/figma-plugin`](https://github.com/yschimke/design-parity/tree/main/packages/figma-plugin)
-is the maintained path. Build it (`npm run build:plugin --workspace
-@design-parity/figma-plugin`), *Plugins → Development → Import plugin from
-manifest…*, then paste the raw root of a `design-artifacts/<system>` branch,
-e.g.
+is the maintained path. Easiest install: download the prebuilt
+`design-parity-figma-plugin.zip` from the
+[latest design-parity release](https://github.com/yschimke/design-parity/releases/latest)
+(or the `figma-plugin-bundle` workflow artifact), unzip, and in the Figma
+**desktop** app *Plugins → Development → Import plugin from manifest…* → the
+unzipped `manifest.json`. No `npm`, no publish. (Build from source —
+`npm run build:plugin --workspace @design-parity/figma-plugin` — only when
+iterating on the plugin itself.)
 
-```
-https://raw.githubusercontent.com/yschimke/design-parity/design-artifacts/compose-m3
-```
+**Pick a catalog.** The plugin ships a small registry (Compose M3, RemoteCompose
+M3, Wear M3, each pointing at its `design-artifacts/<system>` branch); **＋**
+registers your own by the raw root of a bundle (the folder holding
+`catalog.json` — don't append `/catalog.json`); the host must be in the
+manifest's `allowedDomains`. **Load folder…** reads a local `design-artifacts`
+directory with **no server or network** — a freshly generated catalog drops in
+with zero setup. Only the live Override editor needs a `compose-preview serve`
+host.
 
-Pick a variant and Import. It fetches the manifest, DTCG tokens, and every PNG,
-then lays out a `<system> — Catalog` page with:
+Then bring the system onto the canvas two ways:
 
-- the **ideal render + a11y greenlines** OR the **layout wireframe + spacing
-  redlines** (UI toggle — each variant gets its natural overlay);
-- a **Figma variable collection** projected from the DTCG tokens (light/dark →
-  Figma modes);
-- a **`design-map.json`** correspondence scaffold (each `componentId` → the node
-  it placed) to copy and commit into the consumer repo, where design-parity's
-  resolver consumes it.
+- **Insert one component** — a grouped, searchable picker; pick variant + the
+  data-driven dimensions the catalog actually carries (theme / size / props).
+  Place it as a **PNG** (the shipping raster), an **SVG** (the editable
+  `compose/figma-svg` design vector — scales crisply, falls back to the
+  wireframe when no vector is baked), or **all variants as a native component
+  set**.
+- **Import the whole catalog** — the sticker-sheet flow. Pick **ideal render +
+  a11y greenlines** or **layout wireframe + spacing redlines** and a Mode, then
+  Import. It lays out a `<system>` board (or the structured pages below on a
+  code-led catalog), plus a **Figma variable collection** from the DTCG tokens
+  (light/dark → modes) and a **`design-map.json`** correspondence scaffold
+  (each `componentId` → the node it placed) to commit into the consumer repo.
 
-The plan is deterministic (`buildImportPlan` is pure and unit-tested); the
-Figma glue only executes it.
+The plan is deterministic (`buildImportPlan` is pure and unit-tested); the Figma
+glue only executes it. The plugin also runs the reverse **design → code**
+direction — *Propose spec* reads a selected frame into a GitHub-issue body +
+`spec.json` (with design-parity's a11y/i18n acceptance contract) without writing
+code.
 
 ### B. The Figma-MCP runbook (fallback, agent session)
 
@@ -130,31 +146,28 @@ call. Environment prerequisites bite in order: Figma connector present
 there), and there is **no** URL→image path inside `use_figma` (every image goes
 through `upload_assets`). Even in the runbook, **reconcile — do not rebuild.**
 
-## The per-screen diff section (the direction — v2)
+## Structured pages (shipped) — a code-led import isn't one flat sheet
 
-The flat sticker sheet is v1. The target is **one page per main screen**, each
-page a top-to-bottom **diff section**:
+When a code-led catalog carries theme foundations and/or a screen graph
+(`catalog.json`'s `screens: [{ id, title?, related }]`), the whole-catalog
+import lays out **multiple pages instead of one sticker sheet**, each its own
+reconcile **scope** (so a re-import refreshes each independently):
 
-1. **Figma spec on top** — the design intent. Seeded from code on first import,
-   then designer-owned in design-led mode. Shown across **breakpoint variants**
-   (e.g. Wear: small round `< 227dp` ≈192dp vs large round `≥ 227dp` ≈227dp;
-   Compose M3: compact / medium / expanded).
-2. **Comparisons below** — one row per `state × breakpoint`, three lanes:
+- **`Themes / Tokens`** — the theme-foundation showcases plus the native Figma
+  **variable collection** (light/dark modes from the DTCG tokens).
+- **One page per main screen** — leads with a `Figma spec` frame (`role=spec`,
+  seeded once from code, then designer-owned — the reconcile never touches it),
+  with the screen's card and its related secondaries/dialogs below. Each is the
+  **three-lane diff**: **Figma spec · wireframe · code render** — the wireframe
+  is the baked `wireframes/<slug>.svg` placed as a **true vector** node
+  (spacing redlines), the code render is the `capture` PNG (a11y greenlines).
+- **`Components`** — everything else as the library: each component a native
+  Figma **component set** (`state=…, theme=…, size=…` variant properties).
 
-   | Lane | Source | Role |
-   | --- | --- | --- |
-   | **a) Figma** | designer-owned frame (seeded from code) | design intent / source of truth in design-led |
-   | **b) SVG from code** | `compose/semantics-wireframe` (vector) | **structural** truth — geometry, pairs with the redline overlay |
-   | **c) exact PNG from code** | `compose-preview` `capture` PNG | **pixel** truth — what the code renders, pairs with the greenline overlay |
-
-3. The screen's **related secondary screens and dialogs** follow on the same
-   page, ordered by the app's primary navigation.
-
-Both overlays already exist in the plugin; this section arranges them per-screen
-and per-breakpoint. Two things this still needs (tracked in design-parity's
-`FIGMA_IMPORT_V2.md`): a **screen-graph** field in `catalog.spec.json` (which
-entries are main screens + their related secondaries) and the **SVG lane** as a
-first-class per-screen import beside the PNG.
+A catalog with neither themes nor `screens` — and any design-led import — stays
+a single flat page. The remaining gap (design-parity's `FIGMA_IMPORT_V2.md`,
+v3): the renderer fanning out the full `state × breakpoint` matrix so the sets
+carry every cell, not just default + light/dark.
 
 ## File registry
 

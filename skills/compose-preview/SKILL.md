@@ -99,6 +99,17 @@ For a long-lived **interaction** loop — clicking/typing by semantic ref
 semantics instead of pixels — see the Playwright-style, token-frugal
 [references/agent-loop.md](./references/agent-loop.md).
 
+## Vector (SVG) output, not just PNGs
+
+The renderer can export a preview as **scalable vector art** as well as a
+raster: `compose/semantics-wireframe` (a schematic structural wireframe) and
+`compose/figma-svg` (a **layered, editable** design-fidelity SVG — each
+composable a named `<g id>` layer, with real fills/strokes, editable text, and
+token bindings). Reach for these when the target scales to arbitrary sizes or
+must land as named layers in a design tool rather than flat pixels — they are
+what the design-catalog/Figma skills import as crisp vectors. See
+[references/data-products.md § SVG vector output](./references/data-products.md).
+
 ## Running other Gradle builds (use build-brief)
 
 `compose-preview` is the right tool for **rendering previews** — prefer it
@@ -269,7 +280,7 @@ Loaded on demand. Read only what the current task needs.
 | [references/state-hoisting.md](./references/state-hoisting.md) | Full state-hoisting pattern with code examples. |
 | [references/capture-modes.md](./references/capture-modes.md) | Multi-preview annotations, `@AnimatedPreview` GIFs, MCP scripted recordings, paused-clock snapshots, scrolling captures. |
 | [references/a11y.md](./references/a11y.md) | ATF accessibility checks (`compose-preview a11y`). |
-| [references/data-products.md](./references/data-products.md) | Structured per-render data (a11y findings + hierarchy, layout tree, recomposition heat-map, …) via MCP tools and on-disk Gradle output. |
+| [references/data-products.md](./references/data-products.md) | Structured per-render data (a11y findings + hierarchy, layout tree, recomposition heat-map, editable `compose/figma-svg` + wireframe **SVG vector** export, …) via MCP tools and on-disk Gradle output. |
 | [references/mcp.md](./references/mcp.md) | Driving compose-preview from an MCP-aware agent host (push notifications, multi-workspace, in-process server bundled in the CLI). |
 | [references/agent-loop.md](./references/agent-loop.md) | Playwright-style, token-frugal interaction loop: target by semantic ref (not pixels, Desktop + Android), `observe=semantics\|hash`, `diff_semantics`, `render_preview crop` (one element), `render_matrix`, `record_preview emitTest=true`, and typed render-failure `kind`s. |
 | [references/cmp-shared.md](./references/cmp-shared.md) | Compose Multiplatform `:shared` modules (`commonMain` previews via Desktop pipeline). |
