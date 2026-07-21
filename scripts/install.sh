@@ -655,11 +655,12 @@ install_skills_bundle() {
     fi
     mkdir -p "$dir"
     log "refreshing skill bundle $name in $dir"
-    local entry
-    while IFS= read -r entry; do
+    local path
+    while IFS= read -r path; do
+      local entry="${path##*/}"
       [[ -n "$entry" && "$entry" != "." && "$entry" != ".." ]] || continue
       rm -rf "$dir/$entry"
-    done < <(find "$src" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort -u)
+    done < <(find "$src" -mindepth 1 -maxdepth 1 | sort -u)
     cp -R "$src/." "$dir/"
     printf '%s\n' "${sha:-unknown}" > "$dir/.skill-version"
   }

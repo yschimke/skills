@@ -66,3 +66,19 @@ jobs:
             exit 1
           fi
           echo "ok: plugin/marketplace agree on '$plugin_name'"
+
+  test-installer:
+    name: Test install.sh script (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run installer script
+        run: |
+          bash scripts/install.sh
+
