@@ -74,8 +74,11 @@ invocation of the stub — there's no separate "now install the CLI" step.
   Glance/Wear widgets): each component in its primary modes, in two
   variants (ideal render + bordered layout), with extracted design
   tokens and accessibility greenlines, laid out for Figma / Stitch /
-  Claude Design import. Code-led — the published Figma kits are seed
-  only. Pairs with `compose-preview` and `compose-preview-design-board`.
+  Claude Design import, and served at `preview.coo.ee/<system>/`. Covers
+  authoring and **validating** the `catalog.spec.json` inventory
+  (`init-catalog-spec` / `validate-catalog-spec` + its JSON schema) before
+  rendering. Code-led — the published Figma kits are seed only. Pairs with
+  `compose-preview` and `compose-preview-design-board`.
 - [`figma-catalog-import`](skills/figma-catalog-import/SKILL.md) — import
   a published `design-artifacts/<system>` catalog (from
   `compose-design-catalog`) into a **Figma** file as authoritative,
