@@ -54,6 +54,37 @@ documents (e.g. `compact` / `medium` / `expanded` for M3; small/large round for
 Wear). See the `samples/design-catalog-*` modules in
 [yschimke/compose-ai-tools](https://github.com/yschimke/compose-ai-tools).
 
+## Declare & validate the spec (`catalog.spec.json`)
+
+The catalog's inventory, grouping, captions, sections and per-component variants
+are declared in a hand-authored **`catalog.spec.json`** committed next to the
+module. Each component's `preview` **must equal an exact `@Preview` function
+name** — a mistyped or renamed name renders nothing and surfaces only as a late
+"missing" entry at the *end* of the (long) render. Its shape is documented by
+[`scripts/design-artifacts/catalog.spec.schema.json`](https://github.com/yschimke/compose-ai-tools/blob/main/scripts/design-artifacts/catalog.spec.schema.json)
+(reference it via `$schema` for editor validation).
+
+Two build-free helpers in compose-ai-tools' `scripts/design-artifacts/` scan the
+module's Kotlin source directly — no Gradle build, no render — so you author and
+check the spec before spending a render:
+
+```sh
+# Scaffold a starter spec from the module's @Preview functions (one flat
+# "Components" group; caption and regroup from there):
+node scripts/design-artifacts/init-catalog-spec.mjs \
+  --module :app --system my-system --title "My System" --out catalog.spec.json
+
+# Resolve every `preview` (component + variant) against the discovered functions,
+# with typo suggestions, structural checks, and coverage gaps. Exits non-zero on
+# errors, so it runs as the pre-flight in design-artifacts.yml before the render:
+node scripts/design-artifacts/validate-catalog-spec.mjs --spec catalog.spec.json
+```
+
+Discovery recognises `@Preview` and any `annotation class` meta-annotated with it
+(`@CatalogModes`, `@CatalogTemplate`, …); pass `--preview-annotation <Name>` for a
+multipreview annotation imported from another module. The authoritative check
+stays the render + completeness gate — this is the fast local/CI pre-flight.
+
 ## Workflow
 
 1. **Render the system with its data products.** Ask the renderer for the
@@ -72,10 +103,25 @@ Wear). See the `samples/design-catalog-*` modules in
      (`maxLines` / `lineCount` / `truncated`).
    - `a11y/atf` + `a11y/touchTargets` → the greenline findings.
 
-2. **Build and write the catalog.** Feed the products through
+2. **Build and write the catalog.** The maintained path is the
+   `generate-design-catalog.mjs` driver: it renders to a portable bundle with
+   `compose-preview bundle pack --with-semantics`, joins it to `catalog.spec.json`
+   (matching each component's `preview` to the rendered function name), and writes
+   the importable bundle. This is exactly what `design-artifacts.yml` runs:
+
+   ```sh
+   compose-preview bundle pack --module samples:design-catalog-m3 --with-semantics \
+     -o build/m3-bundle.png
+   node scripts/design-artifacts/generate-design-catalog.mjs \
+     --spec catalog.spec.json --renders build/m3-bundle.png --out out/ \
+     --renderer "$(compose-preview --version | head -1)"
+   ```
+
+   Under the hood the driver feeds the render's data products through
    `@design-parity/candidate`'s mappers (`nativeFindings`,
    `semanticsToSemanticTree`, `composeThemeToTokens`) into
-   `@design-parity/catalog-export`:
+   `@design-parity/catalog-export`. To build a catalog **without** a spec file
+   (e.g. a custom pipeline), call that library directly:
 
    ```ts
    import { buildCatalog, writeCatalog } from "@design-parity/catalog-export";
@@ -116,10 +162,13 @@ Wear). See the `samples/design-catalog-*` modules in
      spec (`screens: [{ id, title?, related }]`) turns a code-led import into
      structured per-screen diff pages rather than one flat sheet.
 
-4. **Deliver on a per-system branch.** Commit the bundle to a
+4. **Deliver on a per-system branch.** Force-push the generated `out/` to a clean
    `design-artifacts/<system>` branch (`design-artifacts/compose-m3`,
-   `.../wear-m3`, `.../glimmer`, `.../glance-wear`) — the surface a designer
-   pulls from. Regenerate on component changes so the sheet never drifts.
+   `.../wear-m3`, `.../glimmer`, `.../glance-wear`) — the surface a designer pulls
+   from, and what the public preview server (`preview.coo.ee`) fetches and serves
+   at `/<system>/`. Regenerate on component changes so the sheet never drifts;
+   `design-artifacts.yml` in compose-ai-tools (and in a consumer app repo) does
+   this on a schedule.
 
 ## Source
 
