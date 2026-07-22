@@ -167,11 +167,18 @@ a `data:` URI) *before* it is placed.
   (`svgRasterHrefs` → `inlineSvgRasters`), so `placeCatalogSvg` gets a
   self-contained SVG.
 - **Runbook path — you must pre-inline.** `use_figma` has no `fetch`, so obtain a
-  self-contained SVG *before* embedding it in the `code` string: fetch it from a
-  serve endpoint that inlines server-side, or run the same `inlineSvgRasters`
-  surgery locally over the SVG + its sibling `.figma-raster/` dir. **Never commit
-  inlined SVGs** — external hrefs keep the `design-artifacts/*` diffs clean and
-  rasters dedup'd; inlining is a *transport* step, not a storage one.
+  self-contained SVG *before* embedding it in the `code` string. Easiest:
+  **`compose-preview serve` already returns inlined SVGs** — its `.svg` render
+  route replaces every `figma-raster/<node>.png` href with a `data:` URI
+  ([`inlineFigmaRasters`](https://github.com/yschimke/compose-ai-tools/blob/main/cli/src/main/kotlin/ee/schimke/composeai/cli/serve/ServeFigmaSvg.kt),
+  wired on both the daemon `ServeRenderHost` and the static `ServeBundleHost` /
+  `ServeCatalogStore` paths, with a `..`/absolute traversal guard) — so fetch the
+  served `.svg` (outside `use_figma`) and embed that. Only when you can't run
+  serve — reading files straight off the static `design-artifacts/*` branch — do
+  the same inlining locally over the SVG + its sibling `.figma-raster/` dir.
+  **Never commit inlined SVGs** — external hrefs keep the `design-artifacts/*`
+  diffs clean and rasters dedup'd; inlining is a *transport* step, not a storage
+  one.
 
 **Mind the 50k `use_figma` `code` cap** — it counts the embedded SVG text.
 Mostly-vector screens fit comfortably; inlined rasters add ~⅓ base64 on top, so a
@@ -179,10 +186,10 @@ raster-heavy sticker can exceed the cap and must be placed in pieces — the vec
 SVG in one cap-safe `createNodeFromSvg`, then each raster as its own image node
 positioned from its `<image>` coords (byte-splitting the markup doesn't work, and
 stateless `use_figma` calls can't reassemble a fragmented string). The plugin
-sidesteps the cap (its UI fetches bytes rather than embedding them), so both the
-inlining and the chunking are **agent-runbook** concerns — good candidates to
-automate behind a `compose-preview serve` endpoint (e.g. `?rasters=inline`) that
-reuses `inlineSvgRasters` server-side.
+sidesteps the cap (its UI fetches bytes rather than embedding them). Note the
+**inlining** is already handled server-side (`compose-preview serve`, above), but
+the **chunking is not** — serve returns the whole inlined SVG in one response — so
+cap-splitting a raster-heavy sticker stays an agent-runbook concern.
 
 ## Structured pages (shipped) — a code-led import isn't one flat sheet
 
