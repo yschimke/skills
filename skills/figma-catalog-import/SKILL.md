@@ -143,8 +143,46 @@ When the plugin can't be loaded, drive it by hand with the Figma MCP
 runbook in design-parity. Load the `figma-use` skill before any `use_figma`
 call. Environment prerequisites bite in order: Figma connector present
 (`mcp__Figma__whoami` succeeds), `mcp.figma.com` egress allowed (uploads POST
-there), and there is **no** URL→image path inside `use_figma` (every image goes
-through `upload_assets`). Even in the runbook, **reconcile — do not rebuild.**
+there — an environment's egress policy may block that host, so probe it, don't
+assume by cloud-vs-local), and there is **no** URL→image path inside `use_figma`
+(every image goes through `upload_assets`). Even in the runbook, **reconcile — do
+not rebuild.**
+
+### The SVG-seed path — the placed SVG MUST be self-contained
+
+Both paths can place the baked **`figma/<slug>.svg`** design vector
+(`compose/figma-svg`) as *editable shapes* via `figma.createNodeFromSvg` — the
+plugin's *Insert as SVG* / `placeCatalogSvg`, or a bare `use_figma` call. This
+avoids `upload_assets`/`mcp.figma.com` entirely, so it's the seed path of choice
+when raster upload is blocked. But `createNodeFromSvg` has **no filesystem and no
+`fetch`**, so it can't resolve a relative raster href: a hybrid sticker's
+`<image href="<slug>.figma-raster/<node>.png">` is **silently dropped** — no
+error, just an empty gap in an otherwise-complete node (verified on
+`device-nocontacts.svg`). The SVG must be self-contained (every raster inlined as
+a `data:` URI) *before* it is placed.
+
+- **Plugin path — handled.** The UI thread (the only realm with `fetch`) pulls
+  the crops and rewrites the hrefs via
+  [`svgRaster.ts`](https://github.com/yschimke/design-parity/blob/main/packages/figma-plugin/src/svgRaster.ts)
+  (`svgRasterHrefs` → `inlineSvgRasters`), so `placeCatalogSvg` gets a
+  self-contained SVG.
+- **Runbook path — you must pre-inline.** `use_figma` has no `fetch`, so obtain a
+  self-contained SVG *before* embedding it in the `code` string: fetch it from a
+  serve endpoint that inlines server-side, or run the same `inlineSvgRasters`
+  surgery locally over the SVG + its sibling `.figma-raster/` dir. **Never commit
+  inlined SVGs** — external hrefs keep the `design-artifacts/*` diffs clean and
+  rasters dedup'd; inlining is a *transport* step, not a storage one.
+
+**Mind the 50k `use_figma` `code` cap** — it counts the embedded SVG text.
+Mostly-vector screens fit comfortably; inlined rasters add ~⅓ base64 on top, so a
+raster-heavy sticker can exceed the cap and must be placed in pieces — the vector
+SVG in one cap-safe `createNodeFromSvg`, then each raster as its own image node
+positioned from its `<image>` coords (byte-splitting the markup doesn't work, and
+stateless `use_figma` calls can't reassemble a fragmented string). The plugin
+sidesteps the cap (its UI fetches bytes rather than embedding them), so both the
+inlining and the chunking are **agent-runbook** concerns — good candidates to
+automate behind a `compose-preview serve` endpoint (e.g. `?rasters=inline`) that
+reuses `inlineSvgRasters` server-side.
 
 ## Structured pages (shipped) — a code-led import isn't one flat sheet
 
@@ -169,6 +207,44 @@ a single flat page. The remaining gap (design-parity's `FIGMA_IMPORT_V2.md`,
 v3): the renderer fanning out the full `state × breakpoint` matrix so the sets
 carry every cell, not just default + light/dark.
 
+### Per-screen page layout — a Section per state, variant rows for the blessed state
+
+Within a screen's page, don't drop every render in one horizontal row — it
+sprawls off-canvas and reads as noise (a whole catalog in one strip is as wide as
+the sum of every sticker). Lay it out **spatially with Figma Sections** (titled,
+bordered `createSection` containers) stacked vertically:
+
+- **One Section per major state** — e.g. Device → *Loading*, *No contacts*,
+  *Many contacts*, *Low battery*, *Connecting*, *Failed*, *Cached*. Each state
+  its own bordered, titled section, so the page reads top-to-bottom as the
+  screen's state machine.
+- **The blessed (canonical/populated) state's section carries three labelled
+  variant rows**; every other state shows just its small-phone default:
+  - **Size**: small phone · large phone · small tablet landscape.
+  - **Locale** (small phone): en · ar · ja · de — proves RTL (`ar`) and CJK
+    (`ja`) reflow and German (`de`) expansion on the real screen, not just a
+    component.
+  - **Theme** (small phone): each blessed theme (MeshCore light/dark, Material 3
+    light/dark).
+
+Sections supply the borders/titles designers expect, and the single-mega-row
+width problem dissolves once sections stack vertically and each variant row wraps.
+
+**This needs the catalog to fan the matrix out — it does not today.** The current
+`meshcore-mobile` catalog bakes **state only**: one render per `Group/State`
+componentId (`Device/Loading`, `Device/ManyContacts`, …) at a single size, locale
+`en`, and default theme, with `screens: null` and no `size`/`locale`/`theme`
+dimension fields. To populate the layout above, the consumer's `catalog.spec.json`
++ renderer must emit, per screen: the blessed state across `size` ∈ {small-phone,
+large-phone, small-tablet-landscape}, across `locale` ∈ {en, ar, ja, de} at
+small-phone, and across the blessed `theme`s at small-phone — plus each other
+state at small-phone — and expose `state`/`size`/`locale`/`theme` as **catalog
+dimensions** (with a `screens` graph) so the importer can group by state into
+sections and lay the blessed state's rows by dimension. This is the concrete
+shape of the `state × breakpoint` matrix gap above (`FIGMA_IMPORT_V2.md` v3),
+extended with locale and theme axes. The render/catalog work lands in the
+consumer repo; the importer only reads the dimensions and builds the Sections.
+
 ## File registry
 
 | System | Delivery branch | Figma file |
@@ -189,6 +265,10 @@ system if unchanged.
 - [ ] Delivery branch sha differs from last import (else skip).
 - [ ] Imported via the plugin (or the MCP runbook as fallback), **reconciling
       by `componentId`** — no delete-and-rebuild, un-stamped nodes untouched.
+- [ ] SVG-seed path: placed a **self-contained** SVG (rasters inlined as `data:`
+      URIs); pre-inlined in the runbook since `use_figma` has no `fetch`; watched
+      the 50k `code` cap (chunk raster-heavy stickers). Never committed the
+      inlined SVG.
 - [ ] design-led first-touch: surfaced a diff and got confirmation.
 - [ ] Emitted / refreshed `design-map.json`; offered it for the consumer repo.
 
