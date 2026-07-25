@@ -224,6 +224,29 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
    });
    ```
 
+   Pass `--source-repo <owner>/<repo>` whenever you generate from a **consumer**
+   repo. It defaults to `yschimke/compose-ai-tools`, so a bundle built anywhere
+   else silently bakes README/asset links pointing at the wrong repository —
+   they resolve, they're just wrong, which is worse than a 404.
+
+   > **`@PreviewParameter` previews cannot carry a catalog component.** A
+   > preview whose composable takes a `@PreviewParameter` argument renders its
+   > PNG fine, but the renderer emits **no data products for it at all** — no
+   > `compose/semantics`, layout, fonts or `figma-svg`. The completeness gate
+   > then refuses to publish the whole catalog with
+   > `no semantics for: <componentId>` … `incomplete render — refusing to
+   > publish`. The message names the component, not the cause, so it reads as a
+   > bad spec.
+   >
+   > Don't reach for `--allow-incomplete` (it publishes a sheet with holes) and
+   > don't drop the component. Add a **zero-argument wrapper preview** in
+   > `src/debug` that calls the same composable with a literal fixture, and
+   > point the spec at the wrapper — the full data-product set comes back.
+   >
+   > Check for this *before* spending a render: any `@PreviewParameter` in the
+   > previews a spec references will hit it. It bites Wear catalogs hardest —
+   > 9 of Jetcaster's 12 Wear previews take a `@PreviewParameter`.
+
 3. **Import.** The bundle is tool-neutral first, Figma second:
 
    ```
