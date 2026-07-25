@@ -167,6 +167,52 @@ build-brief --help
 build-brief gradle --version
 ```
 
+## Known cloud-sandbox gotchas
+
+Four things that bite in a proxied sandbox and look like unrelated failures:
+
+- **`JAVA_TOOL_OPTIONS` shadows `java -version`.** When a proxy CA truststore
+  is injected (standard on Claude Code on the web), the JVM prints
+  `Picked up JAVA_TOOL_OPTIONS: …` as its *first* line, so any script parsing
+  line 1 of `java -version` reads the flag dump instead of the version. Match
+  the `version "…"` line, never `head -1`. This broke the installer's own JDK
+  detection until [yschimke/skills](https://github.com/yschimke/skills)
+  fixed it.
+- **`github.com` may be blocked while `api.github.com` is allowed.** Egress
+  policies commonly permit the API and deny HTML endpoints, so
+  `releases.atom` 403s. The installer falls back to the API automatically; if
+  you script releases yourself, do the same. Release *download* URLs usually
+  still work, since they redirect to `objects.githubusercontent.com`.
+- **`dl.google.com` is often blocked, and that is survivable.** `doctor` flags
+  it as an error because Android SDK *platform* downloads go through it. If a
+  platform is already installed and the build resolves its AndroidX/AGP
+  artifacts from `maven.google.com` (which is usually allowed), builds still
+  succeed. Treat it as a warning unless the SDK is genuinely missing.
+- **The first Gradle invocation can exceed `doctor`'s timeout.** A cold
+  sandbox downloads the whole Gradle distribution inside the model query, and
+  `doctor` reports `could not query Gradle project model … cancel requested but
+  timed out`, which reads like a broken project. Warm it first, then re-run:
+
+  ```bash
+  ./gradlew help          # downloads the distribution once
+  compose-preview doctor
+  ```
+
+## Rendering a project that compiles against a very new SDK
+
+`composePreview.sdkVersion` auto-detects from `android.compileSdk`, but the
+Robolectric render range is narrower than the compile range: **SDK > 35 needs
+JDK 21+**. A project on `compileSdk = 37` running on JDK 17 therefore fails at
+configuration time with `sdkVersion = N is outside the supported range`. Either
+run on JDK 21+, or pin the render SDK explicitly:
+
+```kotlin
+composePreview {
+    variant.set("debug")
+    sdkVersion.set(35)   // pinned: compileSdk 37 is outside the render range on JDK 17
+}
+```
+
 ## Recommended quick verification commands
 
 Run after bootstrap:

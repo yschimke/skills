@@ -54,6 +54,30 @@ documents (e.g. `compact` / `medium` / `expanded` for M3; small/large round for
 Wear). See the `samples/design-catalog-*` modules in
 [yschimke/compose-ai-tools](https://github.com/yschimke/compose-ai-tools).
 
+### Cataloguing an existing app (the cheap path)
+
+A dedicated catalog module is right when you are documenting a *component
+library*. When you are cataloguing an **app that already has `@Preview`
+functions**, don't author a parallel set — point the spec at the previews that
+are already there. Adoption is then a plugin line plus `catalog.spec.json`,
+with **no change to UI code**, and the sheet stays honest because it renders the
+same previews the team already maintains.
+
+The [compose-samples catalogs](https://github.com/yschimke/compose-samples/tree/agent/preview-catalogs)
+are built this way: JetNews covers 22 of its 23 existing previews without
+touching a single composable.
+
+Two rules make this work well:
+
+- **Group by feature, not by widget.** The value of a sample/app catalog is
+  showing what the app is *for* — adaptive postures, the states of a screen, an
+  RTL mirror — so `groups`/`section` should follow that, not alphabetical
+  component names.
+- **Put catalog-only fixtures in `src/debug`.** Anything you *do* need to add
+  (motion fixtures, a composed feature shot) belongs in the debug source set:
+  the plugin renders the `debug` variant, so they are discovered like any other
+  preview, but they never reach a release build.
+
 ## Declare & validate the spec (`catalog.spec.json`)
 
 The catalog's inventory, grouping, captions, sections and per-component variants
@@ -128,6 +152,23 @@ Discovery recognises `@Preview` and any `annotation class` meta-annotated with i
 (`@CatalogModes`, `@CatalogTemplate`, …); pass `--preview-annotation <Name>` for a
 multipreview annotation imported from another module. The authoritative check
 stays the render + completeness gate — this is the fast local/CI pre-flight.
+
+> **Wear catalogs always need this flag.** Wear previews are conventionally
+> annotated `@WearPreviewDevices` / `@WearPreviewFontScales` / `@WearPreviewLargeRound`,
+> which live in `androidx.wear.compose.ui.tooling.preview` — an external
+> artifact the source scan cannot see. Without the flags the validator reports
+> **`discovered 0 @Preview function(s)`** and fails every entry, which reads
+> like a broken spec rather than a missing flag:
+>
+> ```sh
+> node validate-catalog-spec.mjs --spec catalog.wear.spec.json \
+>   --preview-annotation WearPreviewDevices \
+>   --preview-annotation WearPreviewFontScales
+> ```
+>
+> Record the required flags in the spec's `$comment` so the next run doesn't
+> rediscover this. The same applies to any app-defined multipreview annotation
+> declared in a different module from the previews that use it.
 
 ## Workflow
 
