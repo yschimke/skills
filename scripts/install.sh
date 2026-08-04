@@ -521,16 +521,34 @@ if [[ -z "$VERSION" ]]; then
   # strip and produced "could not parse version from .../tag/clients-v0.2.0".
   #
   # The atom feed lists every release newest-first and, like the HTML redirect,
-  # isn't the rate-limited api.github.com. We take the newest tag of the form
-  # v<MAJOR.MINOR.PATCH>; a "releases/tag/clients-v..." href does not match
-  # "releases/tag/v...", so component releases are skipped for free.
+  # isn't the rate-limited api.github.com. GitHub includes *draft* releases in
+  # this public feed, though, before their assets are publicly downloadable.
+  # Selecting the first matching tag therefore creates a long 404 window while
+  # the release workflow builds and uploads the CLI (issue #3287).
+  #
+  # Walk CLI-shaped tags newest-first and select the first whose tarball is
+  # actually downloadable. A draft/incomplete candidate returns 404 and we
+  # immediately fall back to the previous complete release. As soon as the new
+  # release is published the same probe succeeds, so safety adds no fixed delay.
+  # A "releases/tag/clients-v..." href does not match "releases/tag/v...", so
+  # component releases are skipped for free.
   FEED="$(curl -fsSL "https://github.com/$REPO/releases.atom")" \
     || die "could not reach github.com/$REPO/releases.atom"
-  VERSION="$(printf '%s\n' "$FEED" \
+  while IFS= read -r candidate; do
+    [[ -n "$candidate" ]] || continue
+    candidate_asset="compose-preview-${candidate}.tar.gz"
+    candidate_url="https://github.com/$REPO/releases/download/v${candidate}/${candidate_asset}"
+    if curl -fsIL --max-time 20 -o /dev/null "$candidate_url" 2>/dev/null; then
+      VERSION="$candidate"
+      break
+    fi
+    log "release v${candidate} has no downloadable CLI tarball yet; trying the previous release"
+  done < <(printf '%s\n' "$FEED" \
     | grep -oE 'releases/tag/v[0-9]+\.[0-9]+\.[0-9]+' \
-    | head -n1 | sed 's#.*/tag/v##')"
+    | sed 's#.*/tag/v##' \
+    | awk '!seen[$0]++')
   [[ -n "$VERSION" ]] \
-    || die "no v<MAJOR.MINOR.PATCH> CLI release found in $REPO releases.atom"
+    || die "no v<MAJOR.MINOR.PATCH> release in $REPO releases.atom has a downloadable CLI tarball"
 fi
 
 CLI_ASSET="compose-preview-${VERSION}.tar.gz"
