@@ -542,8 +542,10 @@ if [[ -z "$VERSION" ]]; then
     candidate_asset="compose-preview-${candidate}.tar.gz"
     candidate_url="https://github.com/$REPO/releases/download/v${candidate}/${candidate_asset}"
     candidate_plugin_url="https://repo.maven.apache.org/maven2/ee/schimke/composeai/preview/ee.schimke.composeai.preview.gradle.plugin/${candidate}/ee.schimke.composeai.preview.gradle.plugin-${candidate}.pom"
+    candidate_plugin_impl_url="https://repo.maven.apache.org/maven2/ee/schimke/composeai/compose-preview-plugin/${candidate}/compose-preview-plugin-${candidate}.pom"
     if curl -fsIL --max-time 20 -o /dev/null "$candidate_url" 2>/dev/null \
-        && curl -fsIL --max-time 20 -o /dev/null "$candidate_plugin_url" 2>/dev/null; then
+        && curl -fsIL --max-time 20 -o /dev/null "$candidate_plugin_url" 2>/dev/null \
+        && curl -fsIL --max-time 20 -o /dev/null "$candidate_plugin_impl_url" 2>/dev/null; then
       VERSION="$candidate"
       break
     fi
