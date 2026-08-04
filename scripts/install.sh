@@ -510,6 +510,46 @@ fi
 CLI_VERSION_FILE="$SKILL_DIR/.cli-version"
 INSTALLED_VERSION="$(cat "$CLI_VERSION_FILE" 2>/dev/null || true)"
 
+# Releases from this version onward carry a readiness asset uploaded only after
+# a clean Gradle build has resolved the CLI's auto-injected plugin classpath from
+# public Maven Central. Older releases predate that workflow, so retain the
+# direct POM probes for backwards-compatible installs.
+READINESS_MARKER_MIN_VERSION="0.19.33"
+MAX_RELEASE_CANDIDATES=5
+
+semver_at_least() {
+  local version="$1" minimum="$2"
+  local v_major v_minor v_patch m_major m_minor m_patch
+  IFS=. read -r v_major v_minor v_patch <<<"$version"
+  IFS=. read -r m_major m_minor m_patch <<<"$minimum"
+  (( v_major > m_major )) \
+    || (( v_major == m_major && v_minor > m_minor )) \
+    || (( v_major == m_major && v_minor == m_minor && v_patch >= m_patch ))
+}
+
+url_is_downloadable() {
+  curl -fsIL --connect-timeout 3 --max-time 8 -o /dev/null "$1" 2>/dev/null
+}
+
+release_is_ready() {
+  local version="$1"
+  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || return 1
+  local cli_asset="compose-preview-${version}.tar.gz"
+  local cli_url="https://github.com/$REPO/releases/download/v${version}/${cli_asset}"
+  url_is_downloadable "$cli_url" || return 1
+
+  if semver_at_least "$version" "$READINESS_MARKER_MIN_VERSION"; then
+    local marker="compose-preview-maven-ready-${version}.json"
+    local marker_url="https://github.com/$REPO/releases/download/v${version}/${marker}"
+    url_is_downloadable "$marker_url"
+    return
+  fi
+
+  local plugin_marker_url="https://repo.maven.apache.org/maven2/ee/schimke/composeai/preview/ee.schimke.composeai.preview.gradle.plugin/${version}/ee.schimke.composeai.preview.gradle.plugin-${version}.pom"
+  local plugin_impl_url="https://repo.maven.apache.org/maven2/ee/schimke/composeai/compose-preview-plugin/${version}/compose-preview-plugin-${version}.pom"
+  url_is_downloadable "$plugin_marker_url" && url_is_downloadable "$plugin_impl_url"
+}
+
 if [[ -z "$VERSION" ]]; then
   log "resolving latest release of $REPO"
   # Resolve the newest CLI release from the public releases.atom feed.
@@ -526,36 +566,36 @@ if [[ -z "$VERSION" ]]; then
   # Selecting the first matching tag therefore creates a long 404 window while
   # the release workflow builds and uploads the CLI (issue #3287).
   #
-  # Walk CLI-shaped tags newest-first and select the first whose tarball AND
-  # matching Gradle plugin marker are actually downloadable. A draft/incomplete
-  # candidate returns 404, as does a newly published plugin while Maven Central's
-  # CDN is still propagating it. The CLI auto-injects that exact plugin version,
-  # so accepting the tarball alone would turn a successful update into a failure
-  # on the first Gradle-backed command. Fall back to the previous usable release
-  # until both consumer paths are ready; there is no fixed delay.
+  # Walk CLI-shaped tags newest-first and select the first usable release. New
+  # releases carry a readiness asset produced only after a clean Gradle resolution
+  # from public Maven Central; draft/incomplete/not-yet-propagated candidates lack
+  # that marker and fall back to the previous usable version. Bound the scan so a
+  # GitHub or Central outage fails promptly instead of probing
+  # every historical feed entry.
   # A "releases/tag/clients-v..." href does not match "releases/tag/v...", so
   # component releases are skipped for free.
   FEED="$(curl -fsSL "https://github.com/$REPO/releases.atom")" \
     || die "could not reach github.com/$REPO/releases.atom"
+  candidates_checked=0
   while IFS= read -r candidate; do
     [[ -n "$candidate" ]] || continue
-    candidate_asset="compose-preview-${candidate}.tar.gz"
-    candidate_url="https://github.com/$REPO/releases/download/v${candidate}/${candidate_asset}"
-    candidate_plugin_url="https://repo.maven.apache.org/maven2/ee/schimke/composeai/preview/ee.schimke.composeai.preview.gradle.plugin/${candidate}/ee.schimke.composeai.preview.gradle.plugin-${candidate}.pom"
-    candidate_plugin_impl_url="https://repo.maven.apache.org/maven2/ee/schimke/composeai/compose-preview-plugin/${candidate}/compose-preview-plugin-${candidate}.pom"
-    if curl -fsIL --max-time 20 -o /dev/null "$candidate_url" 2>/dev/null \
-        && curl -fsIL --max-time 20 -o /dev/null "$candidate_plugin_url" 2>/dev/null \
-        && curl -fsIL --max-time 20 -o /dev/null "$candidate_plugin_impl_url" 2>/dev/null; then
+    candidates_checked=$((candidates_checked + 1))
+    if release_is_ready "$candidate"; then
       VERSION="$candidate"
       break
     fi
-    log "release v${candidate} is not fully downloadable yet (CLI + plugin); trying the previous release"
+    log "release v${candidate} is not ready for CLI + Maven use; trying the previous release"
+    (( candidates_checked >= MAX_RELEASE_CANDIDATES )) && break
   done < <(printf '%s\n' "$FEED" \
     | grep -oE 'releases/tag/v[0-9]+\.[0-9]+\.[0-9]+' \
     | sed 's#.*/tag/v##' \
     | awk '!seen[$0]++')
   [[ -n "$VERSION" ]] \
-    || die "no v<MAJOR.MINOR.PATCH> release in $REPO releases.atom has a downloadable CLI and plugin"
+    || die "no usable CLI release found in the first $MAX_RELEASE_CANDIDATES release candidates"
+else
+  log "verifying requested release v$VERSION is ready for CLI + Maven use"
+  release_is_ready "$VERSION" \
+    || die "release v$VERSION is not ready yet (CLI archive or Maven readiness missing)"
 fi
 
 CLI_ASSET="compose-preview-${VERSION}.tar.gz"
