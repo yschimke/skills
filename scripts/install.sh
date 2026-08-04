@@ -526,10 +526,13 @@ if [[ -z "$VERSION" ]]; then
   # Selecting the first matching tag therefore creates a long 404 window while
   # the release workflow builds and uploads the CLI (issue #3287).
   #
-  # Walk CLI-shaped tags newest-first and select the first whose tarball is
-  # actually downloadable. A draft/incomplete candidate returns 404 and we
-  # immediately fall back to the previous complete release. As soon as the new
-  # release is published the same probe succeeds, so safety adds no fixed delay.
+  # Walk CLI-shaped tags newest-first and select the first whose tarball AND
+  # matching Gradle plugin marker are actually downloadable. A draft/incomplete
+  # candidate returns 404, as does a newly published plugin while Maven Central's
+  # CDN is still propagating it. The CLI auto-injects that exact plugin version,
+  # so accepting the tarball alone would turn a successful update into a failure
+  # on the first Gradle-backed command. Fall back to the previous usable release
+  # until both consumer paths are ready; there is no fixed delay.
   # A "releases/tag/clients-v..." href does not match "releases/tag/v...", so
   # component releases are skipped for free.
   FEED="$(curl -fsSL "https://github.com/$REPO/releases.atom")" \
@@ -538,17 +541,19 @@ if [[ -z "$VERSION" ]]; then
     [[ -n "$candidate" ]] || continue
     candidate_asset="compose-preview-${candidate}.tar.gz"
     candidate_url="https://github.com/$REPO/releases/download/v${candidate}/${candidate_asset}"
-    if curl -fsIL --max-time 20 -o /dev/null "$candidate_url" 2>/dev/null; then
+    candidate_plugin_url="https://repo.maven.apache.org/maven2/ee/schimke/composeai/preview/ee.schimke.composeai.preview.gradle.plugin/${candidate}/ee.schimke.composeai.preview.gradle.plugin-${candidate}.pom"
+    if curl -fsIL --max-time 20 -o /dev/null "$candidate_url" 2>/dev/null \
+        && curl -fsIL --max-time 20 -o /dev/null "$candidate_plugin_url" 2>/dev/null; then
       VERSION="$candidate"
       break
     fi
-    log "release v${candidate} has no downloadable CLI tarball yet; trying the previous release"
+    log "release v${candidate} is not fully downloadable yet (CLI + plugin); trying the previous release"
   done < <(printf '%s\n' "$FEED" \
     | grep -oE 'releases/tag/v[0-9]+\.[0-9]+\.[0-9]+' \
     | sed 's#.*/tag/v##' \
     | awk '!seen[$0]++')
   [[ -n "$VERSION" ]] \
-    || die "no v<MAJOR.MINOR.PATCH> release in $REPO releases.atom has a downloadable CLI tarball"
+    || die "no v<MAJOR.MINOR.PATCH> release in $REPO releases.atom has a downloadable CLI and plugin"
 fi
 
 CLI_ASSET="compose-preview-${VERSION}.tar.gz"
