@@ -104,35 +104,63 @@ unzipped `manifest.json`. No `npm`, no publish. (Build from source —
 `npm run build:plugin --workspace @design-parity/figma-plugin` — only when
 iterating on the plugin itself.)
 
+**The dialog is four designer tasks**, not feature tabs: **Add components**,
+**Manage library**, **Customize live**, **Handoff to code**. The catalog source
+sits above all of them, so switching tasks never drops the loaded system;
+server, render axes, and import policy hide behind contextual disclosures.
+
 **Pick a catalog.** The plugin ships a small registry (Compose M3, RemoteCompose
-M3, Wear M3, each pointing at its `design-artifacts/<system>` branch); **＋**
-registers your own by the raw root of a bundle (the folder holding
-`catalog.json` — don't append `/catalog.json`); the host must be in the
-manifest's `allowedDomains`. **Load folder…** reads a local `design-artifacts`
-directory with **no server or network** — a freshly generated catalog drops in
-with zero setup. Only the live Override editor needs a `compose-preview serve`
-host.
+M3, Wear M3, each pointing at its `design-artifacts/<system>` branch);
+**Catalog options → Register source** adds your own by the raw root of a bundle
+(the folder holding `catalog.json` — don't append `/catalog.json`); the host must
+be in the manifest's `allowedDomains`. **Catalog options → Load local folder…**
+reads a local `design-artifacts` directory with **no server or network** — a
+freshly generated catalog drops in with zero setup. Only **Customize live** needs
+a `compose-preview serve` host; browsing and inserting published renders never
+does.
 
-Then bring the system onto the canvas two ways:
+Then bring the system onto the canvas:
 
-- **Insert one component** — a grouped, searchable picker; pick variant + the
-  data-driven dimensions the catalog actually carries (theme / size / props).
-  Place it as a **PNG** (the shipping raster), an **SVG** (the editable
-  `compose/figma-svg` design vector — scales crisply, falls back to the
-  wireframe when no vector is baked), or **all variants as a native component
-  set**.
-- **Import the whole catalog** — the sticker-sheet flow. Pick **ideal render +
-  a11y greenlines** or **layout wireframe + spacing redlines** and a Mode, then
-  Import. It lays out a `<system>` board (or the structured pages below on a
-  code-led catalog), plus a **Figma variable collection** from the DTCG tokens
-  (light/dark → modes) and a **`design-map.json`** correspondence scaffold
-  (each `componentId` → the node it placed) to commit into the consumer repo.
+- **Add components** (one component) — a grouped, searchable picker; pick variant
+  + the data-driven dimensions the catalog actually carries (theme / size /
+  props, plus the i18n axes `locale` / `direction` / `fontScale` when it renders
+  them). **Add selected component** places it as a **PNG** (the shipping raster)
+  or an **SVG** (the editable `compose/figma-svg` design vector — scales crisply,
+  falls back to the wireframe when no vector is baked). **Add all variants**
+  places the whole component as a **native component set**, one editable
+  per-variant SVG `COMPONENT` per render, named with native variant properties.
+- **Manage library → Import or refresh the library** (whole catalog) — the
+  sticker-sheet flow. Pick **ideal render + a11y greenlines** or **layout
+  wireframe + spacing redlines** and a Mode, then Import. It lays out a
+  `<system>` board (or the structured pages below on a code-led catalog), plus a
+  **Figma variable collection** from the DTCG tokens (light/dark → modes) and a
+  **`design-map.json`** correspondence scaffold (each `componentId` → the node it
+  placed) to commit into the consumer repo.
+
+**The SVG import is Figma-native where that's lossless** — pills/circles become
+rectangles with editable corner radii, fills/strokes/radii/padding/gaps bind to a
+local variable collection from the catalog palette, symbolic type roles become
+local Text Styles, background-backed groups become frames, clear rows/columns
+become Auto Layout, and the root becomes a main component where Figma permits.
+Freeform/overlapping artwork and elliptical or non-uniform corners stay paths —
+promoting them would change the visual.
+
+**Upgrading a legacy import is a first-class flow, not a re-import.** With the
+matching catalog loaded, point **Manage library → Upgrade existing mapped
+layers** at the committed `design-map.json` and press **Upgrade mapped layers**:
+the map (not layer-name guessing) selects the old PNG/basic-SVG roots and
+replaces each with the same editable component set a fresh insert would build,
+keeping canvas position, rotation, parent order, and name. Stale, cross-file,
+ambiguous, already-current, and unsupported mappings are reported and left alone,
+and a component with existing instances is skipped so instance overrides can't
+break. Replacements change node ids, so copy the returned correspondence document
+back over `design-map.json`.
 
 The plan is deterministic (`buildImportPlan` is pure and unit-tested); the Figma
 glue only executes it. The plugin also runs the reverse **design → code**
-direction — *Propose spec* reads a selected frame into a GitHub-issue body +
-`spec.json` (with design-parity's a11y/i18n acceptance contract) without writing
-code.
+direction — **Handoff to code → Create handoff from selection** reads a selected
+frame into a GitHub-issue body + `spec.json` (with design-parity's a11y/i18n
+acceptance contract) without writing code.
 
 ### B. The Figma-MCP runbook (fallback, agent session)
 
@@ -251,6 +279,13 @@ sections and lay the blessed state's rows by dimension. This is the concrete
 shape of the `state × breakpoint` matrix gap above (`FIGMA_IMPORT_V2.md` v3),
 extended with locale and theme axes. The render/catalog work lands in the
 consumer repo; the importer only reads the dimensions and builds the Sections.
+
+The **size** axis of that matrix is the part the catalog spec can already
+express: a `breakpoints` table plus per-entry `select`, or
+`@CatalogComponent(perBreakpoint = true)` on the annotation, gives a card per
+breakpoint off one multipreview — see
+[`compose-design-catalog`](../compose-design-catalog/SKILL.md#breakpoints-one-card-or-a-card-per-size).
+Locale and theme still need the consumer's render matrix.
 
 ## File registry
 

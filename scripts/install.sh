@@ -721,10 +721,13 @@ install_skills_bundle() {
     mkdir -p "$dir"
     log "refreshing skill bundle $name in $dir"
     local entry
+    # `find -printf` is GNU-only; BSD/macOS find rejects it. Print full paths
+    # and strip the directory prefix in the shell instead.
     while IFS= read -r entry; do
+      entry="${entry##*/}"
       [[ -n "$entry" && "$entry" != "." && "$entry" != ".." ]] || continue
       rm -rf "$dir/$entry"
-    done < <(find "$src" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort -u)
+    done < <(find "$src" -mindepth 1 -maxdepth 1 | sort -u)
     cp -R "$src/." "$dir/"
     printf '%s\n' "${sha:-unknown}" > "$dir/.skill-version"
   }
