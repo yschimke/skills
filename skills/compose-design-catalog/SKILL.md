@@ -80,6 +80,50 @@ node scripts/design-artifacts/init-catalog-spec.mjs \
 node scripts/design-artifacts/validate-catalog-spec.mjs --spec catalog.spec.json
 ```
 
+### Breakpoints: one card, or a card per size
+
+A multipreview (`@WearPreviewDevices`, a local `@CatalogWearBreakpoints`) renders
+one function at several device sizes, and the join keys on **function name** — so
+by default they all fold into one entry carrying one image per size, tagged from
+the spec's `breakpoints` table:
+
+```jsonc
+"breakpoints": [
+  { "size": "smallRound", "device": "id:wearos_small_round", "widthDp": 192 },
+  { "size": "largeRound", "device": "id:wearos_large_round", "widthDp": 227 }
+]
+```
+
+Declare each by `device` (matched first) *and* `widthDp` (the fallback): a width
+is a fingerprint two devices can share, and an undeclared device falls back to
+the generic Material width class, making two renders indistinguishable on that
+axis — the export warns when it sees one. A Wear catalog that declares no
+`breakpoints` inherits the standard round table.
+
+When you want a **card per breakpoint** — its own id and caption — use `select`
+rather than splitting the `@Preview` in the module (splitting costs the
+multipreview's other axes, e.g. `@WearPreviewFontScales`):
+
+```jsonc
+{ "componentId": "Home/SmallRound", "preview": "HomeListViewPreview",
+  "select": { "size": "smallRound" }, "caption": "Home — small round." },
+{ "componentId": "Home/LargeRound", "preview": "HomeListViewPreview",
+  "select": { "size": "largeRound" }, "caption": "Home — large round." }
+```
+
+Two entries may share one `preview` as long as each selects a different value. An
+**annotation-led** inventory says the same thing in code with
+`@CatalogComponent(id = "Layout/List", perBreakpoint = true)`, which yields
+`Layout/List/smallRound`, `Layout/List/largeRound`, … — one per breakpoint the
+function actually rendered at, in `breakpoints` order. It's a flag, not a list:
+the multipreview below it already decides the devices, so the names come from the
+renders. One breakpoint keeps the plain id; none resolved keeps the component
+whole and warns. Adopting `perBreakpoint` on a published catalog **moves those
+sticker URLs**, which is why it's opt-in — the preview server already
+disambiguates merely *colliding* card labels on its own. A spec entry always
+overrides the annotation. Full rules:
+[`docs/design/DESIGN_CATALOGS.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/design/DESIGN_CATALOGS.md).
+
 Discovery recognises `@Preview` and any `annotation class` meta-annotated with it
 (`@CatalogModes`, `@CatalogTemplate`, …); pass `--preview-annotation <Name>` for a
 multipreview annotation imported from another module. The authoritative check
