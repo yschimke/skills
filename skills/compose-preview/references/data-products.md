@@ -197,9 +197,11 @@ instead of a fixed raster, both built from the same captured trees as the PNG:
   `CONTENT_SHAPE` (the outermost shaped layer's own silhouette — the pill under an
   `OutlinedButton`, the disc under a circular icon button), and `FULL_BLEED` (a
   plain rect to the corners regardless of any mask, painted outside the device
-  clip). The case that most wants `DEVICE` is a Wear scrolling screen, whose
-  stitched export paints no fill of its own, so its light `TimeText` chrome is
-  hard to read on a light canvas without the face. For a daemon-wide default
+  clip). One surface defaults to `DEVICE` rather than `NONE`: a Wear **scrolling**
+  screen, whose slice-stitched export paints no fill of its own — the slices are
+  composited onto the capsule, not onto a root that draws the watch face — so
+  background-free would leave its light `TimeText` chrome unreadable on a light
+  canvas. Asking for `NONE` on that preview still turns it off. For a daemon-wide default
   instead of a per-preview request, pass `-Dcomposeai.svg.background=<mode>` (or
   `-PcomposePreview.svgBackground=<mode>` through the Gradle plugin); `true` and
   `false` remain aliases for `device` and `none`. This is the vector
