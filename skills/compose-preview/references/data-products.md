@@ -183,7 +183,16 @@ instead of a fixed raster, both built from the same captured trees as the PNG:
   Fonts, degrading right back to `sans-serif` when a face can't be resolved
   (offline / network error). Opt out with `-Dcomposeai.svg.embedFonts=false`
   (renamed from `composeai.figma.embedFonts` — embedding applies to the SVG for
-  any viewer, not just Figma) for a smaller vector-only SVG. This is the vector
+  any viewer, not just Figma) for a smaller vector-only SVG. The preview's own
+  background is **not** injected: a `@Preview(showBackground = true)` render
+  exports without the opaque rect (or Wear device-mask circle) it used to lay
+  under the tree, so the import arrives as editable layers rather than sitting on
+  a fill a designer has to delete — and the tree that declared the background
+  generally paints that colour itself anyway. Opt back in with
+  `-Dcomposeai.svg.background=true` (or `-PcomposePreview.svgBackground=true`
+  through the Gradle plugin); the case that wants it is a Wear scrolling screen,
+  whose stitched export paints no fill of its own, so its light `TimeText` chrome
+  is hard to read on a light canvas without the face. This is the vector
   that **figma-catalog-import** inserts as an SVG (scales crisply) and that
   **compose-design-catalog** bakes into the bundle.
 
