@@ -188,11 +188,21 @@ instead of a fixed raster, both built from the same captured trees as the PNG:
   exports without the opaque rect (or Wear device-mask circle) it used to lay
   under the tree, so the import arrives as editable layers rather than sitting on
   a fill a designer has to delete — and the tree that declared the background
-  generally paints that colour itself anyway. Opt back in with
-  `-Dcomposeai.svg.background=true` (or `-PcomposePreview.svgBackground=true`
-  through the Gradle plugin); the case that wants it is a Wear scrolling screen,
-  whose stitched export paints no fill of its own, so its light `TimeText` chrome
-  is hard to read on a light canvas without the face. This is the vector
+  generally paints that colour itself anyway. A baked-in background is hard to
+  remove and easy to add back, so it is **requested per preview** through
+  `PreviewOverrides.svgBackground`, which names a shape rather than a boolean:
+  `NONE` (the default, nothing injected), `DEVICE` (the device-mask shape — a
+  `<circle>` for a round Wear face, a vertical stadium for a tall Wear scroll
+  export, the plain frame rect with no mask, corners left transparent),
+  `CONTENT_SHAPE` (the outermost shaped layer's own silhouette — the pill under an
+  `OutlinedButton`, the disc under a circular icon button), and `FULL_BLEED` (a
+  plain rect to the corners regardless of any mask, painted outside the device
+  clip). The case that most wants `DEVICE` is a Wear scrolling screen, whose
+  stitched export paints no fill of its own, so its light `TimeText` chrome is
+  hard to read on a light canvas without the face. For a daemon-wide default
+  instead of a per-preview request, pass `-Dcomposeai.svg.background=<mode>` (or
+  `-PcomposePreview.svgBackground=<mode>` through the Gradle plugin); `true` and
+  `false` remain aliases for `device` and `none`. This is the vector
   that **figma-catalog-import** inserts as an SVG (scales crisply) and that
   **compose-design-catalog** bakes into the bundle.
 
