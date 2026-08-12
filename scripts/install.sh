@@ -700,8 +700,57 @@ semver_at_least() {
     || (( v_major == m_major && v_minor == m_minor && v_patch >= m_patch ))
 }
 
+# Is this URL actually fetchable? Probed with a one-byte ranged GET, not a HEAD.
+#
+# A HEAD looks cheaper and is wrong here. GitHub redirects a release asset to a
+# presigned objects.githubusercontent.com URL, and AWS SigV4 presigned URLs are
+# method-bound: GitHub signs them for GET, so the HEAD comes back 401 while the
+# asset downloads perfectly well.
+#
+#   curl -sIL      -o /dev/null -w '%{http_code}' <asset>   -> 401
+#   curl -sL -r 0-0 -o /dev/null -w '%{http_code}' <asset>  -> 206
+#
+# Since release_is_ready() gates every candidate on this, the HEAD made *every*
+# release look unready — auto-resolve then walked the whole feed and reported
+# "no usable CLI release found", blaming the release pipeline for a bug in the
+# probe.
 url_is_downloadable() {
-  curl -fsIL --connect-timeout 3 --max-time 8 -o /dev/null "$1" 2>/dev/null
+  curl -fsL -r 0-0 --connect-timeout 3 --max-time 8 -o /dev/null "$1" 2>/dev/null
+}
+
+# CLI-shaped release versions (X.Y.Z), newest first, deduped.
+#
+# Two sources because neither is reliable everywhere. The atom feed is
+# preferred — it is not the rate-limited api.github.com, which matters on shared
+# CI IPs. But in an *agent* sandbox the polarity flips: the Claude Code proxy
+# allows repository-scoped GitHub API paths and refuses everything else, so the
+# feed comes back 403 —
+#   "This GitHub API path is not available: sessions are bound to their
+#    configured repositories. Use repository-scoped endpoints"
+# — while /repos/<owner>/<repo>/releases answers 200. This used to `die` on that
+# 403, which meant the installer could not resolve a version at all in the one
+# environment it exists to serve.
+#
+# Both sources list drafts, whose assets are not downloadable yet;
+# release_is_ready() is what filters those, so the two stay interchangeable.
+# Empty output (rc 1) means neither source could be listed.
+candidate_versions() {
+  local feed api
+  if feed="$(curl -fsSL "https://github.com/$REPO/releases.atom" 2>/dev/null)"; then
+    printf '%s\n' "$feed" \
+      | grep -oE 'releases/tag/v[0-9]+\.[0-9]+\.[0-9]+' \
+      | sed 's#.*/tag/v##' \
+      | awk '!seen[$0]++'
+    return 0
+  fi
+  log "releases.atom unreachable (blocked or offline); trying the repo-scoped GitHub API"
+  api="$(curl -fsSL -H 'Accept: application/vnd.github+json' \
+    "https://api.github.com/repos/$REPO/releases?per_page=$((MAX_RELEASE_CANDIDATES * 4))" \
+    2>/dev/null)" || return 1
+  printf '%s\n' "$api" \
+    | grep -oE '"tag_name"[[:space:]]*:[[:space:]]*"v[0-9]+\.[0-9]+\.[0-9]+"' \
+    | sed 's#.*"v##; s#"$##' \
+    | awk '!seen[$0]++'
 }
 
 release_is_ready() {
@@ -747,8 +796,16 @@ if [[ -z "$VERSION" ]]; then
   # every historical feed entry.
   # A "releases/tag/clients-v..." href does not match "releases/tag/v...", so
   # component releases are skipped for free.
-  FEED="$(curl -fsSL "https://github.com/$REPO/releases.atom")" \
-    || die "could not reach github.com/$REPO/releases.atom"
+  #
+  # ...and when the feed is unreachable, fall back to the repo-scoped API rather
+  # than dying. The comment above avoids api.github.com because it is
+  # rate-limited on shared sandbox IPs — but in an *agent* sandbox the polarity
+  # flips: the Claude Code proxy allows repository-scoped GitHub API paths and
+  # refuses everything else, so `releases.atom` comes back 403 with
+  #   "This GitHub API path is not available: sessions are bound to their
+  #    configured repositories. Use repository-scoped endpoints"
+  # while /repos/<owner>/<repo>/releases answers 200. Neither source is reliable
+  # everywhere; between them one usually works.
   candidates_checked=0
   while IFS= read -r candidate; do
     [[ -n "$candidate" ]] || continue
@@ -759,10 +816,10 @@ if [[ -z "$VERSION" ]]; then
     fi
     log "release v${candidate} is not ready for CLI + Maven use; trying the previous release"
     (( candidates_checked >= MAX_RELEASE_CANDIDATES )) && break
-  done < <(printf '%s\n' "$FEED" \
-    | grep -oE 'releases/tag/v[0-9]+\.[0-9]+\.[0-9]+' \
-    | sed 's#.*/tag/v##' \
-    | awk '!seen[$0]++')
+  done < <(candidate_versions)
+  if [[ -z "$VERSION" && "$candidates_checked" == 0 ]]; then
+    die "could not list releases of $REPO (github.com/$REPO/releases.atom and api.github.com both unreachable). Pass an explicit version, e.g. install.sh <version>."
+  fi
   [[ -n "$VERSION" ]] \
     || die "no usable CLI release found in the first $MAX_RELEASE_CANDIDATES release candidates"
 else

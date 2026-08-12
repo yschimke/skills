@@ -194,6 +194,65 @@ proj_c="$WORK/proj-c"; mkdir -p "$proj_c"   # no settings.gradle* — not a Grad
 check "write_local_properties leaves a non-Gradle directory alone" \
   "" "$(ls -A "$proj_c")"
 
+# ---- release discovery ----------------------------------------------------
+#
+# Both of these are network-shaped, so `curl` is replaced by a stub that records
+# how it was called and replays canned bodies. Nothing here touches the network.
+
+REPO="yschimke/compose-ai-tools"
+MAX_RELEASE_CANDIDATES=5
+CURL_LOG="$WORK/curl.log"
+: >"$CURL_LOG"
+
+# Stands in for curl. CURL_MODE decides which sources answer.
+curl() {
+  printf '%s\n' "$*" >>"$CURL_LOG"
+  local url="${*: -1}"
+  case "$url" in
+    *releases.atom*)
+      [[ "${CURL_MODE:-ok}" == "ok" ]] || return 22
+      cat <<'ATOM'
+<entry><link href="https://github.com/yschimke/compose-ai-tools/releases/tag/v0.19.61"/></entry>
+<entry><link href="https://github.com/yschimke/compose-ai-tools/releases/tag/clients-v0.2.0"/></entry>
+<entry><link href="https://github.com/yschimke/compose-ai-tools/releases/tag/v0.19.60"/></entry>
+<entry><link href="https://github.com/yschimke/compose-ai-tools/releases/tag/v0.19.60"/></entry>
+ATOM
+      ;;
+    *api.github.com*)
+      [[ "${CURL_MODE:-ok}" == "all-blocked" ]] && return 22
+      cat <<'JSON'
+[{"tag_name": "v0.19.61", "draft": false},
+ {"tag_name": "clients-v0.2.0", "draft": false},
+ {"tag_name": "v0.19.60", "draft": false}]
+JSON
+      ;;
+    *) return 22 ;;
+  esac
+}
+
+check "candidate_versions reads the atom feed, newest first, CLI tags only" \
+  "0.19.61
+0.19.60" "$(CURL_MODE=ok candidate_versions 2>/dev/null)"
+
+# The reported sandbox failure: the agent proxy 403s releases.atom because it is
+# not a repository-scoped GitHub API path, while /repos/<owner>/<repo>/releases
+# is allowed. This used to `die` and end the install.
+check "candidate_versions falls back to the repo-scoped API when the feed is blocked" \
+  "0.19.61
+0.19.60" "$(CURL_MODE=atom-blocked candidate_versions 2>/dev/null)"
+
+check "candidate_versions reports failure when neither source is reachable" \
+  "1" "$(CURL_MODE=all-blocked candidate_versions >/dev/null 2>&1; echo $?)"
+
+# GitHub signs release-asset redirects for GET only, so a HEAD comes back 401 on
+# an asset that downloads fine — which made every release look unready.
+: >"$CURL_LOG"
+url_is_downloadable "https://example.test/asset.tar.gz" >/dev/null 2>&1 || true
+check "url_is_downloadable probes with a ranged GET, not a HEAD" \
+  "yes" "$(grep -q -- '-r 0-0' "$CURL_LOG" && ! grep -q -- 'fsIL' "$CURL_LOG" && echo yes)"
+
+unset -f curl
+
 # ---- the script itself parses ---------------------------------------------
 
 bash -n "$INSTALL_SH" 2>"$WORK/syntax.err"
