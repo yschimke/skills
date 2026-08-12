@@ -52,7 +52,8 @@
 #                                              # stub passes this on first run.
 #   scripts/install.sh --android-sdk           # also install the Android SDK
 #                                              # (cmdline-tools + platforms;android-36
-#                                              # + platform-tools + build-tools;36.0.0)
+#                                              # + platform-tools + build-tools;36.0.0,
+#                                              # plus platforms;android-37.0 best-effort)
 #   scripts/install.sh --jdk 17,21             # install JDK 17 and 21 (first = active)
 #   JDKS=17,21 scripts/install.sh              # same, via env
 #
@@ -65,6 +66,11 @@
 #   SKILLS_REF=main scripts/install.sh                  # skill content ref
 #   ANDROID_HOME=$HOME/Android/Sdk scripts/install.sh --android-sdk
 #   INSTALL_ANDROID_SDK=1 scripts/install.sh     # same as --android-sdk
+#   ANDROID_SDK_PACKAGES='platforms;android-35 platform-tools build-tools;35.0.0'
+#                                                # required sdkmanager packages
+#   ANDROID_SDK_EXTRA_PACKAGES='' scripts/install.sh --android-sdk
+#                                                # best-effort extras (empty = none)
+#   ANDROID_CMDLINE_TOOLS_URL=...                # pin the cmdline-tools zip
 #
 # ANDROID_HOME default:
 #   - $ANDROID_HOME if set
@@ -81,11 +87,15 @@
 #   - Codex:  $CODEX_SANDBOX or $CODEX_SESSION_ID
 #
 # Claude-specific env-file behavior:
-#   - Uses the pre-installed JDK (21 on current Claude Cloud images) when it's
-#     Java 17+ — the CLI, plugin, and renderer AARs are compiled to JDK 17
-#     bytecode and run fine on any newer JDK, so there's no need to downgrade.
-#     Falls back to apt-installing openjdk-17-jdk-headless only when no Java
-#     17+ is available (older base images).
+#   - JDK selection, in order: the JDK already on PATH when its major matches
+#     the project's daemon toolchain; else one already on disk under
+#     /usr/lib/jvm/ or /opt/jdk<major> (tarball installs such as
+#     compose-ai-tools' scripts/setup-cloud-jdk.sh land there); else
+#     apt-install openjdk-<major>-jdk-headless. If that last step fails but
+#     some Java 17+ is on PATH, the run continues with a warning instead of
+#     aborting — the CLI, plugin, and renderer AARs are compiled to JDK 17
+#     bytecode and run fine on any newer JDK, and the rest of the install
+#     (notably --android-sdk) doesn't depend on the daemon toolchain at all.
 #   - Skips api.github.com lookups (they 403 on shared sandbox IPs due to
 #     unauthenticated rate limiting) and resolves versions via the public
 #     github.com HTML redirect instead. Sha256 verification is best-effort.
@@ -180,7 +190,10 @@ else
 fi
 
 die() { echo "error: $*" >&2; exit 1; }
-log() { echo "==> $*"; }
+# Progress goes to stderr, not stdout: several helpers below return a value by
+# printing it (`JDK_HOME="$(install_openjdk_major 17)"`), and a `log` line on
+# stdout would be captured as part of that value.
+log() { echo "==> $*" >&2; }
 
 require() {
   command -v "$1" >/dev/null 2>&1 || die "missing required tool: $1"
@@ -348,16 +361,68 @@ if [[ "$seen_required" == 0 ]]; then
   JDK_MAJORS=("$REQUIRED_JAVA_MAJOR" ${JDK_MAJORS[@]:+"${JDK_MAJORS[@]}"})
 fi
 
+# Report the feature-release major of the JDK rooted at $1, or fail if it
+# isn't a JDK. Prefers the `release` file (no subprocess, and immune to the
+# noise JAVA_TOOL_OPTIONS prints on some sandboxes) and falls back to asking
+# the binary itself.
+jdk_major_of() {
+  local home="$1" version="" major=""
+  [[ -n "$home" && -x "$home/bin/java" ]] || return 1
+  if [[ -r "$home/release" ]]; then
+    version="$(awk -F'"' '/^JAVA_VERSION=/{print $2; exit}' "$home/release" 2>/dev/null || true)"
+  fi
+  if [[ -z "$version" ]]; then
+    version="$("$home/bin/java" -version 2>&1 | awk -F'"' '/version "/{print $2; exit}')"
+  fi
+  [[ -n "$version" ]] || return 1
+  major="${version%%.*}"
+  # Legacy 1.8-style strings carry the major in the second component.
+  [[ "$major" == "1" ]] && major="$(printf '%s' "$version" | awk -F. '{print $2}')"
+  [[ "$major" =~ ^[0-9]+$ ]] || return 1
+  printf '%s\n' "$major"
+}
+
+# Find an already-installed JDK of the requested major, wherever it landed.
+#
+# This used to check only the Debian apt layout
+# (/usr/lib/jvm/java-<major>-openjdk-amd64), so a Temurin tarball unpacked at
+# /opt/jdk17 and symlinked to /usr/lib/jvm/temurin-17 — exactly what
+# compose-ai-tools' scripts/setup-cloud-jdk.sh puts on cloud sandboxes — was
+# invisible, and the installer went to apt for a JDK the box already had. When
+# the apt index was stale that apt call 404'd and aborted the whole run,
+# including the --android-sdk work that has nothing to do with the JDK
+# (compose-ai-tools#3695).
+#
+# Every candidate is verified by reading its actual version, so a loose glob
+# match (`java-11.0.17` for major 17) can't produce a wrong answer.
+find_installed_jdk() {
+  local major="$1" candidate
+  for candidate in \
+      "${JAVA_HOME:-}" \
+      "/usr/lib/jvm/java-${major}-openjdk-amd64" \
+      "/opt/jdk${major}" \
+      /usr/lib/jvm/*"${major}"* \
+      /opt/jdk-"${major}"* \
+      /Library/Java/JavaVirtualMachines/*"${major}"*/Contents/Home; do
+    [[ -n "$candidate" && -d "$candidate" ]] || continue
+    [[ "$(jdk_major_of "$candidate" || true)" == "$major" ]] || continue
+    printf '%s\n' "$candidate"
+    return 0
+  done
+  return 1
+}
+
 install_openjdk_major() {
   local major="$1"
-  local jdk_home="/usr/lib/jvm/java-${major}-openjdk-amd64"
-  if [[ -x "$jdk_home/bin/java" ]]; then
-    log "JDK $major already present at $jdk_home"
-    printf '%s\n' "$jdk_home"
+  local existing=""
+  if existing="$(find_installed_jdk "$major")"; then
+    log "JDK $major already present at $existing"
+    printf '%s\n' "$existing"
     return 0
   fi
+  local jdk_home="/usr/lib/jvm/java-${major}-openjdk-amd64"
   if ! command -v apt-get >/dev/null 2>&1; then
-    log "warning: JDK $major not present at $jdk_home and apt-get unavailable; skipping"
+    log "warning: no JDK $major found on disk and apt-get unavailable; skipping"
     return 1
   fi
   local sudo=""
@@ -366,10 +431,17 @@ install_openjdk_major() {
     sudo="sudo"
   fi
   log "apt-installing openjdk-${major}-jdk-headless"
-  $sudo apt-get install -y -qq "openjdk-${major}-jdk-headless" \
-    || { log "warning: apt-get failed for openjdk-${major}-jdk-headless; skipping"; return 1; }
-  if [[ -x "$jdk_home/bin/java" ]]; then
-    printf '%s\n' "$jdk_home"
+  if ! $sudo apt-get install -y -qq "openjdk-${major}-jdk-headless"; then
+    # A stale apt index pins point releases the Ubuntu archive has already
+    # rotated out, so the .deb 404s ("Failed to fetch ... 404 Not Found").
+    # Refresh the index once and retry before giving up.
+    log "apt-get install failed; refreshing the package index and retrying"
+    $sudo apt-get update -qq || true
+    $sudo apt-get install -y -qq "openjdk-${major}-jdk-headless" \
+      || { log "warning: apt-get failed for openjdk-${major}-jdk-headless; skipping"; return 1; }
+  fi
+  if existing="$(find_installed_jdk "$major")"; then
+    printf '%s\n' "$existing"
     return 0
   fi
   log "warning: openjdk-${major}-jdk-headless installed but $jdk_home/bin/java missing"
@@ -392,10 +464,20 @@ if [[ "$CLAUDE_CLOUD" == 1 || -n "$JDKS_REQUESTED" ]]; then
     if [[ -n "$detected_major" && "$detected_major" =~ ^[0-9]+$ ]]; then
       log "detected JDK $detected_major but project requires JDK $REQUIRED_JAVA_MAJOR; selecting required JDK"
     fi
-    JDK_HOME="$(install_openjdk_major "$REQUIRED_JAVA_MAJOR")" \
-      || die "could not install required JDK $REQUIRED_JAVA_MAJOR"
-    export JAVA_HOME="$JDK_HOME"
-    export PATH="$JAVA_HOME/bin:$PATH"
+    if JDK_HOME="$(install_openjdk_major "$REQUIRED_JAVA_MAJOR")"; then
+      export JAVA_HOME="$JDK_HOME"
+      export PATH="$JAVA_HOME/bin:$PATH"
+    elif [[ -n "$detected_major" && "$detected_major" =~ ^[0-9]+$ && "$detected_major" -ge 17 ]]; then
+      # Don't sink the whole run over the daemon toolchain. Everything this
+      # script installs (the CLI, and the Android SDK below) works on any
+      # Java 17+, and the remaining work — notably --android-sdk — is what the
+      # caller is usually here for. Loud warning, non-zero-cost to ignore, but
+      # not fatal (compose-ai-tools#3695).
+      log "warning: could not provision JDK $REQUIRED_JAVA_MAJOR; continuing on the JDK $detected_major already on PATH."
+      log "warning: a Gradle build pinned to toolchain $REQUIRED_JAVA_MAJOR will still need one on disk (see scripts/setup-cloud-jdk.sh in compose-ai-tools)."
+    else
+      die "could not install required JDK $REQUIRED_JAVA_MAJOR (and no Java 17+ is on PATH to fall back to)"
+    fi
   fi
 
   # Additional JDKs (anything in JDK_MAJORS besides the active major). Gradle's
@@ -410,18 +492,53 @@ fi
 # ---- Optional: install Android SDK ---------------------------------------
 #
 # Mirrors the manual procedure in docs/AGENTS.md ("Bringing up a fresh
-# sandbox"). Idempotent — checks for $ANDROID_HOME/platforms/android-36 and
-# bails out early if present, so re-runs (and the warm-cache path on Claude
-# Cloud) are cheap.
+# sandbox"). Idempotent — every requested package maps 1:1 onto a directory
+# under $ANDROID_HOME, so a re-run (and the warm-cache path on Claude Cloud)
+# installs only what is actually missing and skips out entirely when nothing
+# is.
 #
 # Network note: sdkmanager pulls from dl.google.com, which is not on the
 # Claude Cloud Trusted allowlist by default (developer.android.com is, but
 # that's the docs domain). The reachability probe below fails fast with a
 # clear remediation hint when the host is blocked.
 
+# Packages every install needs. Overridable so a consumer on a different
+# compileSdk isn't stuck with ours.
+ANDROID_SDK_PACKAGES="${ANDROID_SDK_PACKAGES:-platforms;android-36 platform-tools build-tools;36.0.0}"
+# Best-effort extras, installed in a second sdkmanager call so a name this SDK
+# repository doesn't know can't fail the whole install. `platforms;android-37.0`
+# is here because modules on the alpha Compose/Wear artifacts build at
+# compileSdk 37 — and note the package is `android-37.0`, NOT `android-37`,
+# which does not exist and fails the invocation it appears in.
+ANDROID_SDK_EXTRA_PACKAGES="${ANDROID_SDK_EXTRA_PACKAGES-platforms;android-37.0}"
+
+# Can we write $ANDROID_HOME without escalating? Walk up to the nearest
+# existing ancestor — the leaf usually doesn't exist yet on a fresh install.
+android_home_writable() {
+  local dir="$ANDROID_HOME"
+  while [[ -n "$dir" && "$dir" != "/" && ! -e "$dir" ]]; do
+    dir="$(dirname "$dir")"
+  done
+  [[ -w "$dir" ]]
+}
+
 install_android_sdk() {
-  if [[ -d "$ANDROID_HOME/platforms/android-36" ]]; then
-    log "android sdk already present at $ANDROID_HOME (platforms/android-36 found); skipping"
+  local pkg
+  local -a required=() extras=() missing=() missing_extras=()
+  read -r -a required <<<"$ANDROID_SDK_PACKAGES"
+  read -r -a extras <<<"$ANDROID_SDK_EXTRA_PACKAGES"
+
+  # `platforms;android-36` lives at `$ANDROID_HOME/platforms/android-36`.
+  for pkg in ${required[@]+"${required[@]}"}; do
+    [[ -d "$ANDROID_HOME/${pkg//;//}" ]] || missing+=("$pkg")
+  done
+  for pkg in ${extras[@]+"${extras[@]}"}; do
+    [[ -d "$ANDROID_HOME/${pkg//;//}" ]] || missing_extras+=("$pkg")
+  done
+
+  local sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+  if [[ ${#missing[@]} -eq 0 && ${#missing_extras[@]} -eq 0 && -x "$sdkmanager" ]]; then
+    log "android sdk already complete at $ANDROID_HOME; skipping"
     return 0
   fi
 
@@ -429,33 +546,51 @@ install_android_sdk() {
   require unzip
 
   local sudo=""
-  if [[ $EUID -ne 0 ]]; then
-    command -v sudo >/dev/null 2>&1 || die "need root or sudo to write to $ANDROID_HOME"
+  # Only escalate when the target genuinely isn't writable. The non-root
+  # default ($HOME/Android/Sdk) needs no sudo, and demanding it there turned a
+  # working install into a hard failure on machines without sudo.
+  if ! android_home_writable; then
+    command -v sudo >/dev/null 2>&1 \
+      || die "$ANDROID_HOME is not writable and sudo is unavailable; set ANDROID_HOME to a writable path"
     sudo="sudo"
   fi
 
-  local cmdline_zip_url="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
+  local cmdline_zip_url="${ANDROID_CMDLINE_TOOLS_URL:-}"
+  if [[ -z "$cmdline_zip_url" ]]; then
+    local cmdline_os="linux"
+    [[ "$(uname -s)" == "Darwin" ]] && cmdline_os="mac"
+    cmdline_zip_url="https://dl.google.com/android/repository/commandlinetools-${cmdline_os}-13114758_latest.zip"
+  fi
 
   if ! curl -fsI -o /dev/null --max-time 10 "$cmdline_zip_url" 2>/dev/null; then
+    if [[ ${#missing[@]} -eq 0 ]]; then
+      # Everything the caller actually requires is already installed; only the
+      # best-effort extras are absent. An unreachable CDN must not turn that
+      # into a failed install.
+      log "warning: cannot reach dl.google.com; skipping optional packages (${missing_extras[*]})"
+      return 0
+    fi
     die "cannot reach dl.google.com (Android SDK CDN). On Claude Code on the web, set the environment's network access to Custom and add 'dl.google.com' (the default Trusted list only includes developer.android.com, which doesn't serve the SDK)."
   fi
 
-  log "installing Android command-line tools to $ANDROID_HOME"
-  local tmp
-  tmp="$(mktemp -d)"
-  # shellcheck disable=SC2064
-  trap "rm -rf '$tmp'" RETURN
-  local zip="$tmp/cmdline-tools.zip"
-  local extract="$tmp/cmdline-tools-extract"
-  curl -fsSL -o "$zip" "$cmdline_zip_url" \
-    || die "failed to download Android command-line tools"
-  mkdir -p "$extract"
-  unzip -q "$zip" -d "$extract"
-  $sudo mkdir -p "$ANDROID_HOME/cmdline-tools"
-  $sudo rm -rf "$ANDROID_HOME/cmdline-tools/latest"
-  $sudo mv "$extract/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
-
-  local sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+  if [[ -x "$sdkmanager" ]]; then
+    log "android command-line tools already present at $ANDROID_HOME/cmdline-tools/latest"
+  else
+    log "installing Android command-line tools to $ANDROID_HOME"
+    local tmp
+    tmp="$(mktemp -d)"
+    # shellcheck disable=SC2064
+    trap "rm -rf '$tmp'" RETURN
+    local zip="$tmp/cmdline-tools.zip"
+    local extract="$tmp/cmdline-tools-extract"
+    curl -fsSL -o "$zip" "$cmdline_zip_url" \
+      || die "failed to download Android command-line tools"
+    mkdir -p "$extract"
+    unzip -q "$zip" -d "$extract"
+    $sudo mkdir -p "$ANDROID_HOME/cmdline-tools"
+    $sudo rm -rf "$ANDROID_HOME/cmdline-tools/latest"
+    $sudo mv "$extract/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+  fi
 
   # Pre-write the license-hash files instead of piping `yes` into
   # `sdkmanager --licenses`. The pipe approach exits 141 (SIGPIPE) under
@@ -486,19 +621,57 @@ LIC
 e9acab5b5fbb560a72cfaecce8946896ff6aab9d
 LIC
 
-  log "installing Android platforms;android-36, platform-tools, build-tools;36.0.0"
-  $sudo "$sdkmanager" \
-    "platforms;android-36" \
-    "platform-tools" \
-    "build-tools;36.0.0" >/dev/null
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    log "installing Android packages: ${missing[*]}"
+    $sudo "$sdkmanager" ${missing[@]+"${missing[@]}"} >/dev/null \
+      || die "sdkmanager failed to install: ${missing[*]}"
+  fi
+
+  if [[ ${#missing_extras[@]} -gt 0 ]]; then
+    log "installing optional Android packages: ${missing_extras[*]}"
+    $sudo "$sdkmanager" ${missing_extras[@]+"${missing_extras[@]}"} >/dev/null \
+      || log "warning: could not install optional packages (${missing_extras[*]}); continuing without them"
+  fi
 
   log "android sdk installed at $ANDROID_HOME"
+}
+
+# Record the SDK location in the Gradle project's `local.properties` so a build
+# run without ANDROID_HOME exported still resolves it (AGP reads `sdk.dir`
+# first). The file is gitignored in every Gradle project we care about; an
+# existing `sdk.dir` is never overwritten.
+write_local_properties() {
+  local root="" candidate
+  for candidate in "$PWD" "$(git rev-parse --show-toplevel 2>/dev/null || true)"; do
+    [[ -n "$candidate" ]] || continue
+    if [[ -f "$candidate/settings.gradle.kts" || -f "$candidate/settings.gradle" ]]; then
+      root="$candidate"
+      break
+    fi
+  done
+  [[ -n "$root" ]] || return 0
+
+  local file="$root/local.properties"
+  if [[ -f "$file" ]] && grep -q '^[[:space:]]*sdk\.dir[[:space:]]*=' "$file"; then
+    return 0
+  fi
+  if [[ -e "$file" && ! -w "$file" ]] || [[ ! -e "$file" && ! -w "$root" ]]; then
+    log "warning: cannot write $file; export ANDROID_HOME=$ANDROID_HOME instead"
+    return 0
+  fi
+  # Don't glue onto a final line that has no newline of its own.
+  if [[ -s "$file" && -n "$(tail -c1 "$file")" ]]; then
+    printf '\n' >>"$file"
+  fi
+  printf 'sdk.dir=%s\n' "$ANDROID_HOME" >>"$file"
+  log "recorded sdk.dir=$ANDROID_HOME in $file"
 }
 
 if [[ "$INSTALL_ANDROID_SDK" == 1 ]]; then
   install_android_sdk
   export ANDROID_HOME
   export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+  write_local_properties
 fi
 
 # ---- Resolve version ------------------------------------------------------

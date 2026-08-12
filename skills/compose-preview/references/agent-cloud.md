@@ -120,9 +120,23 @@ mkdir -p ~/.claude && printf '# User instructions for AI agents\n\nOverride any 
 
 Notes:
 
-- `--android-sdk` ensures Android preview dependencies are present.
+- `--android-sdk` ensures Android preview dependencies are present:
+  `cmdline-tools`, `platforms;android-36`, `platform-tools` and
+  `build-tools;36.0.0`, plus `platforms;android-37.0` on a best-effort
+  second pass (the alpha Compose/Wear artifacts build at `compileSdk = 37`;
+  note the package is `android-37.0` — `android-37` does not exist and fails
+  the `sdkmanager` invocation it appears in). Override the list with
+  `ANDROID_SDK_PACKAGES` / `ANDROID_SDK_EXTRA_PACKAGES`. Only missing
+  packages are fetched, so re-running on a warm container is cheap, and the
+  resolved path is recorded as `sdk.dir` in the project's (gitignored)
+  `local.properties`.
 - Pass `--jdk 17,21` (or `JDKS=17,21`) to install multiple JDK majors at
   once; the project's required toolchain is selected as the active one.
+- The JDK step never re-installs a JDK the container already has: it looks
+  under `/usr/lib/jvm/` and `/opt/jdk<major>` (where tarball installers such
+  as compose-ai-tools' `scripts/setup-cloud-jdk.sh` put Temurin) before
+  reaching for `apt-get`, and if apt can't provide one it warns and carries
+  on rather than aborting the `--android-sdk` work, which doesn't depend on it.
 - Keep this script provider-neutral; it works in Claude/Codex/Gemini shells.
 - Do **not** hardcode `git config --global user.name/user.email`; only set identity from explicit user-provided values.
 
