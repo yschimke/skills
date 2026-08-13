@@ -61,8 +61,9 @@ Commands:
 Options:
   --module <name>      Target a single module (default: auto-detect)
   --variant <variant>  Android build variant (default: debug)
-  --filter <pattern>   Case-insensitive substring match on preview id
-  --id <exact>         Exact match on preview id
+  --filter <pattern>   Case-insensitive substring match on preview id.
+                       Narrows what Gradle renders, not just what prints
+  --id <exact>         Exact match on preview id. Also narrows the render
   --json               Emit JSON (show, list)
   --output <path>      Copy matched preview PNG to this path (render)
   --progress           Print per-task milestone/heartbeat lines to stderr
@@ -93,6 +94,34 @@ invocation. State is persisted per-module under
 caching means re-renders only redo what changed; the `changed` flag lets
 agents skip reading PNGs that didn't move. Always read the PNG after a UI
 change — don't assume the change looks correct.
+
+### Render only the preview you're iterating on
+
+`--filter` / `--id` narrow **what Gradle renders**, not just what gets
+printed. Asking for one preview used to render the whole module — measured at
+317s against 3s on the CLI's own 64-preview sample — so this is the flag to
+reach for when working on a single screen, rather than `--force` or deleting
+`renders/` by hand.
+
+```sh
+compose-preview show --json --filter HomeScreen
+```
+
+What a narrowed run does to everything else:
+
+- **Previews outside the request keep whatever PNG the previous run left on
+  disk**; on a clean tree they simply have none. `show` scopes its counts to
+  the request for that reason, so don't read a smaller total as previews
+  having disappeared.
+- **Change detection is unaffected.** A narrowed run carries the skipped
+  previews' shas forward, so a later full render doesn't report them all as
+  `changed`.
+- **A filtered render is deliberately not build-cacheable**, so it can't
+  poison a clean checkout — and because the filter is a task input, an
+  unfiltered run afterwards re-renders everything.
+- **`render --bundle` still renders the full module by design.** A bundle
+  omits previews that have no PNG, so a narrowed bundle would ship exactly
+  the one preview you asked for and nothing else.
 
 For a long-lived **interaction** loop — clicking/typing by semantic ref
 (not pixels), checking "did it change?" without reading a PNG, and diffing
