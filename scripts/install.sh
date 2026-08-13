@@ -1024,9 +1024,34 @@ else
     log "warning: api.github.com unreachable (likely rate-limited); skipping sha256 verification"
   fi
 
+  # The plain github.com release URL is the happy path, but an egress policy
+  # that blocks github.com while allowing api.github.com leaves it unreachable
+  # — the same asymmetry `candidate_versions` already works around for listing.
+  # The API's per-asset endpoint serves the same bytes (it redirects to
+  # objects.githubusercontent.com), so keep it as a fallback rather than dying
+  # one step from a working install.
+  CLI_API_URL=""
+  if [[ -n "${META:-}" ]]; then
+    if command -v jq >/dev/null 2>&1; then
+      CLI_API_URL="$(printf '%s' "$META" \
+        | jq -r --arg n "$CLI_ASSET" '.assets[]? | select(.name == $n) | .url' 2>/dev/null \
+        | head -n1)"
+    else
+      CLI_API_URL="$(printf '%s' "$META" | awk -v asset="$CLI_ASSET" '
+        /"url":/ { u = $0; sub(/.*"url":[[:space:]]*"/, "", u); sub(/".*/, "", u) }
+        $0 ~ ("\"name\":[[:space:]]*\"" asset "\"") { print u; exit }')"
+    fi
+  fi
+
   log "downloading $CLI_URL"
-  curl -fL --progress-bar -o "$TMP/$CLI_ASSET" "$CLI_URL" \
-    || die "download failed: $CLI_URL"
+  if ! curl -fL --progress-bar -o "$TMP/$CLI_ASSET" "$CLI_URL"; then
+    [[ -n "$CLI_API_URL" ]] || die "download failed: $CLI_URL"
+    log "github.com unreachable; retrying via the api.github.com asset endpoint"
+    ASSET_HEADERS=(-H "Accept: application/octet-stream")
+    [[ -n "${GITHUB_TOKEN:-}" ]] && ASSET_HEADERS+=(-H "Authorization: Bearer $GITHUB_TOKEN")
+    curl -fL --progress-bar "${ASSET_HEADERS[@]}" -o "$TMP/$CLI_ASSET" "$CLI_API_URL" \
+      || die "download failed: $CLI_URL (and API fallback $CLI_API_URL)"
+  fi
 
   if [[ -n "${CLI_DIGEST:-}" ]]; then
     got="$(sha256_of "$TMP/$CLI_ASSET")"
