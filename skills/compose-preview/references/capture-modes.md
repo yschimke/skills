@@ -41,6 +41,28 @@ The rendered artifact is a GIF under `build/compose-previews/renders/`. For
 `durationMs = 1200` and `frameIntervalMs = 100`, expect 13 frames: frame 0 plus
 one frame every 100ms through 1200ms.
 
+> **Always pin `heightDp` on an `@AnimatedPreview`.** With an unbounded height
+> the capture silently falls back to a **single still** and writes *PNG bytes to
+> a `.gif` filename* (seen on renderer 0.17.17). Nothing fails and the file
+> looks plausible, but every consumer that trusts the extension — browser,
+> Figma import, the preview server — gets a broken asset. Pinning both
+> `widthDp` and `heightDp` produces a real GIF from the identical composable.
+>
+> Verify rather than assume, since the failure is silent — check the magic
+> bytes, not the extension:
+>
+> ```sh
+> head -c3 build/compose-previews/renders/<preview>.gif   # expect: GIF
+> ```
+
+**Where to put motion fixtures.** Animation previews are usually catalog
+fixtures rather than app code. Put them in the **`src/debug` source set**: the
+plugin renders the `debug` variant, so they are discovered like any other
+`@Preview`, but they never ship in a release build. Drive a *real* component
+through a real state change (a `LaunchedEffect` loop flipping the state the
+component already takes) rather than re-implementing the animation — otherwise
+the GIF documents the fixture instead of the product.
+
 Use `durationMs = 0` to auto-detect finite animations. Indeterminate or
 infinite animations usually need a positive `durationMs` so the renderer knows
 how long to record. Set `showCurves = false` for ordinary visual regression or

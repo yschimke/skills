@@ -54,6 +54,30 @@ documents (e.g. `compact` / `medium` / `expanded` for M3; small/large round for
 Wear). See the `samples/design-catalog-*` modules in
 [yschimke/compose-ai-tools](https://github.com/yschimke/compose-ai-tools).
 
+### Cataloguing an existing app (the cheap path)
+
+A dedicated catalog module is right when you are documenting a *component
+library*. When you are cataloguing an **app that already has `@Preview`
+functions**, don't author a parallel set — point the spec at the previews that
+are already there. Adoption is then a plugin line plus `catalog.spec.json`,
+with **no change to UI code**, and the sheet stays honest because it renders the
+same previews the team already maintains.
+
+The [compose-samples catalogs](https://github.com/yschimke/compose-samples/tree/agent/preview-catalogs)
+are built this way: JetNews covers 22 of its 23 existing previews without
+touching a single composable.
+
+Two rules make this work well:
+
+- **Group by feature, not by widget.** The value of a sample/app catalog is
+  showing what the app is *for* — adaptive postures, the states of a screen, an
+  RTL mirror — so `groups`/`section` should follow that, not alphabetical
+  component names.
+- **Put catalog-only fixtures in `src/debug`.** Anything you *do* need to add
+  (motion fixtures, a composed feature shot) belongs in the debug source set:
+  the plugin renders the `debug` variant, so they are discovered like any other
+  preview, but they never reach a release build.
+
 ## Declare & validate the spec (`catalog.spec.json`)
 
 The catalog's inventory, grouping, captions, sections and per-component variants
@@ -129,6 +153,23 @@ Discovery recognises `@Preview` and any `annotation class` meta-annotated with i
 multipreview annotation imported from another module. The authoritative check
 stays the render + completeness gate — this is the fast local/CI pre-flight.
 
+> **Wear catalogs always need this flag.** Wear previews are conventionally
+> annotated `@WearPreviewDevices` / `@WearPreviewFontScales` / `@WearPreviewLargeRound`,
+> which live in `androidx.wear.compose.ui.tooling.preview` — an external
+> artifact the source scan cannot see. Without the flags the validator reports
+> **`discovered 0 @Preview function(s)`** and fails every entry, which reads
+> like a broken spec rather than a missing flag:
+>
+> ```sh
+> node validate-catalog-spec.mjs --spec catalog.wear.spec.json \
+>   --preview-annotation WearPreviewDevices \
+>   --preview-annotation WearPreviewFontScales
+> ```
+>
+> Record the required flags in the spec's `$comment` so the next run doesn't
+> rediscover this. The same applies to any app-defined multipreview annotation
+> declared in a different module from the previews that use it.
+
 ## Workflow
 
 1. **Render the system with its data products.** Ask the renderer for the
@@ -183,6 +224,29 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
    });
    ```
 
+   Pass `--source-repo <owner>/<repo>` whenever you generate from a **consumer**
+   repo. It defaults to `yschimke/compose-ai-tools`, so a bundle built anywhere
+   else silently bakes README/asset links pointing at the wrong repository —
+   they resolve, they're just wrong, which is worse than a 404.
+
+   > **`@PreviewParameter` previews cannot carry a catalog component.** A
+   > preview whose composable takes a `@PreviewParameter` argument renders its
+   > PNG fine, but the renderer emits **no data products for it at all** — no
+   > `compose/semantics`, layout, fonts or `figma-svg`. The completeness gate
+   > then refuses to publish the whole catalog with
+   > `no semantics for: <componentId>` … `incomplete render — refusing to
+   > publish`. The message names the component, not the cause, so it reads as a
+   > bad spec.
+   >
+   > Don't reach for `--allow-incomplete` (it publishes a sheet with holes) and
+   > don't drop the component. Add a **zero-argument wrapper preview** in
+   > `src/debug` that calls the same composable with a literal fixture, and
+   > point the spec at the wrapper — the full data-product set comes back.
+   >
+   > Check for this *before* spending a render: any `@PreviewParameter` in the
+   > previews a spec references will hit it. It bites Wear catalogs hardest —
+   > 9 of Jetcaster's 12 Wear previews take a `@PreviewParameter`.
+
 3. **Import.** The bundle is tool-neutral first, Figma second:
 
    ```
@@ -213,6 +277,71 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
    at `/<system>/`. Regenerate on component changes so the sheet never drifts;
    `design-artifacts.yml` in compose-ai-tools (and in a consumer app repo) does
    this on a schedule.
+
+   Don't hand-roll the pipeline in a consumer repo — call the reusable workflow,
+   which is the same one compose-ai-tools' own catalogs use:
+
+   ```yaml
+   publish:
+     if: ${{ github.repository == 'you/your-repo' }}
+     permissions:
+       contents: write
+     uses: yschimke/compose-ai-tools/.github/workflows/design-artifacts-reusable.yml@main
+     with:
+       system: your-system
+       spec: catalog.spec.json
+       module: ':app'
+       # Without these three the branch carries PNGs only — see below.
+       publish-live-bundle: true
+       split-per-preview: true
+       split-mode: full
+   ```
+
+   > **A published catalog is static unless you opt into a live bundle.**
+   > `publish-live-bundle` and `split-per-preview` both default to **`false`**.
+   > Leave them off and the branch gets rendered PNGs and nothing executable, so
+   > the server has no daemon to launch: it badges the catalog *"serves baked PNG
+   > snapshots only — its delivery branch publishes no live bundle"* and the
+   > device, theme and knob controls in the viewer do nothing. Nothing fails and
+   > no warning is printed — the publish succeeds and quietly ships a static
+   > sheet. Turning them on carries the executable bundle under `bundle/`,
+   > records `liveBundle` in `catalog.json`, and splits it into one
+   > re-renderable bundle per preview.
+   >
+   > **Liveness and trust are independent gates**, and the status page shows them
+   > in adjacent columns, which invites conflating them. Trust is about whether
+   > the server will execute *your* branch (`trust/producers.json`); the live
+   > bundle is about whether the branch contains anything to execute. A catalog
+   > can read `✓ trusted` and still serve baked PNGs — that's a missing bundle,
+   > not a trust problem, and no amount of trust config fixes it.
+   >
+   > `split-mode: full` (each per-preview bundle keeps its own re-render
+   > classpath) requires `publish-live-bundle`; `view-only` is the baked tier for
+   > a render the serve host can't drive. Android/Robolectric and CMP desktop
+   > catalogs are both live-capable — what matters is that the host bakes the
+   > matching daemon, not the platform.
+   >
+   > Costs to weigh: a full split writes a per-preview bundle for every preview,
+   > so the delivery branch and the render both grow with catalog size.
+
+   > **`embed-deps` when a dep isn't on Central or Google Maven.** The serve box
+   > rebuilds the live classpath from the Maven coordinates in the bundle, and it
+   > resolves from exactly two repos — `repo1.maven.org/maven2` and
+   > `dl.google.com/dl/android/maven2`. A dep from anywhere else (JitPack, a
+   > company repo, `androidx.dev` snapshots) can't be fetched, the daemon fails to
+   > build its classpath, and the catalog **silently** falls back to baked PNGs
+   > with `livebundle-unavailable`. `embed-deps: true` carries the reachable jars
+   > inside the bundle under `libs/` instead; it costs bundle size, so leave it
+   > off when every dep is on the two public repos.
+   >
+   > Check before you publish rather than reading it off the status page
+   > afterwards: list the coordinates the module actually resolves and probe both
+   > repos for each `<artifact>-<version>.pom`. Watch for repos that are declared
+   > but inert — a `pluginManagement` repo serves build-time compiler plugins and
+   > never contributes a runtime classpath entry, and an env-gated repo (the
+   > `COMPOSE_SNAPSHOT_ID` branch in the compose-samples `settings.gradle.kts`)
+   > contributes nothing when CI doesn't set the variable. Both look alarming in a
+   > grep and neither affects the live bundle.
 
 ## Source
 

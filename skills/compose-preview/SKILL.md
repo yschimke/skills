@@ -251,6 +251,13 @@ composePreview {
 }
 ```
 
+`sdkVersion` auto-detects from `android.compileSdk` when unset, but the render
+range is narrower than the compile range: **SDK > 35 requires JDK 21+**. On a
+project that compiles against a newer SDK (37 is current for the Android
+samples) the build fails at configuration time with
+`sdkVersion = N is outside the supported range`. Pin it explicitly, or run the
+build on JDK 21+.
+
 ### Zero-Code Integration (Alternative)
 
 You can apply the plugin dynamically without modifying the project's source code by using a Gradle init script. This is useful for agents operating in environments where they shouldn't or cannot modify the build files directly.
