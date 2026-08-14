@@ -52,7 +52,7 @@ Issue-identifying output:
             "viewDescription": "IconButton"
           }
         ],
-        "annotatedPath": "build/compose-previews/renders/com.example.SaveToolbarPreview.a11y.png"
+        "annotatedPath": "build/compose-previews/renders/SaveToolbarPreview-aaa75102.a11y.png"
       }
     }
   }
@@ -439,8 +439,8 @@ Issue-identifying output:
     {
       "id": "com.example.ProfileHeaderPreview",
       "changed": true,
-      "pngPath": "build/compose-previews/renders/com.example.ProfileHeaderPreview.png",
-      "diffPath": "build/compose-previews/diffs/com.example.ProfileHeaderPreview.diff.png",
+      "pngPath": "build/compose-previews/renders/ProfileHeaderPreview-4d791110.png",
+      "diffPath": "build/compose-previews/diffs/ProfileHeaderPreview-4d791110.diff.png",
       "changedPixels": 18420
     }
   ],

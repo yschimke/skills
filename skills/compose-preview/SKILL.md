@@ -128,6 +128,33 @@ For a long-lived **interaction** loop — clicking/typing by semantic ref
 semantics instead of pixels — see the Playwright-style, token-frugal
 [references/agent-loop.md](./references/agent-loop.md).
 
+### Don't spell render filenames by hand — read them from the manifest
+
+A rendered file is named `<readable>-<digest>.<ext>`:
+
+```
+renders/ActivityListPreview_Devices_Large_Round-4f9c2a17.png
+        └──────────── readable ──────────────┘ └ digest ┘
+```
+
+`<readable>` is the function name plus any `@Preview(name = …)` variant, with
+non-alphanumeric runs collapsed to `_`. `<digest>` is 8 hex characters derived
+from the preview id. It is what makes the name unique and stable: adding or
+renaming any *other* preview never renames this one, and two previews can never
+land on the same file — including on case-insensitive filesystems, and including
+names that differ only in punctuation.
+
+The practical consequence: **you cannot reconstruct a filename from a preview
+id, and you shouldn't try.** Read `renderOutput` off the preview in
+`previews.json` (or the `show --json` output), which is authoritative. Structural
+suffixes are appended after the digest — `…-4f9c2a17_SCROLL_top.png`,
+`…-4f9c2a17_PARAM_4.png` — so a glob on the readable prefix also works when you
+just need "every capture of this preview".
+
+Preview **ids** are unaffected and keep their full FQN
+(`com.example.PreviewsKt.HomeScreenPreview`) — `--filter` / `--id`, history
+folders and CLI state all still key by id.
+
 ## Vector (SVG) output, not just PNGs
 
 The renderer can export a preview as **scalable vector art** as well as a
