@@ -152,5 +152,5 @@ hard-links the object database).
   setup of the MCP server itself, `compose-preview mcp install/serve/doctor`.
 - [`agent-pr.md`](./agent-pr.md) — CLI-driven review, agent-authored PRs,
   comment style, image hosting choices.
-- [`ci-previews.md`](./ci-previews.md) — `compose-preview/main` baselines
+- [**compose-preview-ci** skill](../../compose-preview-ci/SKILL.md) — `compose-preview/main` baselines
   branch + PR-comment GitHub Actions for the no-agent path.

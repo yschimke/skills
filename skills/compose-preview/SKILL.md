@@ -216,7 +216,7 @@ compose-preview doctor
 ```
 
 Re-running the same command upgrades to the latest release; pin a specific
-version by appending it (`… | bash -s -- 0.10.8`).
+version by appending it (`… | bash -s -- 1.3.0`).
 
 `doctor` verifies Java 17+ on `PATH` (JDK 21/25 are fine — the renderer is
 compiled to JDK 17 bytecode). If the install path isn't on `PATH`, the
@@ -330,10 +330,13 @@ Loaded on demand. Read only what the current task needs.
 
 ## Related skill
 
-PR-review and CI workflows live in the sibling
+PR-review workflows live in the sibling
 [**compose-preview-review** skill](../compose-preview-review/SKILL.md):
-authoring agent-opened PRs, reviewing UI PRs locally (base + head render,
-diff, text comment), and wiring `compose-preview/main` baselines +
-PR-comment GitHub Actions. The bootstrap installer
-([`scripts/install.sh`](https://raw.githubusercontent.com/yschimke/compose-ai-tools/main/scripts/install.sh))
-sets up both skills together.
+authoring agent-opened PRs, and reviewing UI PRs locally (base + head
+render, diff, text comment). Wiring the CI that does this automatically —
+`compose-preview/main` baselines, PR-comment GitHub Actions, the fork-safe
+two-stage split — is the
+[**compose-preview-ci** skill](../compose-preview-ci/SKILL.md). The
+bootstrap installer
+([`scripts/install.sh`](https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh))
+sets all of them up together.

@@ -35,10 +35,10 @@ Robolectric papers over the gap for AGP `com.android.application` /
 `com.android.kotlin.multiplatform.library` plugin doesn't expose the AGP
 unit-test pipeline (`test<Variant>UnitTest`, merged manifest, resource
 APK) Robolectric needs, so wiring our renderer through it would mean
-re-implementing most of [`AndroidPreviewSupport`](../../../gradle-plugin/src/main/kotlin/ee/schimke/composeai/plugin/AndroidPreviewSupport.kt)
+re-implementing most of [`AndroidPreviewSupport`](https://github.com/yschimke/compose-ai-tools/blob/main/gradle-plugin/src/main/kotlin/ee/schimke/composeai/plugin/AndroidPreviewSupport.kt)
 against a different DSL surface.
 
-The Desktop renderer ([`DesktopRendererMain`](../../../renderer-desktop/src/main/kotlin/ee/schimke/composeai/renderer/DesktopRendererMain.kt))
+The Desktop renderer ([`DesktopRendererMain`](https://github.com/yschimke/compose-ai-tools/blob/main/renderers/desktop/src/main/kotlin/ee/schimke/composeai/renderer/DesktopRendererMain.kt))
 runs `ImageComposeScene` directly on the host JVM and doesn't need any of
 that — it just needs JVM-flavor compose-runtime + the preview composables
 compiled to JVM bytecode. That's exactly what a `jvm("desktop")` target on

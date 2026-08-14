@@ -53,7 +53,7 @@ Workflows and artifacts to look for:
 | Sticky `<!-- preview-diff -->` PR comment | Read it **first** and cite its images instead of re-rendering; only render what it doesn't cover (e.g. a preview you just added). It refreshes on every push, so re-check after you push. |
 | `<!-- a11y-report -->` PR comment / `compose-preview/a11y/*` branches | Accessibility findings + annotated overlays for the same previews. |
 | `design-parity.yml`, `design-artifacts.yml`, `catalog.spec.json` | The repo publishes a design catalog (design-parity pipeline); UI changes may also shift the published sticker sheet, worth a mention in review. |
-| Legacy `preview-comment.yml` / `preview-baselines.yml` etc. | Same data via the deprecated four-action setup — and a migration opportunity, see [ci-previews.md](./ci-previews.md). |
+| Legacy `preview-comment.yml` / `preview-baselines.yml` etc. | Same data via the deprecated four-action setup — and a migration opportunity, see the [compose-preview-ci skill](../../compose-preview-ci/SKILL.md). |
 
 Baseline branches double as a base render you didn't have to produce:
 `compose-preview/main` has the PNGs and `baselines.json`
