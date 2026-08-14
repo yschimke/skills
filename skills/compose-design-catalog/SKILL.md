@@ -18,7 +18,7 @@ that skill owns the renderer, CLI, and Gradle plugin. Check first with
 `compose-preview --version`; if missing, run the bootstrap installer:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yschimke/compose-ai-tools/main/scripts/install.sh \
+curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
   | bash
 ```
 
@@ -270,13 +270,29 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
      spec (`screens: [{ id, title?, related }]`) turns a code-led import into
      structured per-screen diff pages rather than one flat sheet.
 
-4. **Deliver on a per-system branch.** Force-push the generated `out/` to a clean
+4. **Deliver on a per-system branch.** Publish the generated `out/` to a
    `design-artifacts/<system>` branch (`design-artifacts/compose-m3`,
    `.../wear-m3`, `.../glimmer`, `.../glance-wear`) — the surface a designer pulls
    from, and what the public preview server (`preview.coo.ee`) fetches and serves
-   at `/<system>/`. Regenerate on component changes so the sheet never drifts;
-   `design-artifacts.yml` in compose-ai-tools (and in a consumer app repo) does
-   this on a schedule.
+   at `/<system>/`.
+
+   Each publish **appends a commit on the branch tip** rather than force-pushing
+   a fresh orphan, so the delivery branch carries a per-regeneration history and
+   a sticker that moved can be traced back to the source commit that moved it
+   (each commit subject names the render date and the short `main` SHA):
+
+   ```bash
+   git log --oneline origin/design-artifacts/compose-m3 -- images/button-filled/
+   ```
+
+   Regeneration is automatic on the triggers that matter: `design-artifacts.yml`
+   runs on a **push to `main`** that touches a catalog or the export driver
+   (scoped to just the affected systems, so a one-catalog merge regenerates one
+   branch), at the tail of a **published release**, and on a **weekly cron**.
+   **Renderer / plugin / CLI changes are deliberately excluded from the push
+   trigger** — they do change the output, but they're touched by most merges and
+   each system's render is expensive. That drift is picked up by the cron and the
+   release chain; dispatch manually if it needs to land sooner.
 
    Don't hand-roll the pipeline in a consumer repo — call the reusable workflow,
    which is the same one compose-ai-tools' own catalogs use:

@@ -16,7 +16,7 @@ Check first with `compose-preview --version`; if it's missing, ask the user to
 run the bootstrap installer (which covers the compose-preview skills):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yschimke/compose-ai-tools/main/scripts/install.sh \
+curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
   | bash
 ```
 

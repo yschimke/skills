@@ -112,41 +112,51 @@ Without pre-existing image hosting, the simplest flow is:
 
 ### 3. Uploading images — only with explicit consent
 
-If the human asks for images in the comment, pick **one** and confirm the
-destination before acting:
+If the human asks for images in the comment, confirm the destination
+before acting. One command covers both destinations:
 
-- **Gist with markdown + images** (`compose-preview share-gist <md>
-  [--public|--secret] [--desc TEXT] [--json] <png>...`). Default is
-  `--secret` — even secret gist URLs are shareable, so still ask before
-  posting one in a public PR comment, and only use `--public` on
-  explicit request. Wraps the gist-as-git-repo dance: `gh gist create`
-  rejects binary files, so the CLI seeds a text-only gist with the
-  markdown then pushes the images into the gist's git repo. Output is
-  the gist URL plus stable raw URLs you can drop into the PR comment;
-  `--json` emits a `compose-preview-share-gist/v1` envelope. The
-  markdown should reference images by basename
-  (`![](before.png)`) — the command does not rewrite paths. Requires
-  `gh` and `git` on PATH and a `git config user.name|user.email` set
-  somewhere in the global/local chain (used only as the commit
-  identity in the throwaway clone).
-- **Dedicated branch in the repo** (`compose-preview publish-images
-  DIR [--branch compose-preview/pr] [--remote origin] [--pr-number N]
-  [--json]`). Pushes the staging directory's contents as a single commit
-  on the shared `compose-preview/pr` branch, mirroring what the
-  `apply` action (`mode: comment`) does in CI — same retry-on-race
-  loop for parallel pushes from sibling PRs. Output is the resulting commit SHA
-  and a raw URL pattern
-  (`https://raw.githubusercontent.com/<owner>/<repo>/<sha>/{path}`) that
-  pins images to the SHA so they survive merges. `--json` emits a
-  `compose-preview-publish-images/v1` envelope. Prefer this over the
-  gist when you want clean GitHub-hosted URLs and the user's confirmed
-  they want a branch created — the CLI does NOT auto-detect prior
-  consent; it just runs the push. Branch names must match the preview
-  allowlist by default (`compose-preview/*` or the legacy `preview_*`);
-  `--allow-non-preview-branch` opts into a custom name. Mainline /
-  release branches (`main`, `master`, `develop`, `trunk`, `HEAD`,
-  `release/*`) are hard-blocked regardless of the flag.
-- **Issue/PR attachment upload** — not reliably available via `gh`; skip.
+```
+compose-preview share-preview <markdown> [image]... | <dir>
+    [--mechanism auto|gist|branch] [--public|--secret] [--desc TEXT]
+    [--branch BRANCH] [--remote REMOTE] [--raw-base URL] [--pr-number N]
+    [--message MSG] [--allow-non-preview-branch] [--json]
+```
+
+It is also reachable as `compose-preview share share-preview`.
+
+**`--mechanism auto` (the default) picks by what the environment can
+do**, so you rarely set it: when `gh` is installed *and* authenticated it
+uploads a **gist**; when it isn't — Claude Code's hosted web sessions have
+no `gh` and no token, but do have an authenticated git remote — it falls
+back to pushing a **branch** through that remote. Force one with
+`--mechanism gist|branch` when the choice matters to the human.
+
+Two input shapes:
+
+- **report** — `<markdown> <image>...`, a markdown file plus its image
+  attachments. Works with either mechanism. Reference images by basename
+  inside the markdown (`![](before.png)`); the command does not rewrite
+  paths.
+- **bulk** — a single `<dir>` of PNGs. Branch mechanism only (a directory
+  of binaries isn't a gist). Mirrors what the `apply` action pushes in CI.
+
+Per-mechanism things worth knowing before you run it:
+
+- **Gist.** Default visibility is `--secret`. Even secret gist URLs are
+  shareable, so still ask before pasting one into a public PR comment, and
+  only pass `--public` on explicit request.
+- **Branch.** The destination is derived from the branch you are on
+  (`compose-preview/share/<branch>`), so each feature/PR branch's snapshots
+  stay separate; `--branch` overrides, and mainline/release branches are
+  refused as a target. Pushes are **SHA-pinned** — the raw URLs reference
+  the new commit, so they keep resolving after the capture branch moves or
+  the PR merges. Branch names must match the preview allowlist by default;
+  `--allow-non-preview-branch` opts into a custom name.
+
+`--json` emits a machine-readable envelope for either mechanism. The CLI
+does **not** auto-detect prior consent — it just runs the upload.
+
+Issue/PR **attachment** upload is not reliably available via `gh`; skip it.
 
 Never use inline base64 or data URIs — GitHub strips them. Never push images
 to a public branch, gist, or external host without the user explicitly
@@ -208,7 +218,7 @@ surfaces:
 ### 6. Optional: integrate with `apply` CI in `comment` mode (rare)
 
 A small number of repos wire up the unified `apply` GitHub Action
-(see [ci-previews.md](ci-previews.md)). On pull requests it runs in
+(see the [compose-preview-ci skill](../../compose-preview-ci/SKILL.md)). On pull requests it runs in
 `comment` mode and posts a sticky comment keyed by
 `<!-- preview-diff -->` with before/after images hosted on a shared
 `compose-preview/pr` branch, pinned to commit SHAs so they survive

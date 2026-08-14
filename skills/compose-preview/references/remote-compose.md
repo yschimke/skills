@@ -146,7 +146,7 @@ fun Container(content: @Composable @RemoteComposable () -> Unit) {
 
 ## Reference sample
 
-A working end-to-end example lives in [`samples/remotecompose/`](../../../samples/remotecompose/):
+A working end-to-end example lives in [`samples/remotecompose/`](https://github.com/yschimke/compose-ai-tools/tree/main/samples/remotecompose):
 
 - `RemoteComponents.kt` — three `@RemoteComposable` button variants + the
   `Container` helper.

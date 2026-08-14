@@ -130,7 +130,7 @@ annotations work identically to the Compose side.
 ## Reference sample
 
 Working examples live in
-[`samples/wear/src/main/kotlin/com/example/samplewear/TilePreviews.kt`](../../../samples/wear/src/main/kotlin/com/example/samplewear/TilePreviews.kt):
+[`samples/wear/src/main/kotlin/com/example/samplewear/TilePreviews.kt`](https://github.com/yschimke/compose-ai-tools/blob/main/samples/wear/src/main/kotlin/com/example/samplewear/TilePreviews.kt):
 
 - `HelloTilePreview` — minimal `titleCard` inside `primaryLayout`,
   exercising `materialScope` + `.layoutString`.

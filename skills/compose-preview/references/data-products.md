@@ -9,7 +9,7 @@ with its own JSON schema.
 Two surfaces:
 
 - **MCP** — `list_data_products` / `get_preview_data` /
-  `subscribe_preview_data` tools on the [`compose-preview-mcp`](../../../mcp/README.md)
+  `subscribe_preview_data` tools on the [`compose-preview-mcp`](https://github.com/yschimke/compose-ai-tools/blob/main/mcp/README.md)
   server. The right path for any agent that's already driving previews
   through MCP.
 - **CLI / Gradle** — when a kind is enabled in the consumer's
@@ -17,12 +17,12 @@ Two surfaces:
   to `build/compose-previews/data/<previewId>/<kind>.json` after every
   render. CLI / CI consumers read those files directly. **No `--emit`
   flag** — kind selection is Gradle config, not CLI surface (see
-  [`docs/daemon/DATA-PRODUCTS.md`](../../../docs/daemon/DATA-PRODUCTS.md)
+  [`docs/daemon/DATA-PRODUCTS.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/daemon/DATA-PRODUCTS.md)
   goal #6).
 
 The full kind catalogue, per-kind schemas, transports, and re-render
 cost notes live in
-[`docs/daemon/DATA-PRODUCTS.md`](../../../docs/daemon/DATA-PRODUCTS.md).
+[`docs/daemon/DATA-PRODUCTS.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/daemon/DATA-PRODUCTS.md).
 That daemon doc is the human-facing contract. This skill keeps only the
 agent-facing review guidance: which evidence is useful, how to combine it, and
 how much confidence it supports.

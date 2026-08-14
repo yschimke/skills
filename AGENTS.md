@@ -38,7 +38,7 @@ The CLI lives there; consumer guidance lives here.
 
 The `compose-preview` skill documents the CLI shipped from the
 `compose-ai-tools` repo, so it cites release tags (e.g.
-`v0.10.10`) and links into that repo. Keep those links stable. When the
+`v1.3.0`) and links into that repo. Keep those links stable. When the
 CLI gets a new version, update referenced version strings here; do not
 introduce a release-please marker in this repo — versions in skill text
 track the upstream CLI, not this plugin.
