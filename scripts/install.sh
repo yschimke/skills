@@ -2,25 +2,25 @@
 #
 # Bootstrap installer for the compose-preview skill bundles.
 #
-# Installs two sibling skills (sourced from github.com/yschimke/skills)
-# and the compose-preview CLI (sourced from github.com/yschimke/compose-ai-tools
-# releases) into the shared cross-agent skills directory
+# Installs every skill bundle in github.com/yschimke/skills, plus the
+# compose-preview CLI (sourced from github.com/yschimke/compose-ai-tools
+# releases), into the shared cross-agent skills directory
 # (`~/.agents/skills/` by default). Gemini reads `~/.agents/skills/` directly;
 # Claude Code and Codex only read their own per-host dirs, so we symlink the
 # canonical bundle in for each detected host:
 #
 #   <skills-root>/compose-preview/                     (renderer + CLI)
 #   |-- SKILL.md                                       (from skill tarball)
-#   |-- design/...                                     (from skill tarball)
+#   |-- references/...                                 (from skill tarball)
 #   |-- cli/compose-preview-<ver>/bin/compose-preview  (from CLI tarball)
 #   `-- bin/compose-preview -> ../cli/.../compose-preview
 #
-#   <skills-root>/compose-preview-review/              (PR-review workflows)
-#   |-- SKILL.md                                       (from skill tarball)
-#   `-- design/...                                     (from skill tarball)
+#   <skills-root>/<companion>/                         (content-only bundles;
+#   |-- SKILL.md                                        see COMPANION_SKILLS)
+#   `-- references/...
 #
-#   ~/.claude/skills/compose-preview        -> <skills-root>/compose-preview
-#   ~/.claude/skills/compose-preview-review -> …                   (if claude detected)
+#   ~/.claude/skills/compose-preview  -> <skills-root>/compose-preview
+#   ~/.claude/skills/<companion>      -> …                         (if claude detected)
 #   ~/.codex/skills/...                                            (if codex detected)
 #
 # No symlink is created under ~/.gemini/: Gemini scans both `~/.agents/skills/`
@@ -120,6 +120,20 @@ REPO="${REPO:-yschimke/compose-ai-tools}"
 SKILLS_REPO="${SKILLS_REPO:-yschimke/skills}"
 SKILLS_REF="${SKILLS_REF:-main}"
 SKILL_DIR="${SKILL_DIR:-}"
+
+# Every skill in yschimke/skills except `compose-preview`, which is special:
+# it owns $SKILL_DIR because the CLI is unpacked inside it. The companions are
+# plain content bundles installed as siblings. Keep this list in sync with
+# `skills/` in that repo — a name missing here installs no bundle, and users
+# who took the curl path silently get fewer skills than the plugin path.
+COMPANION_SKILLS=(
+  compose-preview-review
+  compose-preview-ci
+  compose-preview-design-board
+  compose-design-catalog
+  figma-catalog-import
+  design-parity-review
+)
 PREFIX="${PREFIX:-$HOME/.local}"
 INSTALL_ANDROID_SDK="${INSTALL_ANDROID_SDK:-0}"
 JDKS_REQUESTED="${JDKS:-}"
@@ -269,12 +283,12 @@ cleanup_legacy_gemini_skill_links() {
   for root in "${roots[@]}"; do
     [[ -d "$root" ]] || continue
     [[ "$root" == "$AGENTS_SKILLS_ROOT" ]] && continue
-    for name in compose-preview compose-preview-review; do
+    for name in compose-preview "${COMPANION_SKILLS[@]}"; do
       local entry="$root/$name"
       [[ -L "$entry" ]] || continue
       local target; target="$(readlink "$entry" 2>/dev/null || true)"
       case "$target" in
-        *compose-preview-review*|*compose-preview*)
+        *compose-preview*|*compose-design-catalog*|*figma-catalog-import*|*design-parity-review*)
           log "removing legacy gemini skill link: $entry (was -> $target)"
           rm -f "$entry"
           ;;
@@ -288,22 +302,21 @@ link_skills_for_detected_hosts() {
   [[ -d "$SKILL_DIR" ]] || return 0
   cleanup_legacy_gemini_skill_links
   local owning_root; owning_root="$(dirname "$SKILL_DIR")"
-  if have_claude; then
-    local claude_dir="$HOME/.claude/skills"
-    if [[ "$claude_dir" != "$owning_root" ]]; then
-      mkdir -p "$claude_dir"
-      link_skill_into_dir "claude" "$claude_dir" "$SKILL_DIR"
-      [[ -d "$REVIEW_SKILL_DIR" ]] && link_skill_into_dir "claude" "$claude_dir" "$REVIEW_SKILL_DIR"
-    fi
-  fi
-  if have_codex; then
-    local codex_dir="${CODEX_HOME:-$HOME/.codex}/skills"
-    if [[ "$codex_dir" != "$owning_root" ]]; then
-      mkdir -p "$codex_dir"
-      link_skill_into_dir "codex" "$codex_dir" "$SKILL_DIR"
-      [[ -d "$REVIEW_SKILL_DIR" ]] && link_skill_into_dir "codex" "$codex_dir" "$REVIEW_SKILL_DIR"
-    fi
-  fi
+  local host_dir name companion
+  for host_dir in "claude:$HOME/.claude/skills" "codex:${CODEX_HOME:-$HOME/.codex}/skills"; do
+    local host="${host_dir%%:*}" dir="${host_dir#*:}"
+    case "$host" in
+      claude) have_claude || continue ;;
+      codex) have_codex || continue ;;
+    esac
+    [[ "$dir" == "$owning_root" ]] && continue
+    mkdir -p "$dir"
+    link_skill_into_dir "$host" "$dir" "$SKILL_DIR"
+    for name in "${COMPANION_SKILLS[@]}"; do
+      companion="$owning_root/$name"
+      [[ -d "$companion" ]] && link_skill_into_dir "$host" "$dir" "$companion"
+    done
+  done
 }
 
 # ---- Cloud: ensure required JDK(s) are available --------------------------
@@ -835,10 +848,9 @@ CLI_DEST="$SKILL_DIR/cli"
 LAUNCHER="$CLI_DEST/compose-preview-${VERSION}/bin/compose-preview"
 SKILL_LAUNCHER="$SKILL_DIR/bin/compose-preview"
 
-# Sibling skill — same parent dir as $SKILL_DIR. Bundle covers PR-review
-# workflows; pairs with compose-preview but ships separately so an agent
-# loading just one of them doesn't pull in the other's content.
-REVIEW_SKILL_DIR="$(dirname "$SKILL_DIR")/compose-preview-review"
+# Companion skills install as siblings of $SKILL_DIR (see COMPANION_SKILLS).
+# They ship separately from compose-preview so an agent loading one of them
+# doesn't pull in the others' content.
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -916,11 +928,19 @@ install_skills_bundle() {
   local sha=""
   sha="$(resolve_skills_sha || true)"
 
-  local cp_marker="$SKILL_DIR/.skill-version"
-  local cpr_marker="$REVIEW_SKILL_DIR/.skill-version"
-  if [[ -n "$sha" \
-        && "$(cat "$cp_marker" 2>/dev/null || true)" == "$sha" \
-        && "$(cat "$cpr_marker" 2>/dev/null || true)" == "$sha" ]]; then
+  # Short-circuit only when *every* bundle is already at the resolved SHA. A
+  # newly added companion has no marker, so adding one to COMPANION_SKILLS
+  # re-downloads once and then goes quiet again.
+  local skills_root; skills_root="$(dirname "$SKILL_DIR")"
+  local up_to_date=1 name dir
+  if [[ -n "$sha" ]]; then
+    for dir in "$SKILL_DIR" "${COMPANION_SKILLS[@]/#/$skills_root/}"; do
+      [[ "$(cat "$dir/.skill-version" 2>/dev/null || true)" == "$sha" ]] || { up_to_date=0; break; }
+    done
+  else
+    up_to_date=0
+  fi
+  if [[ "$up_to_date" == 1 ]]; then
     log "skill bundles already at $SKILLS_REPO@${sha:0:7} — skipping download"
     return 0
   fi
@@ -963,7 +983,10 @@ install_skills_bundle() {
   }
 
   _extract_one_skill "compose-preview" "$SKILL_DIR" || true
-  _extract_one_skill "compose-preview-review" "$REVIEW_SKILL_DIR" || true
+  local companion
+  for companion in "${COMPANION_SKILLS[@]}"; do
+    _extract_one_skill "$companion" "$skills_root/$companion" || true
+  done
 }
 
 # ---- Same-version short-circuit ------------------------------------------
