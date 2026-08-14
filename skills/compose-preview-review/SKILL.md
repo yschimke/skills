@@ -1,21 +1,26 @@
 ---
 name: compose-preview-review
-description: Review pull requests that change Compose UI by rendering @Preview composables on base and head and diffing them. Use when reviewing a UI PR locally or from a CI agent session (@claude mention), authoring an agent-opened PR that touches UI, triaging flaky or unstable previews (time/random/animation), or wiring compose-preview/main baselines and PR-comment GitHub Actions for a project. Pairs with the compose-preview skill.
+description: Review pull requests that change Compose UI by rendering @Preview composables on base and head and diffing them. Use when reviewing a UI PR locally or from a CI agent session (@claude mention), authoring an agent-opened PR that touches UI, or triaging flaky or unstable previews (time/random/animation). Pairs with the compose-preview skill; for wiring the CI that posts those diffs, see the compose-preview-ci skill.
 ---
 
 # Compose Preview — Review
 
-Workflows for reviewing pull requests that touch Compose UI, authoring
-agent-opened PRs that include preview screenshots, and wiring CI to post
-before/after diffs automatically.
+Workflows for reviewing pull requests that touch Compose UI and authoring
+agent-opened PRs that include preview screenshots.
+
+Setting the CI up is a separate job with a separate skill —
+[**compose-preview-ci**](../compose-preview-ci/SKILL.md) owns baselines
+branches, the `apply` action, and the fork-safe two-stage split. This skill
+is about reading what that CI produces (and rendering by hand when it isn't
+there).
 
 This skill assumes the **compose-preview** skill is installed — it owns
 the renderer, CLI, and Gradle plugin. Check first with
 `compose-preview --version`; if it's missing, ask the user to run the
-bootstrap installer (which covers both skills):
+bootstrap installer (which covers every skill in the bundle):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yschimke/compose-ai-tools/main/scripts/install.sh \
+curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
   | bash
 ```
 
@@ -39,7 +44,7 @@ Pick the workflow that matches the task:
 | Review or author from a **CI agent session** (`@claude` mention / `claude.yml` on an Actions runner) | [references/ci-agent-sessions.md](./references/ci-agent-sessions.md) |
 | Author an agent-opened PR that touches UI | [references/agent-pr.md § Authoring an Agent PR](./references/agent-pr.md#authoring-an-agent-pr-body-structure) |
 | Triage a flaky or unstable preview (time, randomness, animation, network images) | [references/stability.md](./references/stability.md) |
-| Wire `compose-preview/main` baselines + PR-comment CI for a project (or migrate from the legacy four-action setup) | [references/ci-previews.md](./references/ci-previews.md) |
+| Wire `compose-preview/main` baselines + PR-comment CI for a project (or migrate from the legacy four-action setup) | [**compose-preview-ci** skill](../compose-preview-ci/SKILL.md) |
 | Render previews on base and head and diff them | [references/agent-pr.md § Render base and head locally](./references/agent-pr.md#1-render-base-and-head-locally) |
 
 ## Quick reference: review a UI PR locally
@@ -80,7 +85,6 @@ Pick the workflow that matches the task:
 | [references/ci-agent-sessions.md](./references/ci-agent-sessions.md) | Running this skill inside a mention-triggered CI agent session (`claude.yml`): Gradle-only rendering, commit-SHA-pinned image embedding, discovering and reusing the repo's existing preview-diff CI. |
 | [references/stability.md](./references/stability.md) | Flaky / unstable previews: detection (render twice, CI symptoms), common causes (clock, randomness, animations, network images, locale), fixes, and how to review a suspect diff. |
 | [references/agent-audits.md](./references/agent-audits.md) | Agent audit recipes and data-product documentation clusters: accessibility, localisation, Wear clipping, resources, theme, traces, and failure triage. |
-| [references/ci-previews.md](./references/ci-previews.md) | `compose-preview/main` baselines branch + PR-comment GitHub Actions: unified `apply` workflow YAML, action inputs, branch durability, and migration from the legacy `preview-baselines` / `preview-comment` / `a11y-report` / `notification-previews` actions. |
 | [references/mcp-review.md](./references/mcp-review.md) | Driving a PR review through the MCP server (two-workspace base+head flow, push notifications, edit-on-top iteration). |
 
 ## Related
