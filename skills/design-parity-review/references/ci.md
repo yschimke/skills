@@ -107,11 +107,56 @@ partitions what it is handed, so a pre-sliced list gets sliced twice.
 
 | Input | Why you'd set it |
 |---|---|
-| `design-map-command` | Shell run before the partition, to regenerate `design-map.json` from the repo (e.g. projecting it out of `@CatalogComponent(reference = …)` annotations). Runs in **every** shard — cheap next to the render, and the partition must derive from the same map the comparison uses. |
+| `design-map-command` | Shell run before the partition, to regenerate `design-map.json` from the repo (e.g. projecting it out of `@CatalogComponent(reference = …)` annotations). Runs in **every** shard — cheap next to the render, and the partition must derive from the same map the comparison uses. Don't hand-write that projection — see [Deriving the map from annotations](#deriving-the-map-from-annotations). |
 | `components` | Comma-separated handles to compare. Empty (default) means **every** component in the map — the exhaustive run this workflow exists to make affordable. Set it only to deliberately narrow. |
 | `cache-paths` | Space-separated paths whose content decides whether a run would reproduce the published board (the module, the version catalog, the build files). Unchanged + same tool version ⇒ the run is skipped and the previous verdict re-applied. **Empty by default on purpose**: a wrong list produces a stale skip, which is worse than never skipping — so the caller has to say what feeds its render. |
 | `force-refresh` | Ignore the cache and run anyway. The key can't cover everything that moves — a runner image, a font, a renderer's transitive deps — so a scheduled unconditional run is the companion to caching, not an optional extra. |
 | `design-parity-ref` | Build and run an **unreleased** design-parity from a git ref instead of the published version. For testing the tool itself. |
+
+## Deriving the map from annotations
+
+For a Compose catalog whose components already carry
+`@CatalogComponent(reference = "figma:<fileKey>/<nodeId>")`, the map is a
+**projection of the annotations**, not a file anyone maintains. Two commands
+produce it, and the split between them is the point:
+
+```sh
+# 1. annotations → base refs + unresolved variant declarations
+./gradlew :<module>:composePreviewDiscover
+node compose-ai-tools/scripts/design-artifacts/emit-design-map.mjs \
+  --previews <module>/build/compose-previews/previews.json
+
+# 2. variant declarations → kit node ids
+npx @design-parity/kit-index resolve
+```
+
+**Why two.** Step 1 knows what the annotations mean — it lives in
+`compose-ai-tools` beside `@CatalogComponent` / `@CatalogVariant` /
+`@OverrideVariant`, so renaming a field changes both in one commit. It stops at
+the variant renders, because `size=l` is a fact about a Compose API and
+`Size=Large` is a fact about somebody's design kit; translating between them
+needs that kit's published vocabulary. Step 1 therefore emits those renders as
+**declarations** in a `design-map-variants.json` sidecar, and step 2 —
+[`@design-parity/kit-index`](https://github.com/yschimke/design-parity/tree/main/packages/kit-index)
+— resolves them against a committed kit index into tagged `ref`/`previewId`
+pairs.
+
+**Each step is useful alone.** Stop after step 1 and you have a valid map of
+base references, which is most of the value at no design-tool credential. Step 2
+needs a committed `figma-kit-index.json` (built once with
+`design-parity-kit-index dump` + `build`, which do need a `FIGMA_TOKEN`); the
+`resolve` itself reads only committed files, so it is safe in every shard.
+
+**Practicalities.** `emit-design-map.mjs` ships in the `compose-ai-tools`
+repository rather than on npm, so a `design-map-command` that uses it needs that
+repo checked out in the job — the same way `design-artifacts-reusable.yml`
+already invokes its siblings by path. `@design-parity/kit-index` *is* published,
+so `npx` reaches it with no checkout.
+
+Both commands take `--check`, which regenerates in memory and fails if the
+committed file has drifted. That is the right shape for a freshness gate on a
+repo that commits its map: the map is an output, and a stale one silently
+compares the wrong nodes.
 
 ## Canonical reference
 

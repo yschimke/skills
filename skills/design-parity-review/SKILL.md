@@ -103,6 +103,13 @@ rather than guessing the mapping at run time, and never blocks. Don't
 hand-author a map for a project that hasn't run bootstrap — bootstrap also
 materialises tokens and tuned check thresholds.
 
+**A Compose catalog is the exception, and doesn't need bootstrap for the map.**
+If its components already carry `@CatalogComponent(reference = …)`, the map is a
+projection of those annotations — derive it rather than authoring or
+bootstrapping it, and the multi-node bindings above come out of the same
+projection instead of being typed by hand. See [Deriving the map from
+annotations](./references/ci.md#deriving-the-map-from-annotations).
+
 ### 3. Pick a reference source
 
 | Source | Auth | Notes |

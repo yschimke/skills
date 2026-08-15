@@ -48,8 +48,13 @@ The two things this direction must get right for the round trip to close:
 - **`componentId` is the join key.** The catalog's `design-map.json`
   correspondence and the parity run's `design-map.json` have to name the same
   components. If the catalog is generated from `@CatalogComponent(reference =
-  …)` annotations, use the same `design-map-command` in the parity workflow
-  so both sides derive the map identically — see [ci.md](./ci.md).
+  …)` annotations, don't hand-write that projection on either side — run
+  `emit-design-map.mjs` + `design-parity-kit-index resolve` as the
+  `design-map-command` in both workflows, so the two derive the map from the
+  same annotations by the same code. See [Deriving the map from
+  annotations](./ci.md#deriving-the-map-from-annotations). A repo that
+  hand-rolls the projection ends up with two copies that agree until one of
+  them is edited.
 - **Published kits are seed only.** In a code-led pipeline the Figma file is
   regenerated from renders; treat hand edits in it as feedback to bring back
   into code, not as a reference to diff against.
