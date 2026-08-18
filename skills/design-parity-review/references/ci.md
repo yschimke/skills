@@ -147,11 +147,51 @@ needs a committed `figma-kit-index.json` (built once with
 `design-parity-kit-index dump` + `build`, which do need a `FIGMA_TOKEN`); the
 `resolve` itself reads only committed files, so it is safe in every shard.
 
-**Practicalities.** `emit-design-map.mjs` ships in the `compose-ai-tools`
-repository rather than on npm, so a `design-map-command` that uses it needs that
-repo checked out in the job — the same way `design-artifacts-reusable.yml`
-already invokes its siblings by path. `@design-parity/kit-index` *is* published,
-so `npx` reaches it with no checkout.
+**Practicalities.** Both steps are published packages now, so a
+`design-map-command` needs no checkout of either repo:
+[`@yschimke/compose-design-map`](https://www.npmjs.com/package/@yschimke/compose-design-map)
+is step 1 (the `emit-design-map.mjs` projection, released in lockstep with the
+compose-ai-tools version it projects) and `@design-parity/kit-index` is step 2.
+
+**Pin both to an exact version.** The outputs are committed and CI fails on any
+difference, so a floating `npx` makes an upstream release turn a repo red for a
+change nobody there made — a floating step 2 once resolved 0.1.49 against a map
+built by 0.1.50's slug matching and reported 439 variant references where the
+committed map had 442. Pinning makes a bump a commit that regenerates the map in
+the same diff.
+
+**Stage both steps and copy the finished pair into place.** Step 1's map is an
+intermediate — base refs with the variants still unresolved — so a run that wrote
+it directly and then failed in step 2 leaves a map that looks complete while
+silently comparing hundreds of nodes fewer.
+
+### A dark-only catalog projects zero components
+
+Step 1 pairs each component's reference with the capture whose id ends `_Light`,
+because kits draw their frames in light mode and diffing a dark render against a
+light reference reports the whole palette as a finding. Sound for a light/dark
+catalog; fatal for a **dark-first** one.
+
+A Wear catalog is dark-first by convention — a black watch face, so the component
+multipreview bakes a single dark capture and no preview id ends in `_Light`. Every
+component can carry a reference and the projector still writes:
+
+```
+Wrote design-map.json: 0 mapped component(s), 0 naming their component set.
+```
+
+And an empty map does **not** skip the way a missing `FIGMA_TOKEN` does — the
+parity run exits 1 with `no components: pass --components, or commit a
+design-map.json with entries`. So a dark-first catalog wired the usual way carries
+a red X on every push for a reason nothing in the log attributes to the mode.
+
+Until the projector can name a dark capture
+([compose-ai-tools#4192](https://github.com/yschimke/compose-ai-tools/issues/4192)),
+run parity on `workflow_dispatch` only, commit no map, and say why in the repo —
+a known red X is how a signal stops being read. Keep the references on the
+annotations regardless: they are what makes the map a projection the day the
+projector can see them, and a test asserting every component carries one costs
+nothing and holds the inventory rule in the meantime.
 
 Both commands take `--check`, which regenerates in memory and fails if the
 committed file has drifted. That is the right shape for a freshness gate on a

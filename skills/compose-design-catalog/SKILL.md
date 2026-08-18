@@ -124,6 +124,20 @@ the generic Material width class, making two renders indistinguishable on that
 axis — the export warns when it sees one. A Wear catalog that declares no
 `breakpoints` inherits the standard round table.
 
+### Dark-first systems
+
+Wear draws its components on a black watch face, so a Wear catalog's component
+sticker is a **single dark capture** on a transparent background — `modes:
+["dark"]` in the spec, `display.surface: "dark"` so the server's front door
+stages the hero on dark rather than washing a light-on-transparent sticker out,
+and a local `@Preview(showBackground = false)` multipreview rather than a
+light/dark pair.
+
+That single mode is load-bearing beyond presentation: a dark-only catalog cannot
+project a `design-map.json` today, because the projector pairs a component's
+reference with its `_Light` capture. Wire parity accordingly — see
+[design-parity-review](../design-parity-review/references/ci.md#a-dark-only-catalog-projects-zero-components).
+
 When you want a **card per breakpoint** — its own id and caption — use `select`
 rather than splitting the `@Preview` in the module (splitting costs the
 multipreview's other axes, e.g. `@WearPreviewFontScales`):
@@ -339,6 +353,16 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
    >
    > Costs to weigh: a full split writes a per-preview bundle for every preview,
    > so the delivery branch and the render both grow with catalog size.
+
+   > **Publish before you register.** A serve host that fetches
+   > `design-artifacts/<system>` reconciles its catalog list by *fetching each
+   > branch*, so registering a system whose branch does not exist yet fails the
+   > reconcile — on preview.coo.ee that is `HTTP 502 — catalog <system> not
+   > published: could not fetch …` and one rejected seed entry fails the whole
+   > run, even though every other catalog was accepted. Land the first
+   > design-artifacts publish, confirm the branch exists, then open the
+   > registration change. A registration that raced the publish is fixed by
+   > re-running the config job once the branch is there — nothing to revert.
 
    > **`embed-deps` when a dep isn't on Central or Google Maven.** The serve box
    > rebuilds the live classpath from the Maven coordinates in the bundle, and it
