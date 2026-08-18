@@ -124,6 +124,68 @@ the generic Material width class, making two renders indistinguishable on that
 axis — the export warns when it sees one. A Wear catalog that declares no
 `breakpoints` inherits the standard round table.
 
+### Reproducing a kit: what splits, and what folds
+
+A design-led catalog — one whose job is to reproduce a *published kit* rather than to publish its
+own system — needs one taxonomy decision made consistently, and the tempting rule is the wrong one.
+
+The kit models variation as **variant properties on a component set**: one `Button` set with
+`Style = Filled | Tonal | Outline | Child`, one selection set with `Type = Checkbox | Radio |
+Switch`. "One kit set is one catalog component" is the right default, and it is what keeps a sheet
+browsable — 35 shapes are cells of one card, not 35 cards.
+
+But it cannot be the whole rule, because some of those axes are **separate functions in code**:
+
+> An axis **splits** into a component per value when its values are separate composables; it
+> **folds** into cells when they are arguments to one.
+
+`Style=` on the Wear kit's `Button` set splits — `Button`, `FilledTonalButton`, `OutlinedButton`,
+`ChildButton` — because which one you call is the choice a reader of the catalog is making. The same
+`Style=` on its `Button-Compact` set *folds*, because Compose ships one `CompactButton` that takes
+emphasis as `colors`: there is no second function to choose, so there is nothing to split. The test
+is the call site, not the word — "emphasis always splits" gets the second case wrong.
+
+Two consequences worth planning for: components that split share their set's node (that is fine and
+expected — each cell can still name the kit's own value via `kitAxis`/`kitValue`), and ids follow the
+**code's** names while membership follows the **kit's** (`Button/Outlined` for the kit's
+`Style=Outline`, because `OutlinedButton` is what a reader greps for).
+
+### Determinism is a capture-state problem, not just a clock problem
+
+Everyone remembers to pin the clock. The subtler cases are components whose *resting* state is not
+what the kit draws, or is not stable:
+
+- **A component at rest may be the wrong picture.** A swipe-to-reveal at rest is indistinguishable
+  from the card underneath it, and every kit cell draws what the gesture uncovers — so seed its
+  state (`rememberRevealState(RightRevealing)`) and publish the revealed component. What you pin is
+  where the capture *starts*; the gesture still works in a live session.
+- **Anything animated must be pinned, not merely started.** An indeterminate progress indicator, a
+  placeholder shimmer, a loading spinner: a capture is one frame of it, and the frame differs on
+  every publish. Give progress a fixed value, and keep a shimmer to the live lane.
+- **Anything derived from "now" must be a literal.** A date picker opened on today, a time picker on
+  now, a relative timestamp — each makes the delivery branch's history noise rather than change.
+
+The cost of getting this wrong is invisible in review and expensive later: the render is green, the
+diff is real, and nobody can tell a change from a re-render.
+
+### Record what you did NOT reproduce
+
+A design-led catalog is a claim about coverage, so the claim needs to be checkable. Commit a row per
+published kit set carrying either the components that reproduce it or a **stated reason** it is
+absent, and test it in both directions:
+
+- a set with neither is an unstated gap;
+- an **exclusion whose node something now references** is a decision nobody is making any more.
+
+The second direction is the one that pays off over time. A kit routinely publishes things the code
+cannot draw — a size the library has no counterpart for, a style whose painter overload only exists
+on some components, an asset that is app content rather than a component — and each of those is a
+fact worth writing down once. Without the reverse check, the note survives the limitation and starts
+lying.
+
+The same test catches the cheaper mistake: a variant cell **seeded but not implemented**. It renders
+green, and it publishes the default picture under another cell's name.
+
 ### Dark-first systems
 
 Wear draws its components on a black watch face, so a Wear catalog's component
