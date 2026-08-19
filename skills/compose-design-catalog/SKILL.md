@@ -203,6 +203,53 @@ per-component judgement that needs re-tuning on every legitimate change, while "
 does. And verify the guard fails — revert the fix, watch it name the offender, put the fix back. A
 render test that has never failed is a render test that might be reading the wrong directory.
 
+### Motion: what a sticker cannot show, and how it goes wrong
+
+A sticker is one frame, so a catalog of a system whose identity is partly *motion* is incomplete
+without recordings. Two annotations produce them — `@AnimatedPreview` for motion a component runs by
+itself, `@InteractionPreview` for motion a user provokes — and there are four traps between you and
+a recording that shows anything.
+
+**`@InteractionPreview` is desktop-renderer-only.** It is the natural choice for a switch or a
+toggle, and on an Android/Robolectric module it silently produces nothing: no animated file is
+written, and the still frame then fails with `<id>.apng: file is missing on disk`. Worse, the
+component loses its ordinary PNG, so the catalog gains a broken card while every other check stays
+green. On Robolectric, drive the state yourself from a `LaunchedEffect` and say so in the source —
+that is a real state change rather than a forged interaction; it just does not claim a finger did
+it.
+
+**Don't hang motion on a component that has variant cells.** The annotation rides every
+`@OverrideVariant` too, and the animated path does not apply a cell's knobs — three placeholder
+styles came out as three byte-identical copies of the base recording, published under three
+different names. Author motion as **standalone previews** instead. Keeping them out of the component
+inventory is also the honest taxonomy: a recording answers to no design-kit node.
+
+**Pin the canvas.** A motion capture needs `widthDp` AND `heightDp`. Component stickers usually wrap
+so they can be cropped and dropped onto any canvas, and an unpinned capture fails with `produced no
+GIF — most often the preview has an unbounded axis`. That message is also what you get when the
+capture recorded only one distinct frame, so read it as "no motion OR no fixed size".
+
+**Prove the recording moves.** Frame count is not motion: a 46-frame GIF can be 46 identical frames.
+Split the GIF on its per-frame graphic-control-extension marker and count *distinct* payloads — no
+LZW decoding needed — and fail below a handful:
+
+```kotlin
+@Test fun `every motion capture actually moves`() { /* fail any GIF under ~6 distinct frames */ }
+```
+
+Real recordings land at 15–46 distinct frames of 46. This check found two that did not: a
+placeholder shimmer at 3, and a single-flip toggle at 12 where the flip happened early and the rest
+of the window was a held still (fixed by flipping back and forth for the whole window, which also
+documents the spring in both directions).
+
+**Some components will not animate under the renderer at all.** Wear's placeholder is driven by a
+coordinator the paused clock does not advance — 3 distinct frames held, 4 with the wipe, and forcing
+`LocalReduceMotion` off changed nothing. Publish no recording rather than one that implies motion
+nobody would see, and write down what you tried so the next person does not re-run the experiment.
+
+**Also**: `private annotation class` is invisible to preview discovery. A private multipreview
+silently contributes zero previews — no error, just nothing rendered.
+
 ### Record what you did NOT reproduce
 
 A design-led catalog is a claim about coverage, so the claim needs to be checkable. Commit a row per
