@@ -124,6 +124,117 @@ the generic Material width class, making two renders indistinguishable on that
 axis — the export warns when it sees one. A Wear catalog that declares no
 `breakpoints` inherits the standard round table.
 
+### Reproducing a kit: what splits, and what folds
+
+A design-led catalog — one whose job is to reproduce a *published kit* rather than to publish its
+own system — needs one taxonomy decision made consistently, and the tempting rule is the wrong one.
+
+The kit models variation as **variant properties on a component set**: one `Button` set with
+`Style = Filled | Tonal | Outline | Child`, one selection set with `Type = Checkbox | Radio |
+Switch`. "One kit set is one catalog component" is the right default, and it is what keeps a sheet
+browsable — 35 shapes are cells of one card, not 35 cards.
+
+But it cannot be the whole rule, because some of those axes are **separate functions in code**:
+
+> An axis **splits** into a component per value when its values are separate composables; it
+> **folds** into cells when they are arguments to one.
+
+`Style=` on the Wear kit's `Button` set splits — `Button`, `FilledTonalButton`, `OutlinedButton`,
+`ChildButton` — because which one you call is the choice a reader of the catalog is making. The same
+`Style=` on its `Button-Compact` set *folds*, because Compose ships one `CompactButton` that takes
+emphasis as `colors`: there is no second function to choose, so there is nothing to split. The test
+is the call site, not the word — "emphasis always splits" gets the second case wrong.
+
+Two consequences worth planning for: components that split share their set's node (that is fine and
+expected — each cell can still name the kit's own value via `kitAxis`/`kitValue`), and ids follow the
+**code's** names while membership follows the **kit's** (`Button/Outlined` for the kit's
+`Style=Outline`, because `OutlinedButton` is what a reader greps for).
+
+### Determinism is a capture-state problem, not just a clock problem
+
+Everyone remembers to pin the clock. The subtler cases are components whose *resting* state is not
+what the kit draws, or is not stable:
+
+- **A component at rest may be the wrong picture.** A swipe-to-reveal at rest is indistinguishable
+  from the card underneath it, and every kit cell draws what the gesture uncovers — so seed its
+  state (`rememberRevealState(RightRevealing)`) and publish the revealed component. What you pin is
+  where the capture *starts*; the gesture still works in a live session.
+- **Anything animated must be pinned, not merely started.** An indeterminate progress indicator, a
+  placeholder shimmer, a loading spinner: a capture is one frame of it, and the frame differs on
+  every publish. Give progress a fixed value, and keep a shimmer to the live lane.
+- **Anything derived from "now" must be a literal.** A date picker opened on today, a time picker on
+  now, a relative timestamp — each makes the delivery branch's history noise rather than change.
+
+The cost of getting this wrong is invisible in review and expensive later: the render is green, the
+diff is real, and nobody can tell a change from a re-render.
+
+### Look at the renders, and then make a machine look at them
+
+A catalog can be green end to end and still publish **blank cards**. The build compiles, discovery
+finds the preview, the render succeeds, the bundle publishes — and the sticker is an empty frame.
+Nothing in that pipeline asserts a component *drew* anything.
+
+Review does not catch it either, and on a dark-first catalog it is nearly invisible: a sticker that
+drew nothing looks exactly like a sticker that drew something dark.
+
+Three real causes, all of which shipped green before being caught by eye:
+
+- **A missing `Modifier.align`.** On Wear's page and scroll indicators, alignment is what makes the
+  component lay out at all — without it they collapse to nothing, not to a mispositioned rail.
+- **An unsettled animation.** A component whose content animates in from a `LaunchedEffect` captures
+  as its first frame, and if that frame is `alpha = 0` the sticker is empty.
+- **A component captured in the wrong state** — an at-rest swipe-to-reveal, a collapsed
+  scroll-revealed button.
+
+So render locally before publishing. An Android/Robolectric module needs no CLI at all —
+`./gradlew :<module>:composePreviewRender` writes the PNGs — and the render is cheap enough
+(seconds, for a couple of hundred previews) to be part of the edit loop rather than a CI-only step.
+
+Then make it a test, because eyes do not scale to a growing sheet:
+
+```kotlin
+// composePreview { renderBeforeUnitTests.set(true) } puts the real renderer output where a unit
+// test can read it — the same PNGs CI publishes, not a fixture.
+@Test fun `no sticker publishes an empty frame`() { /* fail any capture with ~no visible pixels */ }
+```
+
+Assert that a sticker drew **something**, not that it drew the right thing: a real lower bound is a
+per-component judgement that needs re-tuning on every legitimate change, while "not blank" never
+does. And verify the guard fails — revert the fix, watch it name the offender, put the fix back. A
+render test that has never failed is a render test that might be reading the wrong directory.
+
+### Record what you did NOT reproduce
+
+A design-led catalog is a claim about coverage, so the claim needs to be checkable. Commit a row per
+published kit set carrying either the components that reproduce it or a **stated reason** it is
+absent, and test it in both directions:
+
+- a set with neither is an unstated gap;
+- an **exclusion whose node something now references** is a decision nobody is making any more.
+
+The second direction is the one that pays off over time. A kit routinely publishes things the code
+cannot draw — a size the library has no counterpart for, a style whose painter overload only exists
+on some components, an asset that is app content rather than a component — and each of those is a
+fact worth writing down once. Without the reverse check, the note survives the limitation and starts
+lying.
+
+The same test catches the cheaper mistake: a variant cell **seeded but not implemented**. It renders
+green, and it publishes the default picture under another cell's name.
+
+### Dark-first systems
+
+Wear draws its components on a black watch face, so a Wear catalog's component
+sticker is a **single dark capture** on a transparent background — `modes:
+["dark"]` in the spec, `display.surface: "dark"` so the server's front door
+stages the hero on dark rather than washing a light-on-transparent sticker out,
+and a local `@Preview(showBackground = false)` multipreview rather than a
+light/dark pair.
+
+That single mode is load-bearing beyond presentation: a dark-only catalog cannot
+project a `design-map.json` today, because the projector pairs a component's
+reference with its `_Light` capture. Wire parity accordingly — see
+[design-parity-review](../design-parity-review/references/ci.md#a-dark-only-catalog-projects-zero-components).
+
 When you want a **card per breakpoint** — its own id and caption — use `select`
 rather than splitting the `@Preview` in the module (splitting costs the
 multipreview's other axes, e.g. `@WearPreviewFontScales`):
@@ -339,6 +450,16 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
    >
    > Costs to weigh: a full split writes a per-preview bundle for every preview,
    > so the delivery branch and the render both grow with catalog size.
+
+   > **Publish before you register.** A serve host that fetches
+   > `design-artifacts/<system>` reconciles its catalog list by *fetching each
+   > branch*, so registering a system whose branch does not exist yet fails the
+   > reconcile — on preview.coo.ee that is `HTTP 502 — catalog <system> not
+   > published: could not fetch …` and one rejected seed entry fails the whole
+   > run, even though every other catalog was accepted. Land the first
+   > design-artifacts publish, confirm the branch exists, then open the
+   > registration change. A registration that raced the publish is fixed by
+   > re-running the config job once the branch is there — nothing to revert.
 
    > **`embed-deps` when a dep isn't on Central or Google Maven.** The serve box
    > rebuilds the live classpath from the Maven coordinates in the bundle, and it
