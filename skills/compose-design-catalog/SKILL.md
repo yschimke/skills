@@ -168,6 +168,41 @@ what the kit draws, or is not stable:
 The cost of getting this wrong is invisible in review and expensive later: the render is green, the
 diff is real, and nobody can tell a change from a re-render.
 
+### Look at the renders, and then make a machine look at them
+
+A catalog can be green end to end and still publish **blank cards**. The build compiles, discovery
+finds the preview, the render succeeds, the bundle publishes — and the sticker is an empty frame.
+Nothing in that pipeline asserts a component *drew* anything.
+
+Review does not catch it either, and on a dark-first catalog it is nearly invisible: a sticker that
+drew nothing looks exactly like a sticker that drew something dark.
+
+Three real causes, all of which shipped green before being caught by eye:
+
+- **A missing `Modifier.align`.** On Wear's page and scroll indicators, alignment is what makes the
+  component lay out at all — without it they collapse to nothing, not to a mispositioned rail.
+- **An unsettled animation.** A component whose content animates in from a `LaunchedEffect` captures
+  as its first frame, and if that frame is `alpha = 0` the sticker is empty.
+- **A component captured in the wrong state** — an at-rest swipe-to-reveal, a collapsed
+  scroll-revealed button.
+
+So render locally before publishing. An Android/Robolectric module needs no CLI at all —
+`./gradlew :<module>:composePreviewRender` writes the PNGs — and the render is cheap enough
+(seconds, for a couple of hundred previews) to be part of the edit loop rather than a CI-only step.
+
+Then make it a test, because eyes do not scale to a growing sheet:
+
+```kotlin
+// composePreview { renderBeforeUnitTests.set(true) } puts the real renderer output where a unit
+// test can read it — the same PNGs CI publishes, not a fixture.
+@Test fun `no sticker publishes an empty frame`() { /* fail any capture with ~no visible pixels */ }
+```
+
+Assert that a sticker drew **something**, not that it drew the right thing: a real lower bound is a
+per-component judgement that needs re-tuning on every legitimate change, while "not blank" never
+does. And verify the guard fails — revert the fix, watch it name the offender, put the fix back. A
+render test that has never failed is a render test that might be reading the wrong directory.
+
 ### Record what you did NOT reproduce
 
 A design-led catalog is a claim about coverage, so the claim needs to be checkable. Commit a row per
