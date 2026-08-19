@@ -101,6 +101,92 @@ snapshot annotations artifact locally. The renderer discovers annotations by
 FQN, so a published annotations artifact can still work with a newer snapshot
 renderer.
 
+## `@SettledPreview`: wait for a late arrival, then capture the still
+
+Use `@SettledPreview` from `ee.schimke.composeai:preview-annotations` when a
+component's content is driven in by **time** rather than by a gesture, so a
+plain `@Preview` captures its *first* frame and publishes an empty container.
+
+The two shapes that hit this:
+
+- a reveal — `LaunchedEffect { delay(…); animateTo(…) }`, as in Wear's
+  `ConfirmationDialogContent`, whose children start at `alpha = 0`;
+- a **deferred value** — a field whose content is written after the first
+  composition, as in Material 3's `DateInputTextField`, which publishes its
+  label resting on top of the date it should have floated above.
+
+```kotlin
+import androidx.compose.ui.tooling.preview.Preview
+import ee.schimke.composeai.preview.SettledPreview
+
+@SettledPreview                  // auto: advance until quiescent, bounded by maxMs (default 1000)
+@Preview(name = "Confirmation", showBackground = true)
+@Composable
+fun ConfirmationPreview() { /* … */ }
+
+@SettledPreview(afterMs = 600)   // exact: advance exactly 600ms, then capture
+@Preview(name = "Snackbar", showBackground = true)
+@Composable
+fun SnackbarPreview() { /* … */ }
+```
+
+Prefer `afterMs` when you know the timing — it is one advance rather than a
+frame-by-frame walk. Auto mode is the right default when the animation is
+*internal to a stock component* and you have no way to know how long it runs.
+
+### Hoist it onto your multi-preview annotation
+
+`@SettledPreview` targets `ANNOTATION_CLASS` as well as `FUNCTION`, so a
+catalog whose stickers all wrap stock design-system composables can settle
+every one of them at once instead of hunting for the affected components:
+
+```kotlin
+@SettledPreview
+@Preview(name = "Light", group = "modes")
+@Preview(name = "Dark", group = "modes", uiMode = UI_MODE_NIGHT_YES)
+annotation class StickerPreview
+```
+
+That is usually the right shape, because the animation is internal: an author
+writing a sticker that merely calls `DatePicker()` has no way to know a label
+tween is running inside it.
+
+### It does not combine with a motion product
+
+Putting `@SettledPreview` on the **same function** as `@AnimatedPreview`,
+`@InteractionPreview`, or `@FocusedPreview(gif = true)` is **reported as a
+discovery warning and the settle is dropped** — you get the motion artifact and
+an *unsettled* still.
+
+This is not an arbitrary restriction. Every capture of one preview renders from
+one composition against one paused clock, and the two want opposite things from
+it: the GIF needs the timeline from its start, the settled still needs a
+coordinate near the end, and virtual time does not rewind. Whichever ran first
+would spoil the other.
+
+**Split them across two preview functions** — each then owns its own
+composition, and both get what they asked for.
+
+### What it costs, and where it applies
+
+- Only **still** captures are settled. A `@ScrollingPreview` LONG/GIF product
+  runs its own post-scroll settle, and an explicit `advanceTimeMillis` is a
+  snapshot of a coordinate you chose — neither is touched.
+- Auto mode walks the window in frame-sized steps, so it is proportional to
+  `maxMs`. A settled capture is costed accordingly and lands in the **heavy**
+  bucket at the default window, which keeps it out of the render-on-every-save
+  fast tier. Keep the default unless a reveal genuinely runs longer.
+- An animation that never ends (an `InfiniteTransition`, an indeterminate
+  progress indicator) can't quiesce, so it captures at the `maxMs` bound. The
+  annotation belongs on a reveal, not on a spinner.
+- `maxMs` is clamped to 5000ms.
+
+Batch renders honour the settle on **both** backends (Android/Robolectric and
+CMP Desktop). `compose-preview serve` honours it on the Android backend; the
+desktop daemon does not yet, so a settled CMP preview viewed live still shows
+its first frame while its published PNG is settled
+([#4238](https://github.com/yschimke/compose-ai-tools/issues/4238)).
+
 ## Manual clock snapshots (Android only)
 
 The Android renderer pauses the Compose `mainClock` and advances by a fixed

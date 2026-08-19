@@ -342,7 +342,7 @@ Loaded on demand. Read only what the current task needs.
 | [references/runtime-permissions.md](./references/runtime-permissions.md) | Pinning Android runtime permissions per render via `renderNow.overrides.permissions`; reading the `compose/permissions` data product. |
 | [references/state-hoisting.md](./references/state-hoisting.md) | Full state-hoisting pattern with code examples. |
 | [references/override-knobs.md](./references/override-knobs.md) | Author-declared editable values (`previewOverride*`): re-render a published bundle with new text / colours / counts and no source rebuild, and declare a closed value set so an axis shows its alternatives instead of a bare text field. |
-| [references/capture-modes.md](./references/capture-modes.md) | Multi-preview annotations, `@AnimatedPreview` GIFs, MCP scripted recordings, paused-clock snapshots, scrolling captures. |
+| [references/capture-modes.md](./references/capture-modes.md) | Multi-preview annotations, `@AnimatedPreview` GIFs, `@SettledPreview` for content that arrives late, MCP scripted recordings, paused-clock snapshots, scrolling captures. |
 | [references/a11y.md](./references/a11y.md) | ATF accessibility checks (`compose-preview a11y`). |
 | [references/data-products.md](./references/data-products.md) | Structured per-render data (a11y findings + hierarchy, layout tree, recomposition heat-map, editable `compose/figma-svg` + wireframe **SVG vector** export, …) via MCP tools and on-disk Gradle output. |
 | [references/mcp.md](./references/mcp.md) | Driving compose-preview from an MCP-aware agent host (push notifications, multi-workspace, in-process server bundled in the CLI). |
