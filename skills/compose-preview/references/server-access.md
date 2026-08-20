@@ -55,6 +55,16 @@ Cumulative — each includes the ones above it.
 | `live` | Open live preview sessions (starts a render daemon on that machine) | You need to re-render with different knobs, themes, or device configs |
 | `playground` | Compile and run Kotlin on that machine | Almost never — and most servers refuse to grant it at all |
 
+A grant that falls short of what a route needs gets a `403` naming the scope it
+lacks, not a sign-in redirect. That is the signal to ask your human for a wider
+grant, not to retry.
+
+**A grant never covers the ingest lanes.** `POST /bundles/{name}` and
+`POST /docs` — where a client contributes content to someone else's box — take
+the operator's own token and refuse grants outright, whatever scope you hold. If
+you genuinely need to publish something there, that is a separate conversation
+with the operator, not a wider `--scope`.
+
 Asking for more than you need is not free: `live` spends the host's CPU, and
 `playground` is arbitrary code execution on someone else's box. A server's
 operator caps what may be granted, and an approver can never pass on a
@@ -64,15 +74,25 @@ comes back approved as `live`, which is not an error.
 ## While you wait, and after
 
 ```bash
-compose-preview auth status     # what you hold and how long it lasts
+compose-preview auth status     # what you hold, checked against the server
 compose-preview auth token      # just the bearer, for curl or another tool
 compose-preview auth revoke     # hand it back when you are done
 ```
 
 If you would rather not hold a process open, `--no-wait` prints the link and
-exits; run `compose-preview auth status --server <url>` once they have approved.
-`--json` gives you the request id and device secret so you can poll
-`POST /agent-access/poll` yourself.
+exits. The request is remembered locally, so once your human approves, the next
+`auth status` — or `auth token` — collects the token for you. You do not have to
+ask again.
+
+`auth status` asks each server whether the grant it has on file is still live, so
+a grant the operator revoked reads as gone rather than being reported as usable
+right up until some other command fails with an unexplained `404`. A server it
+cannot reach reads `unverified`; that is not the same as expired, and not a
+reason to request a second grant.
+
+`--json` emits JSON Lines — one compact document per line. A waiting
+`auth request --json` gives you the request first (including the device secret,
+if you would rather poll `POST /agent-access/poll` yourself) and then the grant.
 
 **Revoke when the task is done.** A grant you no longer need is a credential
 sitting on someone's machine for no reason. It expires on its own, but ending it
@@ -81,8 +101,9 @@ yourself is the right habit, and it costs one command.
 ## Things that will not work, so don't try them
 
 - **Approving your own request.** The approval page needs a human identity — a
-  GitHub session cookie or the operator's token — and a grant is neither. A
-  grant cannot approve another grant, or revoke someone else's.
+  GitHub session cookie, the operator's token, or on a private server both — and
+  a grant is none of those. A grant cannot approve another grant, or revoke
+  someone else's.
 - **Treating the link as the credential.** It carries a request id, nothing
   more; the token is delivered to the process that asked, against a secret that
   never left it. So the link is safe to paste into chat — and useless if you
