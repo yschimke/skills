@@ -339,6 +339,7 @@ Loaded on demand. Read only what the current task needs.
 | Path | When to read |
 |---|---|
 | [references/permissions.md](./references/permissions.md) | Setting up agent allowlists; staging PNGs outside `build/`. |
+| [references/server-access.md](./references/server-access.md) | Getting into a gated `serve` deployment: ask for a temporary scoped grant with `compose-preview auth request`, relay the link + verification code to a human, and revoke when done — instead of asking for the server's own `--token`. |
 | [references/runtime-permissions.md](./references/runtime-permissions.md) | Pinning Android runtime permissions per render via `renderNow.overrides.permissions`; reading the `compose/permissions` data product. |
 | [references/state-hoisting.md](./references/state-hoisting.md) | Full state-hoisting pattern with code examples. |
 | [references/override-knobs.md](./references/override-knobs.md) | Author-declared editable values (`previewOverride*`): re-render a published bundle with new text / colours / counts and no source rebuild, and declare a closed value set so an axis shows its alternatives instead of a bare text field. |

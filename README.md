@@ -55,7 +55,8 @@ invocation of the stub — there's no separate "now install the CLI" step.
   token-frugal agent loop (semantic-ref targeting on Desktop + Android,
   `observe`/`diff_semantics`, `render_preview crop`, record-to-test, typed
   render-failure kinds), editable **SVG vector** export (`compose/figma-svg` +
-  wireframe), and cloud sandbox setup.
+  wireframe), cloud sandbox setup, and how to ask a human for temporary,
+  scoped access to a gated preview server rather than for its own token.
 - [`compose-preview-review`](skills/compose-preview-review/SKILL.md) —
   review pull requests that change Compose UI by rendering `@Preview`
   composables on base and head and diffing them. Pairs with
@@ -164,6 +165,7 @@ compose-preview ─┬─ compose-preview-review ──────→ a PR base
 | You want to… | Read, in order |
 |---|---|
 | See a composable without Android Studio | `compose-preview` |
+| Reach a gated `serve` deployment as an agent | `compose-preview` → [server-access.md](skills/compose-preview/references/server-access.md) |
 | Review a UI PR | `compose-preview-review` |
 | Have CI post before/after diffs on every PR | `compose-preview-ci` |
 | …and the repo takes **fork** PRs | `compose-preview-ci` → [fork-prs.md](skills/compose-preview-ci/references/fork-prs.md) |
