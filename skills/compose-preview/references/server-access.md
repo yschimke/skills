@@ -59,6 +59,13 @@ A grant that falls short of what a route needs gets a `403` naming the scope it
 lacks, not a sign-in redirect. That is the signal to ask your human for a wider
 grant, not to retry.
 
+`preview` covers reading what is already rendered. Anything that makes the
+server *render for you* — `/render/<id>.png` with an override query, a `.svg` /
+`.slots` / `.a11y` suffix, or `/bundle.zip` — is `live`, because it spends that
+machine's CPU. If you expect to re-render with different themes, devices or
+locales, ask for `live` up front rather than discovering it one `403` at a
+time.
+
 **A grant never covers the ingest lanes.** `POST /bundles/{name}` and
 `POST /docs` — where a client contributes content to someone else's box — take
 the operator's own token and refuse grants outright, whatever scope you hold. If
