@@ -124,9 +124,20 @@ yourself is the right habit, and it costs one command.
 
 ## If the server does not offer this
 
-`--agent-grants` is off by default, so `POST /agent-access/request` may 404. Say
-so plainly and let your human decide — the fix is one flag on their side
-(`compose-preview serve --agent-grants …`, documented in
+`POST /agent-access/request` may 404, because the lane is not universal.
+
+Whether it is on depends on how the server was started. Someone running
+`compose-preview serve` by hand has it **off** unless they passed
+`--agent-grants`. A box built from the published Docker image enables it
+**automatically wherever it has someone who could approve** — GitHub OAuth
+configured, or token-gated with an operator token — and only a fully open box
+with no sign-in has neither, where the server refuses the lane outright rather
+than letting anonymous visitors mint credentials.
+
+So a 404 here is not "they forgot a flag": on the image it more likely means the
+box genuinely has nobody who could approve. Say so plainly and let your human
+decide. The fix is on their side (`--agent-grants`, or `SERVE_AGENT_GRANTS=1`
+for the image, both documented in
 [the preview-server docs](https://github.com/yschimke/compose-ai-tools/blob/main/docs/public-preview-server.md#granting-an-agent-temporary-access---agent-grants)),
 and it is their call whether this box should be handing out credentials at all.
 Do not fall back to asking for the operator token.
