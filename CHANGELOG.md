@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.3](https://github.com/yschimke/skills/compare/v0.1.2...v0.1.3) (2026-08-22)
+
+
+### Features
+
+* add compose-preview-ci skill, covering the fork-safe two-stage split ([93f67e7](https://github.com/yschimke/skills/commit/93f67e77740c7d2a9d40a0a7c596832d02401fe8))
+* add design-parity-review skill for the design-to-code direction ([62062b1](https://github.com/yschimke/skills/commit/62062b14f2792a692ae16248a833db170c7d44f1))
+* freshness sweep, plus compose-preview-ci and design-parity-review skills ([2c7aabf](https://github.com/yschimke/skills/commit/2c7aabf552922a4568363950c3716928431b1921))
+
+
+### Bug Fixes
+
+* correct CLI commands, cross-repo links and install URLs that had rotted ([e32e161](https://github.com/yschimke/skills/commit/e32e1619679166b3faefdf49cb723f3132de619f))
+
 ## [0.1.2](https://github.com/yschimke/skills/compare/v0.1.1...v0.1.2) (2026-08-14)
 
 
