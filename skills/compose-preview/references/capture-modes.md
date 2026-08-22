@@ -187,6 +187,82 @@ desktop daemon does not yet, so a settled CMP preview viewed live still shows
 its first frame while its published PNG is settled
 ([#4238](https://github.com/yschimke/compose-ai-tools/issues/4238)).
 
+## `@CaptureGutter`: keep a shadow that falls outside the component
+
+A wrapped capture is cropped to the composable's measured size, so anything
+drawn *outside* its own bounds is cut at the edge of the image — an elevation
+shadow, a focus ring, a badge that overhangs its anchor.
+
+The obvious workaround is to pad the preview body:
+
+```kotlin
+@Preview
+@Composable
+fun ElevatedButtonSticker() = Box(Modifier.padding(4.dp)) { ElevatedButton(…) { … } }   // don't
+```
+
+It keeps the shadow, and it costs more than it looks. The padding is *inside*
+the bounds: the component now measures in a smaller box, the canvas grows by
+the padding, and every consumer that fits a render to a column scales the
+component down to make room for margin it cannot see. On a sticker sheet
+laying five emphases of one button side by side, the one that padded for its
+shadow draws ~7% smaller than its four siblings, for a reason that has nothing
+to do with the design
+([m3-catalog#179](https://github.com/yschimke/m3-catalog/issues/179)).
+
+`@CaptureGutter` moves the gutter out of the component tree and into the
+capture:
+
+```kotlin
+import androidx.compose.ui.tooling.preview.Preview
+import ee.schimke.composeai.preview.CaptureGutter
+
+@CaptureGutter(all = 4, bottom = 5)   // dp; bottom is deeper — M3 shadows are offset downward
+@Preview
+@Composable
+fun ElevatedButtonSticker() = ElevatedButton(onClick = {}) { Text("Elevated") }
+```
+
+The renderer enlarges the scene, measures the composable against the
+constraints it would have had without a gutter, and places it inset. So the
+component's measured size is byte-identical to what it was before the
+annotation, the shadow has room, and the gutter travels in `previews.json` as
+`params.captureGutter` — a declared fact a consumer can subtract, rather than
+anonymous transparent pixels it has to guess at.
+
+`all` sets every edge; `start` / `top` / `end` / `bottom` override it per edge.
+Edges are leading/trailing, so an overhang stays on the same side of the
+component under RTL. Each is capped at 64 dp — past that you want a framed
+canvas, which is what `@Preview(widthDp = …)` is for.
+
+**Fixed axes grow too.** `@Preview(widthDp = 360)` plus a 4 dp gutter renders
+368 dp wide with a 360 dp component in it. The rule is the same on both kinds
+of axis: the component measures what it declared, and the gutter is added
+around it. A catalog that hand-rolled this by declaring a 368 dp frame can
+collapse back to 360 and say what the extra 8 dp is for.
+
+### Hoist it onto your multi-preview annotation
+
+`@CaptureGutter` targets `ANNOTATION_CLASS` as well as `FUNCTION`, so a catalog
+whose elevated stickers share one shadow level declares the gutter once:
+
+```kotlin
+@CaptureGutter(all = 4, bottom = 5)
+@Preview(name = "Light", group = "modes")
+@Preview(name = "Dark", group = "modes", uiMode = UI_MODE_NIGHT_YES)
+annotation class ElevatedStickerPreview
+```
+
+### Where it applies
+
+Both static render lanes — Android (Robolectric) and CMP Desktop — apply it,
+and both grow the canvas by the same dp, so a gutter never moves the published
+bounds on one lane and not the other. The **live** daemon lane
+(`compose-preview serve`, the VS Code panel) does not honour it yet, so a
+guttered preview streamed live is its un-guttered size while its published PNG
+carries the gutter
+([#4443](https://github.com/yschimke/compose-ai-tools/issues/4443)).
+
 ## Manual clock snapshots (Android only)
 
 The Android renderer pauses the Compose `mainClock` and advances by a fixed
