@@ -255,13 +255,22 @@ annotation class ElevatedStickerPreview
 
 ### Where it applies
 
-Both static render lanes — Android (Robolectric) and CMP Desktop — apply it,
-and both grow the canvas by the same dp, so a gutter never moves the published
-bounds on one lane and not the other. The **live** daemon lane
-(`compose-preview serve`, the VS Code panel) does not honour it yet, so a
-guttered preview streamed live is its un-guttered size while its published PNG
-carries the gutter
-([#4443](https://github.com/yschimke/compose-ai-tools/issues/4443)).
+Both static render lanes — Android (Robolectric) and CMP Desktop — apply it to
+a preview's **still** capture, including a `@FocusedPreview` still, and both
+grow the canvas by the same dp, so a gutter never moves the published bounds on
+one lane and not the other.
+
+Two places it does not reach yet:
+
+- the **motion products** a preview can also carry — an `@AnimatedPreview` GIF,
+  an `@InteractionPreview` recording, a scrolling capture. Those are framed
+  tight, so a component that declares a gutter and also records motion
+  publishes a still with its shadow and a recording without it
+  ([#4452](https://github.com/yschimke/compose-ai-tools/issues/4452));
+- the **live** daemon lane (`compose-preview serve`, the VS Code panel), so a
+  guttered preview streamed live is its un-guttered size while its published
+  PNG carries the gutter
+  ([#4443](https://github.com/yschimke/compose-ai-tools/issues/4443)).
 
 ## Manual clock snapshots (Android only)
 
