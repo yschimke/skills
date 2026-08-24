@@ -255,22 +255,31 @@ annotation class ElevatedStickerPreview
 
 ### Where it applies
 
-Both static render lanes — Android (Robolectric) and CMP Desktop — apply it to
-a preview's **still** capture, including a `@FocusedPreview` still, and both
-grow the canvas by the same dp, so a gutter never moves the published bounds on
-one lane and not the other.
+Every render lane — Android (Robolectric) and CMP Desktop, batch and the
+**live** daemon lane (`compose-preview serve`, the VS Code panel) alike — grows
+the canvas by the same dp, so a gutter never moves the published bounds on one
+lane and not the other, and a preview does not change size when a viewer toggles
+PNG↔Live. It reaches:
 
-Two places it does not reach yet:
+- a preview's **still** capture, including a `@FocusedPreview` still;
+- its **motion products** — an `@AnimatedPreview` GIF, an `@InteractionPreview`
+  recording. Every frame of a recording shares one canvas, exactly as a still
+  does, so the gutter is as well-defined there
+  ([#4452](https://github.com/yschimke/compose-ai-tools/issues/4452),
+  [#4443](https://github.com/yschimke/compose-ai-tools/issues/4443)).
 
-- the **motion products** a preview can also carry — an `@AnimatedPreview` GIF,
-  an `@InteractionPreview` recording, a scrolling capture. Those are framed
-  tight, so a component that declares a gutter and also records motion
-  publishes a still with its shadow and a recording without it
-  ([#4452](https://github.com/yschimke/compose-ai-tools/issues/4452));
-- the **live** daemon lane (`compose-preview serve`, the VS Code panel), so a
-  guttered preview streamed live is its un-guttered size while its published
-  PNG carries the gutter
-  ([#4443](https://github.com/yschimke/compose-ai-tools/issues/4443)).
+### Not with `@ScrollingPreview`
+
+`@CaptureGutter` **cannot be combined with `@ScrollingPreview`** on the same
+function — a non-zero gutter alongside it is **rejected at discovery**: the
+function is skipped with a warning naming it and produces nothing. A gutter is a
+component's overdraw margin ("the component draws this far past its bounds"); a
+scroll capture has no such bounds — a `LONG` stitch is the scrolled extent, a
+`GIF` the declared viewport, and even a settled `END`/`TOP` frame is one viewport
+of a screen. There is no edge for a gutter to sit on, so the two are a
+contradiction, not a combination — remove one annotation. (An all-zero
+`@CaptureGutter()` is equivalent to no annotation, so it does not trip the
+rejection.) See [#4467](https://github.com/yschimke/compose-ai-tools/issues/4467).
 
 ## Manual clock snapshots (Android only)
 
@@ -424,6 +433,11 @@ Knobs: `maxScrollPx` caps scroll distance on END/LONG (`0` = unbounded);
 `reduceMotion = true` (default) disables Wear `TransformingLazyColumn`
 transforms that would otherwise vary slice-to-slice. Only vertical scrolling
 is supported. `@ScrollingPreview` is Android-only.
+
+Don't combine it with `@CaptureGutter` — a scroll capture has no component edge
+for a gutter to sit on, so the pair is rejected at discovery (see
+[`@CaptureGutter`](#capturegutter-keep-a-shadow-that-falls-outside-the-component)
+above).
 
 Filenames: single-mode → plain `renders/<id>.png`; multi-mode →
 `renders/<id>_SCROLL_<mode>.png`, emitted in enum order (TOP, END, LONG).
