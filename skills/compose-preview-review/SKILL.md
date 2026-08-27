@@ -44,6 +44,7 @@ Pick the workflow that matches the task:
 | Review or author from a **CI agent session** (`@claude` mention / `claude.yml` on an Actions runner) | [references/ci-agent-sessions.md](./references/ci-agent-sessions.md) |
 | Author an agent-opened PR that touches UI | [references/agent-pr.md § Authoring an Agent PR](./references/agent-pr.md#authoring-an-agent-pr-body-structure) |
 | Triage a flaky or unstable preview (time, randomness, animation, network images) | [references/stability.md](./references/stability.md) |
+| Report, accept, verify, and close a design-parity difference | [references/design-parity-lifecycle.md](./references/design-parity-lifecycle.md) |
 | Wire `compose-preview/main` baselines + PR-comment CI for a project (or migrate from the legacy four-action setup) | [**compose-preview-ci** skill](../compose-preview-ci/SKILL.md) |
 | Render previews on base and head and diff them | [references/agent-pr.md § Render base and head locally](./references/agent-pr.md#1-render-base-and-head-locally) |
 
@@ -86,6 +87,7 @@ Pick the workflow that matches the task:
 | [references/stability.md](./references/stability.md) | Flaky / unstable previews: detection (render twice, CI symptoms), common causes (clock, randomness, animations, network images, locale), fixes, and how to review a suspect diff. |
 | [references/agent-audits.md](./references/agent-audits.md) | Agent audit recipes and data-product documentation clusters: accessibility, localisation, Wear clipping, resources, theme, traces, and failure triage. |
 | [references/mcp-review.md](./references/mcp-review.md) | Driving a PR review through the MCP server (two-workspace base+head flow, push notifications, edit-on-top iteration). |
+| [references/design-parity-lifecycle.md](./references/design-parity-lifecycle.md) | Catalog-owner workflow for reporting, triage, scoped acceptance, status review, verification, and safe atomic closure. |
 
 ## Related
 
