@@ -313,6 +313,42 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
      --renderer "$(compose-preview --version | head -1)"
    ```
 
+   **Scoping a pack — use the file flags for any generated list.** `bundle pack`
+   takes `--id` (pack only these previews) and `--exclude-preview-id` (skip
+   these), and both are **comma-separated**. A preview id may itself contain a
+   comma: `@Preview(widthDp = 227, heightDp = 200)` mints
+   `…AppCardRemote_width=227dp,height=200dp,dpi=320`. Passing such an id through
+   the comma-separated flags splits it into three, which fails in two different
+   ways depending on which flag you used:
+
+   - `--exclude-preview-id` — a plain pattern matches by **substring**, so the
+     orphaned fragment `dpi=320` matches every preview in the module and the
+     render dies with *"excluded every one of the N preview(s) — nothing would
+     render"*.
+   - `--id` — the render survives (same substring matching), but
+     `composePreviewBundle` matches ids **exactly** and fails with *"preview id
+     not found: …AppCardRemote_width=227dp"*, naming the first fragment.
+
+   So for anything generated — a shard list, a deferred palette, a design-map
+   projection — pass a **file**, one id per line, which has no delimiter to
+   collide with:
+
+   ```sh
+   compose-preview bundle pack --module :remote-catalog --with-semantics \
+     --id-file slice-previews.txt \
+     --exclude-preview-id-file slice-excluded.txt \
+     -o build/candidates.bundle.png
+   ```
+
+   Both refuse an unreadable **or empty** file rather than falling back to an
+   empty selection — an empty list means *everything* to both flags, so the
+   quiet failure would be packing or rendering the whole catalog while reporting
+   success. If you have nothing to select, omit the flag.
+
+   Requires compose-preview **1.41.0+** (`--id-file`); `--exclude-preview-id-file`
+   landed in 1.40.0. Hand-written lists of comma-free ids are fine on the inline
+   flags.
+
    Under the hood the driver feeds the render's data products through
    `@design-parity/candidate`'s mappers (`nativeFindings`,
    `semanticsToSemanticTree`, `composeThemeToTokens`) into
