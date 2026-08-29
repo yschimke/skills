@@ -25,11 +25,12 @@ Apply one area label and the relevant parity label:
 - `parity:regression`, `parity:known-difference`, `parity:verification-needed`,
   `parity:upstream`, or `parity:catalog`
 
-The report form asks the last three itself — a "Where does it belong?" control beside the Summary,
-whose value is filed as the label. Answer it there rather than after the fact: `parity:upstream`
-when the difference belongs to the framework or design system the catalog builds on,
-`parity:catalog` when the catalog's own code draws it wrongly, and `parity:verification-needed` —
-the default — when you cannot tell yet.
+The report form asks two of these itself — a "Where does it belong?" control beside the Summary on
+the viewer, the focused comparison and the comparison wall, whose value is filed as the label.
+Answer it there rather than after the fact: `parity:upstream` when the difference belongs to the
+framework or design system the catalog builds on, `parity:catalog` when the catalog's own code draws
+it wrongly. Its default — "not sure yet" — labels nothing, so an unclassified report stays
+unclassified rather than claiming a triage state nobody reached.
 
 Do not add per-component labels. Component identity belongs in the locator block. If the issue spans
 components, keep one locator block per component in the same body; never reuse a preview in two
