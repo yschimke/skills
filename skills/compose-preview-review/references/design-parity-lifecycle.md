@@ -14,10 +14,22 @@ editing the fenced `compose-parity-locator/v1` block: the issue index parses tha
 the repository, catalog, component, served preview id, reference, variant, overrides, and optional
 element selection. The page URL is only a reproduction link; it is not the identity.
 
+For several components at once, tick their rows on the comparison wall's reference lane and use the
+wall's own report: it carries one locator block per ticked row. At most one row per component — the
+index refuses a body naming a component, preview or reference twice, and refuses the whole body, so
+such an issue is filed and then indexed nowhere.
+
 Apply one area label and the relevant parity label:
 
 - `area:spec`, `area:component`, `area:preview`, `area:renderer`, or `area:comparison`
-- `parity:regression`, `parity:known-difference`, or `parity:verification-needed`
+- `parity:regression`, `parity:known-difference`, `parity:verification-needed`,
+  `parity:upstream`, or `parity:catalog`
+
+The report form asks the last three itself — a "Where does it belong?" control beside the Summary,
+whose value is filed as the label. Answer it there rather than after the fact: `parity:upstream`
+when the difference belongs to the framework or design system the catalog builds on,
+`parity:catalog` when the catalog's own code draws it wrongly, and `parity:verification-needed` —
+the default — when you cannot tell yet.
 
 Do not add per-component labels. Component identity belongs in the locator block. If the issue spans
 components, keep one locator block per component in the same body; never reuse a preview in two
