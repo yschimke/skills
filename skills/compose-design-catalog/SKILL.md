@@ -460,6 +460,26 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
        split-mode: full
    ```
 
+   > **Publishing a SECOND catalog from the same repo? Add `design-map-command`
+   > to both jobs.** `system`, `spec` and `module` vary per call, but
+   > `design-map.json` is read from the repo root either way — so the sheet that
+   > does not own the committed map is scored against the other one's. Every
+   > mapping dangles and the board publishes `coverage.percent: 0`, which looks
+   > exactly like a catalog nobody has annotated yet. The input (compose-ai-tools
+   > **v1.54.0** and later) lets each job project its own map first:
+   >
+   > ```yaml
+   >       design-map-command: >
+   >         ./gradlew :second-module:composePreviewDiscover --stacktrace &&
+   >         scripts/design-map.sh second-module
+   > ```
+   >
+   > Set it on the parity workflow too, and make sure that projection passes
+   > `--prefix <module-dir>` — it defaults to `catalog`, so a second module's
+   > code handles otherwise name files that do not exist. Failure modes:
+   > [design-parity-review →
+   > CI](../design-parity-review/references/ci.md#two-catalogs-in-one-repo).
+
    > **A published catalog is static unless you opt into a live bundle.**
    > `publish-live-bundle` and `split-per-preview` both default to **`false`**.
    > Leave them off and the branch gets rendered PNGs and nothing executable, so
