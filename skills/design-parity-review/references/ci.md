@@ -165,6 +165,50 @@ intermediate — base refs with the variants still unresolved — so a run that 
 it directly and then failed in step 2 leaves a map that looks complete while
 silently comparing hundreds of nodes fewer.
 
+**Pass `--prefix <module-dir>` to step 1 whenever the module is not `catalog`.**
+`previews.json` records `sourceFile` module-relative (`src/main/kotlin/…`), so
+the projector prepends this to reach a repo-relative code handle — and it
+**defaults to `catalog`**. Right for a `:catalog` module by luck, silently wrong
+for every other name:
+
+```
+# :remote-catalog projected without --prefix
+catalog/src/main/kotlin/…/remote/CatalogPreviews.kt#AppCardRemote
+# …a path no file has, for a component that exists one directory over
+```
+
+Every handle in that map dangles, and nothing says so: the board reports the
+sheet as 0% mapped, which is indistinguishable from a catalog nobody has
+annotated. Check it directly after the first projection — every `code` handle
+should name a file that exists.
+
+### Two catalogs in one repo
+
+A repo publishing two sheets from two modules has **one map path and two maps**.
+Both the parity run and the artifacts publish read `<repoRoot>/design-map.json`,
+so whichever system does not own the committed one is scored against the other's:
+100% of its mappings dangle and its coverage publishes as `percent: 0`.
+
+Both reusable workflows take a `design-map-command` for exactly this — each
+system is a separate job with its own workspace, so it regenerates the map before
+anything reads it. Set it in **both** places; the parity lane having it while the
+artifacts lane does not is a repo whose hourly comparison is right and whose
+published board is wrong, with nothing to tell them apart:
+
+```yaml
+# .github/workflows/design-parity.yml   AND   design-artifacts.yml
+      design-map-command: >
+        ./gradlew :remote-catalog:composePreviewDiscover --stacktrace &&
+        scripts/design-map.sh remote-catalog     # → passes --prefix remote-catalog
+```
+
+`design-artifacts-reusable.yml` gained this input in compose-ai-tools **v1.54.0**
+([#4843](https://github.com/yschimke/compose-ai-tools/pull/4843)); the parity one
+has taken it for longer. Its step deletes the root map before running the
+command, so the check proves the command *recreated* it rather than that a map
+happens to be there — without that, a command projecting to an `--out-dir` leaves
+the other system's map standing and publishes it under this system's name.
+
 ### A dark-only catalog projects zero components
 
 Step 1 pairs each component's reference with the capture whose id ends `_Light`,
