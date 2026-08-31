@@ -243,7 +243,7 @@ compose-preview doctor
 ```
 
 Re-running the same command upgrades to the latest release; pin a specific
-version by appending it (`… | bash -s -- 1.3.0`).
+version by appending it (`… | bash -s -- 1.56.2`).
 
 `doctor` verifies Java 17+ on `PATH` (JDK 21/25 are fine — the renderer is
 compiled to JDK 17 bytecode). If the install path isn't on `PATH`, the
