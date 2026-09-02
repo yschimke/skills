@@ -352,7 +352,7 @@ Loaded on demand. Read only what the current task needs.
 | [references/resource-previews.md](./references/resource-previews.md) | Android XML resources (`<vector>`, `<animated-vector>`, `<adaptive-icon>`). |
 | [references/wear-ui.md](./references/wear-ui.md) | Wear OS Material 3 Expressive design. |
 | [references/wear-tiles.md](./references/wear-tiles.md) | Wear Tiles (protolayout, not Compose). |
-| [references/remote-compose.md](./references/remote-compose.md) | Remote Compose dialect + `RemoteDocument`. |
+| [references/remote-compose.md](./references/remote-compose.md) | Remote Compose dialect, `RemoteDocument`, and the wrapper + connector requirement for recorded `.rc` export. |
 | [references/agent-cloud.md](./references/agent-cloud.md) | Running compose-preview in Claude Code cloud sandboxes (allowlist, JDK, install paths). |
 | [references/vscode.md](./references/vscode.md) | VS Code extension (humans, not agents). |
 
