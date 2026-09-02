@@ -49,15 +49,26 @@ dependencies {
     implementation("androidx.compose.remote:remote-creation:…")
     implementation("androidx.compose.remote:remote-creation-compose:…")
     implementation("androidx.wear.compose.remote:remote-material3:…")
+
+    // Use the same version as the ee.schimke.composeai.preview Gradle plugin.
+    // debugImplementation is enough when Remote Compose is only used by previews.
+    debugImplementation("ee.schimke.composeai:data-remotecompose-connector:<compose-preview-version>")
 }
 ```
+
+The connector is not just an editor/override add-on. It substitutes
+`RemotePreviewWrapper` with the recorder-aware wrapper that emits the encoded
+`<render-stem>.rc` document beside the PNG, and declares that wrapper structural
+so a catalog `themeProvider` nests around it instead of replacing its Remote
+Compose applier. If a project publishes executable preview bundles or expects
+recorded documents, keep this dependency on the preview runtime classpath.
 
 Most Remote Compose APIs are `@RestrictTo(LIBRARY_GROUP)`. You'll get lint
 failures (`RestrictedApi`) and IDE red squigglies without either
 `@file:Suppress("RestrictedApiAndroidX")` at the top of each file *and* a
 `lint { disable += "RestrictedApi" }` block in the module's `build.gradle.kts`.
 
-## Previewing: two shapes, same output
+## Previewing: same pixels, different export behavior
 
 ### 1. `RemotePreview` wrapper inside a `@Preview` composable
 
@@ -77,6 +88,11 @@ This is the shape used in `wear/compose/remote/remote-material3/samples` in
 AOSP and works on any Android Studio that can render `@Preview` — no
 dependency on the newer `PreviewWrapper` annotation.
 
+This in-body shape creates a document in memory for playback, but
+compose-preview does **not** record that document as a `.rc` sidecar. The same
+applies to the newer spelling `RemoteContentPreview { … }`. Rendering a PNG is
+not evidence that an encoded document was exported.
+
 ### 2. `@PreviewWrapper(RemotePreviewWrapper::class)`
 
 ```kotlin
@@ -94,6 +110,14 @@ landed in `androidx.compose.ui:ui-tooling-preview` 1.11.0-beta+ — older
 Compose releases don't ship the annotation class, so this shape is newer than
 approach 1.
 
+With `data-remotecompose-connector` on the preview runtime classpath, this is
+the compose-preview **recording** path: it emits a non-empty `.rc` sidecar,
+preserves the Remote applier under theme overrides, and enables Remote Compose
+document replay/editing in bundles. Do not replace this annotation with an
+in-body `RemoteContentPreview` merely to cure `Invalid applier`; that keeps the
+pixels but silently drops the recorded document. Fix the missing connector or
+structural-wrapper handling instead.
+
 `RemotePreviewWrapper` itself lives in `remote-tooling-preview`:
 
 ```kotlin
@@ -110,9 +134,15 @@ class RemotePreviewWrapper : PreviewWrapperProvider {
 > `RemotePreviewWrapper` class, drop a local copy into the sample module —
 > signature is identical, swap to the upstream one once it ships.
 
-Both approaches render the same pixels — pick the one that suits your
-preview density. Approach 1 scales well when previews need different profiles
-or framing per case; approach 2 keeps many same-shaped previews terse.
+Both approaches can render the same pixels. Pick approach 1 for IDE-only pixel
+previews that need different profiles or framing per case. Pick approach 2 plus
+the connector whenever compose-preview must export/replay the encoded document.
+
+After rendering, verify the recording rather than inferring it from the PNG:
+
+```sh
+find <module>/build/compose-previews/renders -name '<PreviewStem>*.rc' -size +0
+```
 
 ## Component previews, not device previews
 
