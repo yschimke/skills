@@ -454,10 +454,12 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
        system: your-system
        spec: catalog.spec.json
        module: ':app'
-       # Without these three the branch carries PNGs only — see below.
+       # Keep one executable bundle per module for trusted live rendering. Do not
+       # multiply it into one executable bundle per preview unless a consumer has
+       # demonstrated that it cannot route through the module bundle.
        publish-live-bundle: true
-       split-per-preview: true
-       split-mode: full
+       defer-figma-svg: true
+       split-per-preview: false
    ```
 
    > **Publishing a SECOND catalog from the same repo? Add `design-map-command`
@@ -482,14 +484,15 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
 
    > **A published catalog is static unless you opt into a live bundle.**
    > `publish-live-bundle` and `split-per-preview` both default to **`false`**.
-   > Leave them off and the branch gets rendered PNGs and nothing executable, so
+   > Leave `publish-live-bundle` off and the branch gets rendered PNGs and nothing executable, so
    > the server has no daemon to launch: it badges the catalog *"serves baked PNG
    > snapshots only — its delivery branch publishes no live bundle"* and the
    > device, theme and knob controls in the viewer do nothing. Nothing fails and
-   > no warning is printed — the publish succeeds and quietly ships a static
-   > sheet. Turning them on carries the executable bundle under `bundle/`,
-   > records `liveBundle` in `catalog.json`, and splits it into one
-   > re-renderable bundle per preview.
+   > no warning is printed — the publish succeeds and quietly ships a static sheet.
+   > `publish-live-bundle: true` carries one executable bundle per discovered module under
+   > `bundle/` and records `liveBundle` in `catalog.json`; that is the normal live-catalog shape.
+   > Keep `split-per-preview: false` unless an actual consumer requires an independently
+   > addressable executable bundle for every preview.
    >
    > **Liveness and trust are independent gates**, and the status page shows them
    > in adjacent columns, which invites conflating them. Trust is about whether
@@ -498,14 +501,22 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
    > can read `✓ trusted` and still serve baked PNGs — that's a missing bundle,
    > not a trust problem, and no amount of trust config fixes it.
    >
-   > `split-mode: full` (each per-preview bundle keeps its own re-render
-   > classpath) requires `publish-live-bundle`; `view-only` is the baked tier for
-   > a render the serve host can't drive. Android/Robolectric and CMP desktop
-   > catalogs are both live-capable — what matters is that the host bakes the
-   > matching daemon, not the platform.
+   > `defer-figma-svg: true` is the normal companion to a live bundle. Pure editable SVGs are a
+   > daemon data product, so publishing them eagerly adds coordinate-derived files that churn when
+   > capture packing order changes; raster-backed hybrid SVGs remain static. The workflow requires
+   > a live bundle before it can defer them, because the trusted daemon is what regenerates them.
    >
-   > Costs to weigh: a full split writes a per-preview bundle for every preview,
-   > so the delivery branch and the render both grow with catalog size.
+   > If a per-preview split is genuinely required, use `full-shared-classpath` instead of `full`
+   > unless offline self-contained downloads are themselves a requirement. `full` repeats the
+   > classpath in every split; any classpath change then rewrites every copy, so delivery-branch
+   > growth scales with preview count. `view-only` is the baked tier for a render the serve host
+   > cannot drive. Android/Robolectric and CMP desktop catalogs are both live-capable — what matters
+   > is that the host bakes the matching daemon, not the platform.
+   >
+   > Before enabling a split, and whenever a generated-artifact checkout becomes unexpectedly
+   > large, read [Delivery-branch size and retention](references/delivery-branch-size.md). It covers
+   > measuring reachable history, identifying duplicate same-source publishes, safely re-rooting a
+   > bloated branch once, and reclaiming an existing clone after the remote rewrite.
 
    > **Publish before you register.** A serve host that fetches
    > `design-artifacts/<system>` reconciles its catalog list by *fetching each
