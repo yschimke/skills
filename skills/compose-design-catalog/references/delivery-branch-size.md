@@ -81,13 +81,14 @@ new_tip=$(git commit-tree "$trimmed_tree" \
   -m "chore(design-artifacts): reset generated history")
 
 git push --force-with-lease="refs/heads/$target:$old_tip" \
-  origin "$new_tip:refs/heads/$target"
+  origin "${new_tip}:refs/heads/$target"
 ```
 
 Do not use a blind `--force`. The exact lease aborts if a catalog or parity publisher moved the
 branch after inspection. Rerun the normal design-artifacts workflow after the reset; it recreates
 fresh bounded revision indexes from the new root. Confirm the served catalog and live lane before
-considering the operation complete.
+considering the operation complete. Keep braces around `new_tip`: zsh treats the colon after an
+unbraced parameter as a filename modifier and silently mangles the refspec.
 
 GitHub may retain unreachable objects internally for a while, but fresh clones stop downloading
 them as soon as no ref reaches them.
