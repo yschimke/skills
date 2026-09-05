@@ -444,7 +444,7 @@ Issue-identifying output:
       "changedPixels": 18420
     }
   ],
-  "counts": { "changed": 1, "unchanged": 0, "missing": 0 }
+  "counts": { "total": 1, "changed": 1, "unchanged": 0, "missing": 0, "skipped": 0 }
 }
 ```
 
@@ -458,6 +458,10 @@ Check:
 - Unexpected changed pixels are explained by animation, rendering variance, or
   a real regression.
 - New or removed previews are called out separately from changed previews.
+- `missing` is a render failure worth raising; `skipped` is an expected empty
+  render (an `optional` capture, or a kind that emits no PNG) and is not. The
+  buckets partition `total`, so a non-zero residual means an older CLI bundle —
+  see the `counts` block in the `compose-preview` skill.
 
 ### Runtime and recomposition audit
 

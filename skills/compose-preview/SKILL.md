@@ -88,6 +88,48 @@ invocation. State is persisted per-module under
 `<module>/build/compose-previews/.cli-state.json` and gets wiped by
 `./gradlew clean`.
 
+### The `counts` block, and what "no PNG" means
+
+`show --json` wraps the rows in a versioned envelope whose `counts` block
+summarises the run, so an agent can decide what to read without walking every
+entry:
+
+```json
+"counts": { "total": 37, "changed": 1, "unchanged": 33, "missing": 1, "skipped": 2 }
+```
+
+The four buckets **partition** `total` — every preview is in exactly one, and
+`changed + unchanged + missing + skipped == total`. What each one means:
+
+| Bucket | Meaning |
+|--------|---------|
+| `changed` | At least one capture's `sha256` differs from the previous run. These are the PNGs worth reading. |
+| `unchanged` | Rendered, and pixel-identical to last time. |
+| `missing` | **No PNG, and that is a render failure** — the set `--missing-renders` gates on. Worth investigating. |
+| `skipped` | No PNG, and the miss is *expected*: every absent capture is declared `optional`, or the preview is a kind that never emits a PNG (an `@XrSubspacePreview` composite). Not a failure. |
+
+The same distinction shows up in the text output's per-row tags, so don't read
+a bare `[no PNG]` off every empty row:
+
+```
+MainActivity (activity__MainActivity) [no PNG]
+RedirectUriReceiverActivity (activity__RedirectUriReceiverActivity) [no PNG, optional]
+SpatialPanelPreview (p.SpatialPanelPreview) [no PNG, by design]
+```
+
+Only `[no PNG]` is a failure, and it marks exactly the previews the
+"Render task completed but produced no PNG for N of M preview(s)" summary
+enumerates underneath. A `[no PNG, optional]` row is a best-effort capture that
+was never guaranteed to render — a non-launcher activity that needs intent
+extras discovery can't guess, a desktop `@ColorCatalog` sheet — so treat it as
+information, not as something to fix. Per capture, the `optional` boolean on
+each entry in `captures[]` carries the same fact in the JSON.
+
+`skipped` and the qualified tags arrived together; a CLI bundle predating them
+tags every empty row `[no PNG]` and emits no `skipped` key, and its buckets do
+not add up to `total`. Check `compose-preview --version` before relying on a
+residual computed from `counts`.
+
 ## Iterating on a design
 
 `list` → edit → `show --json` → read the PNGs whose `changed: true`. Gradle

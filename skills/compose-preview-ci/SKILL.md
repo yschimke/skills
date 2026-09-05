@@ -216,7 +216,7 @@ Two things to carry over deliberately:
 | PR reports many phantom New + Removed previews | Baseline branch is stale — a baseline run on `main` was cancelled | Stop cancelling baseline runs (see the warning above), then re-run the workflow on `main` |
 | Comment says "no changes" for a pipeline that didn't run | `only` / `skip` mismatch across a two-stage split | The render job's resolved pipeline set travels in the handoff; don't re-specify `only`/`skip` on the publish call |
 | Run cancelled mid-build, reported as "Render failed" / rc=2 | Per-invocation `timeout` too low for a cold runner | Raise `timeout` (seconds). It is a hung-build ceiling, not a budget — keep it well above the slowest observed run |
-| A preview that legitimately can't render fails the gate | Default `missing-renders: fail` | Mark that capture `optional` at discovery rather than downgrading the gate to `warn` |
+| A preview that legitimately can't render fails the gate | Default `missing-renders: fail` | Mark that capture `optional` at discovery rather than downgrading the gate to `warn`. `show` then reports it as `[no PNG, optional]` and counts it under `counts.skipped`, not `counts.missing` |
 
 ## Reference docs
 
