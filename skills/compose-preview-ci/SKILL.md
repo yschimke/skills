@@ -107,7 +107,7 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v6
-      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.56.2
+      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.79.0
         with:
           # cli-version defaults to `auto` — leave it alone (see below).
           a11y-module: ''                       # '' = auto-detect all modules
@@ -132,7 +132,7 @@ jobs:
 **This is the single most common way the action breaks**, so it is worth
 being explicit even though the default is now correct.
 
-Pinning the *action* ref (`apply@v1.56.2`) does **not** pin the *CLI*. Under
+Pinning the *action* ref (`apply@v1.79.0`) does **not** pin the *CLI*. Under
 the old `cli-version: latest`, every new compose-ai-tools release
 auto-installed the newest CLI against a still-pinned Gradle plugin. A CLI
 newer than the applied plugin cannot discover that older plugin, so the
@@ -152,7 +152,7 @@ that version. Declare the plugin version once and the CLI follows it:
 ```toml
 # gradle/libs.versions.toml
 [versions]
-composePreviewPlugin = "1.56.2"
+composePreviewPlugin = "1.79.0"
 
 [plugins]
 composePreview = { id = "ee.schimke.composeai.preview", version.ref = "composePreviewPlugin" }

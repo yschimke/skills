@@ -243,7 +243,7 @@ compose-preview doctor
 ```
 
 Re-running the same command upgrades to the latest release; pin a specific
-version by appending it (`… | bash -s -- 1.56.2`).
+version by appending it (`… | bash -s -- 1.79.0`).
 
 `doctor` verifies Java 17+ on `PATH` (JDK 21/25 are fine — the renderer is
 compiled to JDK 17 bytecode). If the install path isn't on `PATH`, the
@@ -289,7 +289,7 @@ build on JDK 21+.
 
 You can apply the plugin dynamically without modifying the project's source code by using a Gradle init script. This is useful for agents operating in environments where they shouldn't or cannot modify the build files directly.
 
-> **VS Code users:** the [`Compose Preview` extension](https://github.com/yschimke/compose-ai-tools/tree/main/vscode-extension) already passes a bundled init script via `--init-script` on every Gradle invocation it makes, so its renders pick up Android / Compose projects with no extra setup. The instructions below are for CLI and CI flows that go through `./gradlew` directly.
+> **VS Code users:** the [`Compose Preview` extension](https://github.com/yschimke/compose-preview-vscode) already passes a bundled init script via `--init-script` on every Gradle invocation it makes, so its renders pick up Android / Compose projects with no extra setup. The instructions below are for CLI and CI flows that go through `./gradlew` directly.
 
 Create a file named `~/.gradle/init.d/compose-ai-tools.gradle` with the following content:
 

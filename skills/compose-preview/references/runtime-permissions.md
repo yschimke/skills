@@ -22,8 +22,11 @@ The exact JSON shape of `overrides.permissions` and the
 `compose/permissions` payload (manifest declarations vs. runtime
 `checkSelfPermission` calls, special-permission handling, partial-access
 states on Android 14+) is the upstream daemon contract. See
-[`docs/daemon/RUNTIME-PERMISSIONS.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/daemon/RUNTIME-PERMISSIONS.md)
-in `compose-ai-tools` for the schema and the producer's coverage notes.
+[`docs/daemon/PROTOCOL.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/daemon/PROTOCOL.md)
+(the `renderNow.overrides.permissions` entry) and
+[`docs/daemon/DATA-PRODUCTS.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/daemon/DATA-PRODUCTS.md)
+(the `compose/permissions` row) in `compose-ai-tools` for the schema and the
+producer's coverage notes.
 This file is the agent-facing guidance: when to reach for it, how to
 combine with other evidence, and how much confidence the result supports.
 
