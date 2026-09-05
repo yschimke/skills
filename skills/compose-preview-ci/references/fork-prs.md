@@ -57,7 +57,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup           # your java + SDK + cache composite
-      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.3.0
+      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.79.0
         with:
           phase: render
       - uses: actions/upload-artifact@v7
@@ -80,7 +80,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.3.0
+      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.79.0
 ```
 
 > **Keep `render-fork` and `apply` as two jobs.** The tempting refactor —
@@ -155,7 +155,7 @@ jobs:
         if: steps.fork.outputs.is_fork == 'true'
         run: echo "number=$(cat _compose_preview_handoff/_pr_number)" >> "$GITHUB_OUTPUT"
 
-      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.3.0
+      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.79.0
         if: steps.pr.outputs.number != ''
         with:
           phase: publish

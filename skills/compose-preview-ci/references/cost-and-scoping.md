@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup           # your java + SDK + cache composite
-      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.3.0
+      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.79.0
         with:
           only: compose,resources
 
@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
-      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.3.0
+      - uses: yschimke/compose-ai-tools/.github/actions/apply@v1.79.0
         with:
           only: a11y,notifications
 ```
