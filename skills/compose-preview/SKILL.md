@@ -12,7 +12,11 @@ Desktop (via `ImageComposeScene` + Skia).
 Maintained at [github.com/yschimke/skills](https://github.com/yschimke/skills)
 under `skills/compose-preview/`. The CLI, Gradle plugin, and renderer ship from
 [github.com/yschimke/compose-ai-tools](https://github.com/yschimke/compose-ai-tools);
-this skill documents how an agent drives them.
+the **preview server** the CLI's `serve` command starts — catalog hosting, live
+render sessions, the browser viewer, the remote catalog MCP — ships separately
+from
+[github.com/yschimke/compose-preview-server](https://github.com/yschimke/compose-preview-server).
+This skill documents how an agent drives them.
 
 Run `compose-preview --version` to see the installed CLI bundle, `compose-preview doctor`
 to compare against the latest release (warns when the local copy trails), and
@@ -346,7 +350,8 @@ Loaded on demand. Read only what the current task needs.
 | [references/capture-modes.md](./references/capture-modes.md) | Multi-preview annotations, `@AnimatedPreview` GIFs, `@SettledPreview` for content that arrives late, MCP scripted recordings, paused-clock snapshots, scrolling captures. |
 | [references/a11y.md](./references/a11y.md) | ATF accessibility checks (`compose-preview a11y`). |
 | [references/data-products.md](./references/data-products.md) | Structured per-render data (a11y findings + hierarchy, layout tree, recomposition heat-map, editable `compose/figma-svg` + wireframe **SVG vector** export, …) via MCP tools and on-disk Gradle output. |
-| [references/mcp.md](./references/mcp.md) | Driving compose-preview from an MCP-aware agent host (push notifications, multi-workspace, in-process server bundled in the CLI). |
+| [references/mcp.md](./references/mcp.md) | Driving compose-preview from an MCP-aware agent host (push notifications, multi-workspace, in-process server bundled in the CLI) — the **local daemon** MCP, over your own checkout. |
+| [references/catalog-mcp.md](./references/catalog-mcp.md) | The **remote** MCP a `compose-preview serve` deployment exposes at `/mcp`: `list_previews`, `render_preview`/`render_matrix` with override provenance, `list_devices`, `diff_semantics`, `history_list`/`history_diff`/`history_read`, and the in-protocol `request_access` / `poll_access` handshake. Read it when the previews live on a server rather than in your working tree. |
 | [references/agent-loop.md](./references/agent-loop.md) | Playwright-style, token-frugal interaction loop: target by semantic ref (not pixels, Desktop + Android), `observe=semantics\|hash`, `diff_semantics`, `render_preview crop` (one element), `render_matrix`, `record_preview emitTest=true`, and typed render-failure `kind`s. |
 | [references/cmp-shared.md](./references/cmp-shared.md) | Compose Multiplatform `:shared` modules (`commonMain` previews via Desktop pipeline). |
 | [references/resource-previews.md](./references/resource-previews.md) | Android XML resources (`<vector>`, `<animated-vector>`, `<adaptive-icon>`). |

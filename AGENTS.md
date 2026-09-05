@@ -8,6 +8,15 @@ that pairs with the `compose-preview` CLI and Gradle plugin published from
 [yschimke/compose-ai-tools](https://github.com/yschimke/compose-ai-tools).
 The CLI lives there; consumer guidance lives here.
 
+**The preview server is a second upstream.** Everything behind
+`compose-preview serve` — catalog hosting, live render sessions, the playground,
+the browser viewer, and the remote **catalog MCP** at `/mcp` — ships from
+[yschimke/compose-preview-server](https://github.com/yschimke/compose-preview-server),
+released on its own version line (the CLI that starts it, and the render host it
+consumes, stay in `compose-ai-tools`). When a skill documents `serve`, cite that
+repo for the server's behaviour and `compose-ai-tools` for the CLI and the
+renderer.
+
 ## When adding, renaming, or removing a skill
 
 1. **Update `README.md`** — keep the skills list in sync. Each entry links
@@ -42,6 +51,13 @@ The `compose-preview` skill documents the CLI shipped from the
 CLI gets a new version, update referenced version strings here; do not
 introduce a release-please marker in this repo — versions in skill text
 track the upstream CLI, not this plugin.
+
+The same applies to `compose-preview-server`, which versions independently
+(`v3.0.0` at the time of writing). A skill statement about `serve` — its flags,
+its routes, its MCP surface — belongs against that repo's docs, not against
+`compose-ai-tools`. Two links there are still correct and should not be
+"fixed": the operator guide `docs/public-preview-server.md` and the SVG
+inlining in `render-host/` both remain in `compose-ai-tools`.
 
 ## What not to do
 

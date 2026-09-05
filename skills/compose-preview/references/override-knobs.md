@@ -89,6 +89,91 @@ Two things worth knowing:
   shape, a state, a density. A label or a title is free text and should stay
   `previewOverrideString`.
 
+## Parameter knobs, and the `enum` kind
+
+There is a second way to declare a knob that needs no runtime dependency at all:
+give the `@Preview` function a **parameter with a default**. Discovery reads the
+defaults out of the compiled body and publishes them as knobs, so the preview
+still renders standalone and the parameter becomes editable.
+
+```kotlin
+@Preview
+@Composable
+fun BadgePreview(label: String = "New", count: Int = 3, compact: Boolean = false) { … }
+```
+
+A `String` parameter is a text box — which is the same loss `previewOverrideString`
+has against `previewOverrideChoice`: it shows the current value and hides every
+alternative. **Declare an `enum class` instead** and the constants *are* the
+closed set:
+
+```kotlin
+enum class Emphasis { Filled, Tonal, Outlined }
+
+@Preview
+@Composable
+fun EmphasisPreview(emphasis: Emphasis = Emphasis.Tonal) { … }
+```
+
+Discovery records the kind as `ENUM` with the constants as `options`, both
+renderers declare it `optionsExhaustive = true`, and a viewer draws exactly the
+picker `previewOverrideChoice` produces. It is better than the string it
+replaces on the Kotlin side too: the `when` over it is exhaustive, so a constant
+added later is a compile error rather than a branch that quietly falls through.
+
+### `@KnobValue` — when the constant's name is not the value
+
+By default a constant answers to **its own name**, which is right for a knob
+written from scratch. It is wrong for one being migrated. A catalog that has been
+calling `previewOverrideChoice("iconSize", "default", listOf("default", "large",
+"extra-large"))` has that vocabulary written into every
+`@OverrideVariant(strings = ["iconSize=extra-large"])` it has accumulated **and**
+into the design kit its renders are compared against, where a mismatched value
+drops the node from the comparison with no diagnostic anywhere. Rename the value
+to `ExtraLarge` and every seed silently falls back to the author default.
+
+Several such values cannot be Kotlin identifiers at all — `12-sided cookie`,
+`4-leaf clover`, `0.0`, `24s`. So the constant **declares the text** instead of
+being renamed to it:
+
+```kotlin
+import ee.schimke.composeai.preview.KnobValue
+
+enum class IconSize {
+  @KnobValue("default") Default,
+  @KnobValue("large") Large,
+  @KnobValue("extra-large") ExtraLarge,
+}
+```
+
+Everything downstream then speaks one vocabulary — the published `options`, the
+viewer's picker, an `@OverrideVariant` seed, and the declared default (read out
+of the compiled body as the constant name and translated back). Constants
+without the annotation answer to their own names, so the two forms mix freely.
+
+Worth knowing about the shape:
+
+- **The seed crosses the wire as text.** Nothing before the renderer's invoke
+  seam holds the enum's `Class`, so the value becomes a constant at the one point
+  that can build it. A name matching no constant is dropped and the author
+  default renders — the honest answer to a stale client naming a constant that a
+  rename removed.
+- **Values must be distinct within an enum.** Two constants claiming one seed
+  text make the seed ambiguous, so discovery drops that enum's options entirely
+  rather than binding whichever it saw first.
+- **An enum with no resolvable options is not a knob at all**, rather than a knob
+  whose values are unknown: a picker with nothing in it is worse than the text
+  box it replaced.
+- **The renderers resolve `@KnobValue` by name, not by type**, so no published
+  renderer artifact depends on `:preview-annotations` — a consumer that never
+  uses the annotation simply has no class by that name.
+
+What parameter knobs still cannot do: there is no `Color` or `Dp` kind (an ARGB
+`Long` is the stand-in, and it costs the colour picker), no **indexed** knob (a
+parameter list is fixed-arity), and no knob declared outside the `@Preview`
+function. Those remain reasons to reach for `previewOverride*`. Full rationale:
+[`docs/design/PARAMETER_KNOB_MIGRATION.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/design/PARAMETER_KNOB_MIGRATION.md).
+
 ## Driving them
 
 The declared set travels with the render as the `compose/overrides` data product
@@ -103,12 +188,17 @@ compose-preview bundle render ./bundle.png --knob title="Groceries" --knob size=
 ```sh
 # Serve it and edit interactively: the viewer's Overrides panel lists every
 # declared knob, and each edit re-renders. The same values work as URL params.
+# (`serve` ships from yschimke/compose-preview-server.)
 compose-preview serve --bundle app=./bundle.png
 #   → /p/<id>?knob.title=Groceries&knob.size=xl
 ```
 
 An MCP client seeds the same values through `renderNow.overrides.namedOverrides`
-(see [mcp.md](./mcp.md)).
+(see [mcp.md](./mcp.md)). Against a **remote** server, they are the `overrides`
+object on the catalog MCP's `render_preview` — which refuses an unknown key
+rather than ignoring it, and reports `overridesApplied: false` when the bundle it
+is serving has no renderer to honour them
+(see [catalog-mcp.md](./catalog-mcp.md)).
 
 Because the knob is resolved at render time from a value the *caller* supplies,
 one baked bundle re-skins to any of these without going near the source tree —

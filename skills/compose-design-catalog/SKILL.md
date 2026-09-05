@@ -124,6 +124,95 @@ the generic Material width class, making two renders indistinguishable on that
 axis — the export warns when it sees one. A Wear catalog that declares no
 `breakpoints` inherits the standard round table.
 
+### Locales: a bilingual sheet (`locales`)
+
+A project whose previews fan out by **locale** could not be catalogued at all
+until this axis existed. `@LocalePreviews` on one function mints
+`LanguageToggleButtonPreview_en` and `…_ja`; the spec names the base function,
+both renders match it, and the catalog's axes — `variant` / `state` / `theme` /
+`size` / `props` — had no place for "this is the Japanese one". The two arms
+folded onto one output key and the build was refused with `duplicate output
+axes`, with nothing actually misconfigured.
+
+Declare the locales the sheet covers:
+
+```jsonc
+"locales": ["en", "ja"]
+```
+
+An id whose trailing segment names a declared locale is tagged with a `locale`
+**props** axis, so it gets its own sticker (`…__locale-ja.png`), its own manifest
+entry, and sits beside its sibling the way a `fontScale` variant does. Matching
+works like `modes`: case-insensitive, longest-first, and only at a segment
+boundary — so the `ja` inside `Ninja` is not a locale. An id naming no declared
+locale stays untagged and remains the component's primary sticker.
+
+Unlike `modes` this is **not** informational: leaving it out is what produces the
+duplicate-axes refusal. Declaring it costs nothing for a single-locale catalog,
+which is every catalog that does not write the field. Note that locale is spelled
+as a prop (`{ "state": "rtl", "props": { "locale": "ar-XB" } }`), not as a
+top-level field beside `theme` and `size`, and it is deliberately **not** wired
+into `modePriority` — deferring a whole language to the live server is a separate
+decision from deferring a palette.
+
+### Themes an imported project cannot declare (`themes`)
+
+A first-party catalog declares its palettes in code, by annotating its
+`PreviewWrapperProvider` classes `@ThemeCatalog` / `@WearThemeCatalog` beside the
+components — and **omits the spec's `themes` entirely**. Each such provider
+publishes its own token set as `themes/<provider-fqn>.dtcg.json` beside the
+system's `tokens.dtcg.json`, and a theme's id is its provider FQN because that is
+what the preview server addresses it by (`?theme=theme:<providerFqn>`).
+
+An **import** — somebody else's repository, built without their involvement — has
+no dependency on those annotations and never will, so for as long as themes were
+annotation-only every imported catalog served an *empty* Theme control: not
+because the upstream had one theme, but because nothing could say it had more.
+Pocket Casts ships nine palettes, Twine twelve, Thunderbird's Bolt two brands.
+
+The spec's `themes[]` closes that, on the same bargain as `groups`: the inventory
+is our description of someone else's code and it lives in our repository.
+`generate-theme-catalogs.mjs` writes the providers into the throwaway checkout
+before anything compiles — beside the module's own sources, so an `internal`
+theme composable is reachable — and discovery then scans an ordinary module that
+declares its themes. Nothing downstream learns an import happened: the chips,
+`?theme=theme:<fqn>`, and one token file per theme all follow.
+
+An entry is a **shape**, not a snippet, because the upstreams reach for the same
+few — and a shape records which themes are one family and what a reviewer is
+agreeing to in the import's PR:
+
+| `kind` | The upstream shape |
+| --- | --- |
+| `enum` | one theme composable over an enum's constants — `AppThemeWithBackground(LIGHT) { }` |
+| `functions` | a whole composable per theme — `ThunderbirdBoltTheme { }` |
+| `modes` | one composable with a boolean dark parameter — `ElementTheme(darkTheme = true) { }` |
+| `arguments` | one composable, a named-argument list per theme; the general form of the three above |
+| `wrapper` | a raw Kotlin body — the escape hatch |
+
+```jsonc
+"themes": [
+  { "kind": "enum", "group": "Pocket Casts",
+    "composable": "au.com.shiftyjelly.pocketcasts.compose.AppThemeWithBackground",
+    "enum": "au.com.shiftyjelly.pocketcasts.ui.theme.Theme.ThemeType",
+    "values": ["LIGHT", "DARK", "EXTRA_DARK", "ELECTRIC"] }
+]
+```
+
+`values` are **listed rather than reflected** off the enum: generation runs before
+the upstream compiles, so there is nothing to reflect against — and a constant
+that does not exist fails that module's compile by name, which beats a silently
+thinner catalog. Each entry may carry a `group` (themes sharing one are
+catalogued together), `parameter` (pass the constant by name, or name the boolean
+for `kind: modes`), and `imports` for names a `wrapper` body or an `arguments`
+expression uses.
+
+Two things follow from this being catalog-level rather than per-component:
+a **folded section does not bring its themes with it** (a borrowed system's theme
+is one the host cannot render), and a theme whose FQN cannot be resolved from
+`previews.json` is **not published** at all rather than shipped under a key no
+consumer can join on.
+
 ### Reproducing a kit: what splits, and what folds
 
 A design-led catalog — one whose job is to reproduce a *published kit* rather than to publish its
@@ -554,4 +643,7 @@ under `skills/compose-design-catalog/`. The export library
 (`@design-parity/catalog-export`) lives in
 [yschimke/design-parity](https://github.com/yschimke/design-parity); the
 renderer/CLI in
-[yschimke/compose-ai-tools](https://github.com/yschimke/compose-ai-tools).
+[yschimke/compose-ai-tools](https://github.com/yschimke/compose-ai-tools); the
+preview server that hosts the published catalog (`compose-preview serve`,
+`preview.coo.ee`) in
+[yschimke/compose-preview-server](https://github.com/yschimke/compose-preview-server).

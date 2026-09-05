@@ -196,8 +196,10 @@ a `data:` URI) *before* it is placed.
   self-contained SVG.
 - **Runbook path — you must pre-inline.** `use_figma` has no `fetch`, so obtain a
   self-contained SVG *before* embedding it in the `code` string. Easiest:
-  **`compose-preview serve` already returns inlined SVGs** — its `.svg` render
-  route replaces every `figma-raster/<node>.png` href with a `data:` URI
+  **`compose-preview serve` already returns inlined SVGs** — the server
+  ([yschimke/compose-preview-server](https://github.com/yschimke/compose-preview-server))
+  replaces every `figma-raster/<node>.png` href on its `.svg` render route with a
+  `data:` URI
   ([`inlineFigmaRasters`](https://github.com/yschimke/compose-ai-tools/blob/main/render-host/src/main/kotlin/ee/schimke/composeai/cli/serve/ServeFigmaSvg.kt),
   wired on both the daemon `ServeRenderHost` and the static `ServeBundleHost` /
   `ServeCatalogStore` paths, with a `..`/absolute traversal guard) — so fetch the

@@ -1,5 +1,10 @@
 # Getting access to a preview server
 
+`compose-preview serve` ships from
+[`yschimke/compose-preview-server`](https://github.com/yschimke/compose-preview-server)
+and is released on its own line (the CLI that starts it, and the render host it
+consumes, stay in `compose-ai-tools`).
+
 Some `compose-preview serve` deployments are gated. If you are an agent and a
 request comes back `404` (a token-gated box says "not found" rather than
 confirming it exists), or a live preview socket closes with
@@ -104,6 +109,33 @@ if you would rather poll `POST /agent-access/poll` yourself) and then the grant.
 **Revoke when the task is done.** A grant you no longer need is a credential
 sitting on someone's machine for no reason. It expires on its own, but ending it
 yourself is the right habit, and it costs one command.
+
+## Once you are in: the tool surface
+
+A grant is not the destination. What it buys you, beyond fetching URLs by hand,
+is the server's **catalog MCP** — an aggregate Streamable HTTP endpoint at
+`https://<host>/mcp` carrying `list_projects`, `list_previews`,
+`render_preview`, `render_matrix`, `list_devices`, `diff_semantics`,
+`history_list` / `history_diff` / `history_read`, `list_data_products` and
+`get_preview_data`. Read
+[**catalog-mcp.md**](./catalog-mcp.md) next; it is where the scopes above cash
+out into calls.
+
+Two things to know before you get there:
+
+- **The same handshake runs inside MCP.** `request_access` and `poll_access`
+  mirror `POST /agent-access/request` and `POST /agent-access/poll` exactly, so
+  an agent holding only the MCP transport does not need this CLI. Everything on
+  this page about relaying the link and the code verbatim, asking for the least
+  scope, and not retrying in a loop applies unchanged.
+- **The endpoint is opt-in and always grant-gated**, even where the catalog
+  pages are public: the operator ran `--catalog-mcp` alongside `--agent-grants`,
+  or they did not. A host with grants but no `/mcp` is an operator decision, not
+  a scope you can widen into.
+
+Do not confuse it with the **local** MCP server bundled in the CLI
+([`mcp.md`](./mcp.md)), which drives daemons over your own checkout. The tool
+names overlap; the surfaces do not.
 
 ## Things that will not work, so don't try them
 

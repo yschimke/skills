@@ -5,6 +5,19 @@ SDK, custom hosts) instead of from a shell. Companion to the
 [contributor README](https://github.com/yschimke/compose-ai-tools/blob/main/mcp/README.md);
 this file covers what the consumer of the published skill bundle needs.
 
+> **Two different MCP surfaces share these tool names.** This file is the
+> **local daemon MCP**: it runs on your machine out of the `compose-preview`
+> CLI, over stdio, against a checkout it can build. A `compose-preview serve`
+> deployment exposes a second, **remote catalog MCP** over Streamable HTTP at
+> `https://<host>/mcp` — no checkout, a short-lived grant instead of no
+> credential, and a stateless surface with `list_previews`, `list_devices`,
+> `history_list` and no `watch`. That one is
+> [`catalog-mcp.md`](./catalog-mcp.md), and it ships from
+> [`compose-preview-server`](https://github.com/yschimke/compose-preview-server)
+> rather than from `compose-ai-tools`. If the previews you want are published on
+> a server rather than sitting in your working tree, read that file instead of
+> this one.
+
 ## Troubleshooting first — when NOT to act
 
 Before reaching for `mcp install`, killing a daemon, or restarting the host,
@@ -211,3 +224,7 @@ see the dedicated [`compose-preview-review/references/mcp-review.md`](../../comp
   — daemon JSON-RPC wire format the MCP shim translates from.
 - [`compose-preview-review/references/mcp-review.md`](../../compose-preview-review/references/mcp-review.md)
   — agent-driven PR review using two MCP workspaces (base + head).
+- [`catalog-mcp.md`](./catalog-mcp.md) — the **other** MCP: a remote preview
+  server's catalog endpoint, its grant handshake, and the tools that only exist
+  there (`list_previews`, `list_devices`, `history_list` / `history_diff` /
+  `history_read`).

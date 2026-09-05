@@ -55,8 +55,11 @@ invocation of the stub — there's no separate "now install the CLI" step.
   token-frugal agent loop (semantic-ref targeting on Desktop + Android,
   `observe`/`diff_semantics`, `render_preview crop`, record-to-test, typed
   render-failure kinds), editable **SVG vector** export (`compose/figma-svg` +
-  wireframe), cloud sandbox setup, and how to ask a human for temporary,
-  scoped access to a gated preview server rather than for its own token.
+  wireframe), cloud sandbox setup, how to ask a human for temporary,
+  scoped access to a gated preview server rather than for its own token, and the
+  **remote catalog MCP** that access buys you — a served catalog's
+  `list_previews` / `render_preview` / `list_devices` / `history_*` surface,
+  distinct from the local daemon MCP.
 - [`compose-preview-review`](skills/compose-preview-review/SKILL.md) —
   review pull requests that change Compose UI by rendering `@Preview`
   composables on base and head and diffing them. Pairs with
@@ -86,7 +89,8 @@ invocation of the stub — there's no separate "now install the CLI" step.
   Claude Design import, and served at `preview.coo.ee/<system>/`. Covers
   authoring and **validating** the `catalog.spec.json` inventory
   (`init-catalog-spec` / `validate-catalog-spec` + its JSON schema) before
-  rendering. Code-led — the published Figma kits are seed only. Pairs with
+  rendering, including the `locales` axis for a bilingual sheet and the `themes`
+  inventory for an imported project that cannot declare its own palettes. Code-led — the published Figma kits are seed only. Pairs with
   `compose-preview` and `compose-preview-design-board`.
 - [`figma-catalog-import`](skills/figma-catalog-import/SKILL.md) — import
   a published `design-artifacts/<system>` catalog (from
@@ -108,11 +112,15 @@ invocation of the stub — there's no separate "now install the CLI" step.
   directions on one project including opt-in Code-to-Canvas push-back.
   Drives [`design-parity`](https://github.com/yschimke/design-parity).
 
-The CLI, Gradle plugin, renderer, MCP server, and VS Code extension
-live in [yschimke/compose-ai-tools]; the parity bot and catalog exporter
+The CLI, Gradle plugin, renderer, local MCP server, and VS Code extension
+live in [yschimke/compose-ai-tools]; the **preview server** behind
+`compose-preview serve` — catalog hosting, live render sessions, the browser
+viewer, and the remote catalog MCP — lives in
+[yschimke/compose-preview-server]; the parity bot and catalog exporter
 live in [yschimke/design-parity]. This repo is content-only.
 
 [yschimke/design-parity]: https://github.com/yschimke/design-parity
+[yschimke/compose-preview-server]: https://github.com/yschimke/compose-preview-server
 
 ### How these relate
 
@@ -166,6 +174,7 @@ compose-preview ─┬─ compose-preview-review ──────→ a PR base
 |---|---|
 | See a composable without Android Studio | `compose-preview` |
 | Reach a gated `serve` deployment as an agent | `compose-preview` → [server-access.md](skills/compose-preview/references/server-access.md) |
+| Drive a **remote** preview server's catalog over MCP | `compose-preview` → [catalog-mcp.md](skills/compose-preview/references/catalog-mcp.md) |
 | Review a UI PR | `compose-preview-review` |
 | Have CI post before/after diffs on every PR | `compose-preview-ci` |
 | …and the repo takes **fork** PRs | `compose-preview-ci` → [fork-prs.md](skills/compose-preview-ci/references/fork-prs.md) |
