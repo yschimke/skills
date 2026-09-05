@@ -8,6 +8,16 @@ that pairs with the `compose-preview` CLI and Gradle plugin published from
 [yschimke/compose-ai-tools](https://github.com/yschimke/compose-ai-tools).
 The CLI lives there; consumer guidance lives here.
 
+**Two upstream repos, not one.** The CLI, the Gradle plugin, the renderers and
+the local daemon MCP ship from `compose-ai-tools`. The preview *server* —
+everything behind `compose-preview serve`, including its catalog MCP endpoint,
+the UI builder and the playground — ships from
+[yschimke/compose-preview-server](https://github.com/yschimke/compose-preview-server),
+on its own release line. When a skill cites `serve` source or a server-side
+design doc, it belongs to that repo. (Its operator-facing manual,
+`docs/public-preview-server.md`, still lives in `compose-ai-tools` — cite it
+where it actually is rather than where the code is.)
+
 ## When adding, renaming, or removing a skill
 
 1. **Update `README.md`** — keep the skills list in sync. Each entry links
