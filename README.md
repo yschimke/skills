@@ -108,11 +108,16 @@ invocation of the stub — there's no separate "now install the CLI" step.
   directions on one project including opt-in Code-to-Canvas push-back.
   Drives [`design-parity`](https://github.com/yschimke/design-parity).
 
-The CLI, Gradle plugin, renderer, MCP server, and VS Code extension
-live in [yschimke/compose-ai-tools]; the parity bot and catalog exporter
-live in [yschimke/design-parity]. This repo is content-only.
+The CLI, Gradle plugin, renderer, and local daemon MCP server live in
+[yschimke/compose-ai-tools]; the preview server behind `compose-preview
+serve` — including its own catalog MCP endpoint — lives in
+[yschimke/compose-preview-server]; the parity bot and catalog exporter
+live in [yschimke/design-parity]; the VS Code extension lives in
+[yschimke/compose-preview-vscode]. This repo is content-only.
 
 [yschimke/design-parity]: https://github.com/yschimke/design-parity
+[yschimke/compose-preview-server]: https://github.com/yschimke/compose-preview-server
+[yschimke/compose-preview-vscode]: https://github.com/yschimke/compose-preview-vscode
 
 ### How these relate
 

@@ -281,6 +281,87 @@ stays the render + completeness gate — this is the fast local/CI pre-flight.
 > rediscover this. The same applies to any app-defined multipreview annotation
 > declared in a different module from the previews that use it.
 
+### A bilingual catalog: the `locales` axis
+
+A project whose previews fan out by **locale** could not be catalogued at all.
+`@LocalePreviews` on one function mints `LanguageToggleButtonPreview_en` and
+`…_ja`; the spec names the base function, both renders match it, and the
+catalog's axes — `variant` / `state` / `theme` / `size` / `props` — had nowhere
+to say "this is the Japanese one". The two arms folded onto the same output key
+and the build was refused with **`duplicate output axes`**. Nothing was
+misconfigured, so the error reads like a spec bug when it is a missing
+declaration.
+
+Declare the locales the sheet covers, and the arms become distinct renders:
+
+```jsonc
+"locales": ["en", "ja"]
+```
+
+An id whose trailing segment names a declared locale gets a `locale` **props**
+axis — its own sticker (`…__locale-ja.png`), its own manifest entry, sitting
+beside its sibling the way a `fontScale` variant does. Matching works like
+`modes`: case-insensitive, longest-first, and only at a segment boundary, so
+`ja` inside `Ninja` is not a locale. An id naming no declared locale stays
+untagged and remains the component's primary sticker.
+
+Locale is deliberately **not** wired into `modePriority` — deferring a whole
+language to the live server is a different decision from deferring a palette.
+Declaring `locales` costs nothing for a single-locale catalog, which is every
+catalog that omits the field.
+
+### Themes an imported project cannot declare (`themes`)
+
+Themes normally start at a `@ThemeCatalog` provider — an annotation from this
+toolchain. An **import** (someone else's repository, catalogued without their
+involvement) has no dependency on it and never will, so for as long as themes
+were annotation-only every imported catalog served an **empty Theme control** —
+not because the upstream had one theme, but because nothing could say it had
+more.
+
+A spec's `themes[]` closes that, the same way `groups` closes missing
+`@CatalogComponent` annotations: the inventory is written down in the import,
+and the providers are generated into the throwaway checkout before anything
+compiles. Discovery then scans an ordinary module that declares its themes, and
+nothing downstream learns an import was involved — the chips,
+`?theme=theme:<providerFqn>`, and one `themes/<fqn>.dtcg.json` per theme all
+follow.
+
+An entry is a **shape**, not a snippet, so it carries which themes are one
+family and which are light or dark:
+
+| `kind` | The upstream shape |
+| --- | --- |
+| `enum` | one theme composable over an enum's constants — `AppThemeWithBackground(LIGHT) { }` |
+| `functions` | a whole composable per theme — `ThunderbirdBoltTheme { }` |
+| `modes` | one composable with a boolean dark parameter — `ElementTheme(darkTheme = true) { }` |
+| `arguments` | one composable, a named-argument list per theme |
+| `wrapper` | a raw Kotlin body — the escape hatch |
+
+```jsonc
+"themes": [
+  { "kind": "enum", "group": "Pocket Casts",
+    "composable": "au.com.shiftyjelly.pocketcasts.compose.AppThemeWithBackground",
+    "enum": "au.com.shiftyjelly.pocketcasts.ui.theme.Theme.ThemeType",
+    "values": ["LIGHT", "DARK", "EXTRA_DARK", "ELECTRIC"] }
+]
+```
+
+Two things that look like omissions and are not:
+
+- **The constants are listed, not reflected.** Generation runs before the
+  upstream compiles, so there is nothing to reflect against — and a listed
+  constant that does not exist fails the module's compile *by name*, which
+  beats a catalog that is quietly one palette short.
+- **Nothing extra is baked.** Generated themes are a *live* axis: the switcher
+  re-renders through the published bundle and the serve host's theme cache, the
+  way `modePriority`'s deferred palettes do. Baking nine palettes × every
+  component is exactly the cost this design avoids.
+
+**First-party catalogs annotate their providers beside the code and omit
+`themes` entirely.** The step is a no-op for them. Reach for the field only
+when you cannot put an annotation in the source you are cataloguing.
+
 ## Workflow
 
 1. **Render the system with its data products.** Ask the renderer for the

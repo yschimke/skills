@@ -1,9 +1,16 @@
-# MCP server (agent integration)
+# Local daemon MCP (agent integration)
 
 Driving compose-preview from an MCP-aware agent host (Claude Code, the Agent
 SDK, custom hosts) instead of from a shell. Companion to the
 [contributor README](https://github.com/yschimke/compose-ai-tools/blob/main/mcp/README.md);
 this file covers what the consumer of the published skill bundle needs.
+
+> **This is the *local* MCP surface** — daemons on your machine, over a
+> checkout you can build, launched over stdio by your agent host. A
+> `compose-preview serve` deployment exposes a **second, different** MCP
+> endpoint over HTTP, with its own tools and a mandatory scoped grant. If you
+> have a server URL and no checkout, you want
+> [`references/catalog-mcp.md`](./catalog-mcp.md) instead.
 
 ## Troubleshooting first — when NOT to act
 

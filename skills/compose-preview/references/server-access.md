@@ -10,6 +10,13 @@ unrevocable in practice, and once it is in your context it is in a transcript.
 Ask for a grant instead. You print a link; a human opens it, checks a code, and
 approves. You get a short-lived, scoped, revocable token.
 
+The flow below uses the `compose-preview` CLI. If your only transport is MCP,
+the same handshake is available as the `request_access` / `poll_access` tools on
+the server's own MCP endpoint — see
+[`references/catalog-mcp.md`](./catalog-mcp.md), which also covers what that
+endpoint lets you do once you hold a grant. Everything on this page about
+scopes, approvers and revocation applies either way.
+
 ## Ask
 
 ```bash

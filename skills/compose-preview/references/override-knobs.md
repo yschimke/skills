@@ -114,3 +114,83 @@ Because the knob is resolved at render time from a value the *caller* supplies,
 one baked bundle re-skins to any of these without going near the source tree —
 which is what makes an override knob different from just authoring another
 `@Preview`.
+
+## The second format: parameter knobs
+
+Everything above declares a knob by **executing a lookup in the composable
+body**. There is a second, newer format that declares it by the **function
+signature** instead — an ordinary parameter with a default:
+
+```kotlin
+@Preview @Composable
+fun BasketPreview(title: String = "Basket", rows: Int = 3) { … }
+```
+
+Both formats are live and publish the same `PreviewOverrideDeclaration`, so a
+viewer's Overrides panel and an MCP client treat them alike. The differences
+that matter to you:
+
+| | `previewOverride*` | Parameter knob |
+| --- | --- | --- |
+| Preview body | one harness call per knob | nothing — no harness dependency at all |
+| Value seeding | typed values written into a process-static controller | ordinary argument passing |
+| Default comes from | the author's call site | read back out of the compiled body |
+| Published in a packed bundle's `previews/<id>.overrides.json` | yes | daemon lanes and the offline bake, yes |
+
+**A default it cannot read back is a knob it cannot declare.** Defaults that
+are expressions — `stringResource(...)`, `Color(0xFF3366FF)` — are not
+recoverable from the compiled body, so those parameters do not become knobs.
+`Color` and `Dp` are not seedable kinds either. If a preview you expected to be
+editable shows no knob, this is usually why: it is not a bug to report, it is
+the format's boundary. `previewOverride*` remains correct for those, and for the
+indexed case (`previewOverrideString(..., index = i)`), which the parameter form
+has no equivalent for because a parameter list is fixed-arity.
+
+### A closed set, as an `enum class`
+
+The parameter form's answer to `previewOverrideChoice` is to declare the
+parameter as an enum. Its constants **are** the closed set:
+
+```kotlin
+enum class Emphasis { Filled, Tonal, Outlined }
+
+@Preview @Composable
+fun EmphasisPreview(emphasis: Emphasis = Emphasis.Tonal) { … }
+```
+
+Discovery records the kind as `ENUM` with the constants as `options`, and both
+renderers declare it `optionsExhaustive = true`, so a viewer draws exactly the
+picker `previewOverrideChoice` produces. It is stricter than the string it
+replaces — a `when` over it is exhaustive, so a constant added later is a
+compile error rather than a branch that silently falls through.
+
+### `@KnobValue`, when the wire value is not the constant's name
+
+By default a constant answers to its own name. That is right for a knob written
+from scratch and **wrong for one being migrated**: seeds already written into
+`@OverrideVariant(strings = ["iconSize=extra-large"])`, into existing links, and
+into the design kit the renders are compared against all speak the old
+vocabulary, and renaming the value unbinds every one of them — the render then
+falls back to the author default with no diagnostic anywhere. Plenty of real
+values cannot be Kotlin identifiers at all (`12-sided cookie`, `0.0`, `24s`), so
+"name the constant after the value" is not always available even in principle.
+
+Declare the text on the constant instead:
+
+```kotlin
+enum class IconSize {
+  @KnobValue("default") Default,
+  @KnobValue("large") Large,
+  @KnobValue("extra-large") ExtraLarge,
+}
+```
+
+Everything downstream then speaks the declared vocabulary — the knob's
+`options`, the picker, an `@OverrideVariant` seed, and the declared default.
+Two constants claiming the same text make a seed ambiguous, so the enum reports
+no options and **stops being a knob** rather than binding whichever was read
+first; an enum with no resolvable options is likewise not a knob at all, because
+an empty picker is worse than the text box it replaced.
+
+Full migration record, including which sample shapes can and cannot move:
+[`docs/design/PARAMETER_KNOB_MIGRATION.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/design/PARAMETER_KNOB_MIGRATION.md).
