@@ -1,13 +1,14 @@
-# The published catalogs, without the 70 KB call
+# The published catalogs, in the form an insert needs
 
 Everything a `ui_builder_apply` needs to be right: the component ids, the slot
 names a child goes into, which properties are required, and which are closed
-enums. Extracted from `ui_builder_list_catalogs` against
-`https://preview.coo.ee` on **2026-09-06**.
+enums. Extracted from `ui_builder_list_catalogs` on a host serving
+`m3-catalog@candidate`.
 
 Treat it as a fast path, not as the contract. The server is the authority: a
 component here that the server refuses, or one you need that is missing, means
-this file has aged — regenerate it with the recipe at the bottom.
+this file has aged behind the catalog — regenerate it with the recipe at the
+bottom.
 
 Two catalogs are published. A design pins exactly one and cannot mix them.
 
@@ -130,32 +131,23 @@ Pin it as `{"systemId": "remote-m3", "catalogRevision": "wear-widget-scaffolds-v
 | `remote-compose/document` | `theme` | `inherit`, `light`, `dark`, `system` |
 | `asset/image` | `contentScale` | `crop`, `fit`, `fillBounds`, `inside` |
 
-## Two gates: in the document, and in the export
+## The exporter is a second opinion
 
-A component being in the catalog table above means the **document** accepts it.
-It does not mean the **Compose exporter** can write it: the generator works from
-a separate component record, and a node it does not recognise comes back as an
-export diagnostic while the design itself stays perfectly valid, renders, and
-shows in the browser.
+A component being in the table above means the **document** accepts it. Whether
+the Compose generator can write it is a separate question, answered per node by
+`ui_builder_export`:
 
 ```json
 {"severity": "error", "code": "UNPROVEN_CALL_SITE",
  "message": "no component `m3/list-item` in this catalog"}
 ```
 
-Measured against `https://preview.coo.ee` on 2026-09-06 — **per deployment**, so
-another host may differ. Export early on any design whose Kotlin matters, rather
-than at the end.
-
-| | Components |
-| --- | --- |
-| **Export cleanly** | `layout/box`, `layout/column`, `layout/row`, `layout/scaffold`, `m3/surface`, `m3/text`, `m3/card`, `m3/button`, `m3/icon`, `m3/icon-button`, `m3/switch`, `m3/checkbox`, `m3/radio-button`, `m3/horizontal-divider`, `m3/progress-indicator`, `m3/filter-chip`, `m3/text-field` |
-| **Refused by the exporter** | `m3/center-aligned-top-app-bar`, `m3/list-item`, `m3/slider`, `shape/colour-dot`, `asset/image` |
-| **Untested** | the lazy containers, `layout/horizontal-carousel`, `layout/supporting-pane-scaffold`, `m3/dialog`, `m3/tab`, `m3/primary-tab-row`, `m3/search-bar`, `m3/search-input-field`, `m3/snackbar-host`, `m3/date-picker`, `m3/time-picker`, `m3/horizontal-floating-toolbar`, the gradients, `remote-compose/document` |
-
-If the Kotlin is the deliverable, build the screen out of the first row. If the
-*design* is the deliverable — a mockup, a PNG for a designer — the whole catalog
-is available and an export diagnostic is not a problem to solve.
+Nothing is wrong with the design when this happens — it renders, it opens in the
+browser, a designer can carry on with it. Only the Kotlin for that node is
+withheld. Which components a given host can write changes as the generator's
+records grow, so there is no list here worth trusting: **export once after the
+first structural batch** and let the diagnostics tell you, while a swap is still
+one operation.
 
 ## Slots have a cardinality
 
@@ -172,10 +164,10 @@ atomic, so the pair either lands together or nothing lands at all.
 
 ## Regenerating this file
 
-`ui_builder_list_catalogs` answers with ~70 KB of JSON — every component's
-parameters, Wasm adapter status, SVG parity status and export notes. Do not read
-that into the conversation. Save the tool result to a file (most hosts do this
-for you when a result is oversized; otherwise `curl` the endpoint) and reduce it:
+`ui_builder_list_catalogs` answers with every component's parameters, Wasm
+adapter status, SVG parity status and export notes — far more than an insert
+needs, and more than is worth reading into a conversation. Save the result to a
+file (most hosts do this for you when a result is oversized) and reduce it:
 
 ```sh
 python3 - "$SAVED_RESULT" <<'PY'
