@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4](https://github.com/yschimke/skills/compare/v0.1.3...v0.1.4) (2026-09-06)
+
+
+### Features
+
+* **compose-ui-builder:** a skill for authoring a design over MCP ([c6d72b1](https://github.com/yschimke/skills/commit/c6d72b185800c560939d24d30dd06842f39846d5))
+* **compose-ui-builder:** a skill for authoring a design over MCP ([9d403cb](https://github.com/yschimke/skills/commit/9d403cb7e4d8fa15de374c5659cedffec0bad89b))
+
 ## [0.1.3](https://github.com/yschimke/skills/compare/v0.1.2...v0.1.3) (2026-08-22)
 
 
