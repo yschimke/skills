@@ -88,6 +88,17 @@ invocation of the stub — there's no separate "now install the CLI" step.
   (`init-catalog-spec` / `validate-catalog-spec` + its JSON schema) before
   rendering. Code-led — the published Figma kits are seed only. Pairs with
   `compose-preview` and `compose-preview-design-board`.
+- [`compose-ui-builder`](skills/compose-ui-builder/SKILL.md) — **author** a
+  Compose screen or Wear widget over MCP against a `compose-preview serve`
+  deployment, with no checkout: create a design, insert and edit nodes in the
+  catalog's own vocabulary, and export the Kotlin, PNG or SVG. Carries the
+  things a session would otherwise spend its first hour discovering — the
+  capability grant (`ui-builder-read/write/export`, not a scope), known-good
+  starter documents, the component/slot/enum tables extracted from the 70 KB
+  `list_catalogs` call, which components the *exporter* refuses even though the
+  document accepts them, and which calls are cheap. Also covers sharing a design
+  with a person, and the comment threads that make an agent a participant rather
+  than a batch job.
 - [`figma-catalog-import`](skills/figma-catalog-import/SKILL.md) — import
   a published `design-artifacts/<system>` catalog (from
   `compose-design-catalog`) into a **Figma** file as authoritative,
@@ -165,6 +176,13 @@ compose-preview ─┬─ compose-preview-review ──────→ a PR base
   [round-trip.md](skills/design-parity-review/references/round-trip.md) before
   wiring the second one.
 
+- **authoring is a different axis** — everything in that diagram starts from
+  code you already have. **`compose-ui-builder`** starts from nothing: a design
+  is authored in the builder's own catalog vocabulary, on a server, with no
+  checkout, and *produces* the Kotlin. It feeds the same destinations (its PNG
+  and SVG exports are a design board's or a parity run's input) but its input is
+  a person's intent rather than a `@Preview`.
+
 ### Common routes
 
 | You want to… | Read, in order |
@@ -177,6 +195,8 @@ compose-preview ─┬─ compose-preview-review ──────→ a PR base
 | Get an app's screens in front of a designer, once | `compose-preview` → `compose-preview-design-board` |
 | Publish a component system into Figma, refreshed on every change | `compose-preview` → `compose-design-catalog` → `figma-catalog-import` |
 | Check a PR against its Figma design | `design-parity-review` (wire the reference cache **before** the run) |
+| Build or change a screen with no checkout, and get Kotlin out | `compose-ui-builder` (start at its five-call quickstart) |
+| Work on a design a designer is editing right now | `compose-ui-builder` → its comment and `await_design` loop |
 | Run both directions on one project | `design-parity-review` → [round-trip.md](skills/design-parity-review/references/round-trip.md) |
 
 ## Contributing
