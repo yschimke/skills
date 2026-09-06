@@ -131,6 +131,7 @@ COMPANION_SKILLS=(
   compose-preview-ci
   compose-preview-design-board
   compose-design-catalog
+  compose-ui-builder
   figma-catalog-import
   design-parity-review
 )
