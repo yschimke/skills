@@ -314,6 +314,19 @@ So decide which you are making, and act on it early:
   designer left, `ui_builder_post_comment` replies (pinned to a node, a markup
   stroke, or a point on the frame), `ui_builder_resolve_comment_thread` closes
   one. This is how you answer "why did you put the button there".
+- **A design says what it is for.** `ui_builder_get_links` reads the record
+  beside a design — the tracker `issue` it was drawn for, the `reference` frame
+  in the design tool, the `pr` that implemented it, the chat `thread` it is
+  being discussed in, and the `previous` design it continues. You rarely need
+  to call it: the same object rides along on `ui_builder_get_design` as
+  `links`, so the brief behind a screen arrives on the reply you are already
+  reading. Read it before you redesign something — "make the header smaller" is
+  a different task when the issue says the header is the complaint.
+  `ui_builder_set_links` writes it back, and **replaces the whole record**, so
+  send every link you want to keep and not only the one you are changing. All
+  five are optional; everything but `previous` is an absolute `http(s)` URL.
+  Writing takes the design's own write access, so a design shared with you as a
+  viewer is readable and not writable.
 - **A comment may leave the editor.** A host can be started with
   `--ui-builder-comment-webhook`, and then a new thread, a reply and a
   resolution are posted to a chat channel with a link back to the thread — the
