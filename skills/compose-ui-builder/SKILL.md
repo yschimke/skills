@@ -426,6 +426,17 @@ controls are absent merely because the central canvas resembles the target.
   the same cursor for a later wait. This is cheaper and faster than re-reading
   the design in a loop, and it is what makes you a participant in a session
   rather than a poller.
+- **Delegate a background watcher when the agent runtime supports it.** For an
+  active collaborative session, give a background task the design id, host,
+  current comment `sequence`, and a bounded window (30 minutes is a useful
+  default). It should loop on `ui_builder_await_comments` with calls shorter
+  than the host's request timeout, reuse the returned cursor, and notify only
+  when a new comment arrives, the grant expires, a material error needs action,
+  or the window ends. It must not mutate the design or discussion. Tell the
+  person when the watcher starts and exactly when it stops, so “background”
+  never implies an invisible permanent service. A delegated task belongs to
+  the current agent task unless the runtime explicitly provides durable
+  automations; it must not promise notification after that task is closed.
 
 ## Keeping a design
 
