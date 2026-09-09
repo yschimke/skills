@@ -96,9 +96,10 @@ invocation of the stub — there's no separate "now install the CLI" step.
   capability grant (`ui-builder-read/write/export`, not a scope), known-good
   starter documents, the component/slot/enum tables extracted from the 70 KB
   `list_catalogs` call, which components the *exporter* refuses even though the
-  document accepts them, and which calls are cheap. Also covers sharing a design
-  with a person, and the comment threads that make an agent a participant rather
-  than a batch job.
+  document accepts them, and which calls are cheap. Also covers the browser's
+  persistent reference overlay (overlay/difference/split/boxes), progress links
+  and bounded comment waits, sharing a design with a person, and the comment
+  threads that make an agent a participant rather than a batch job.
 - [`figma-catalog-import`](skills/figma-catalog-import/SKILL.md) — import
   a published `design-artifacts/<system>` catalog (from
   `compose-design-catalog`) into a **Figma** file as authoritative,

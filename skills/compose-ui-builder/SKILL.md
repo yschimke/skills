@@ -30,6 +30,7 @@ Everything below is the long version. This is the whole loop:
 ```jsonc
 // 1. request_access  — capabilities, not scope (see "Getting in")
 {"capabilities": ["ui-builder-read", "ui-builder-write", "ui-builder-export"],
+ "ttlSeconds": 14400,
  "label": "add a header row to the settings screen"}
 // → show approveUrl + userCode to your human, then poll_access
 
@@ -53,6 +54,27 @@ Everything below is the long version. This is the whole loop:
 // 5. tell your human where it is
 // https://<host>/ui-builder/<catalogSystemId>/settings-v2
 ```
+
+Send that browser URL as soon as the design exists, then keep sending the
+current revision, what just changed, the comment state, and the next action.
+Do not make a person infer progress from a silent series of MCP calls. A useful
+update is: “Desktop reference is at revision 4; the header and rails are in;
+there are no open comments; next I am comparing it with the attached reference.”
+
+Before creating anything, orient yourself:
+
+1. Look for an existing design or checked-in fixture with the requested name.
+   Read the current design, its links, and its comments before deciding to copy,
+   edit, or create it.
+2. Open the canonical path URL returned by the design identity:
+   `https://<host>/ui-builder/<catalogSystemId>/<designId>`. Do not invent an
+   old query-string URL; the path carries both the catalog and design.
+3. If the request names or attaches a visual reference, open **Frame, density
+   and reference** in the browser and check whether one is already attached.
+   The full reference workflow is under [Compare with a reference](#compare-with-a-reference).
+4. Report the link, revision, open-comment count, and the first planned part
+   before editing. This is the point where the person can correct the target
+   while the correction is still cheap.
 
 **Read [references/m3-catalog.md](./references/m3-catalog.md) rather than
 calling `ui_builder_list_catalogs` to find out what to insert.** It carries the
@@ -83,6 +105,11 @@ The handshake is the ordinary agent-grant one — see
 - **Ask for all three capabilities at once.** Discovering `ui-builder-write` one
   `403` at a time costs a human round trip each time, and an approver can only
   grant what the server's own ceiling allows anyway.
+- **Ask for enough time once.** An iterative authoring and review session often
+  outlives the one-hour default. Request `ttlSeconds: 14400` (four hours) when
+  the task includes reference comparison or live feedback, while keeping the
+  grant limited to these three capabilities. The approver may shorten it. Do
+  not ask for a longer grant merely to compensate for polling or idle waiting.
 - **Pass the token as each tool's `token` argument.** An MCP client fixes its
   headers when it connects, so a token approved mid-session cannot become a
   header. Every gated tool takes `token` for exactly this reason.
@@ -297,6 +324,52 @@ So decide which you are making, and act on it early:
   — is what you hand a person. Always give them this rather than describing the
   design.
 
+## Compare with a reference
+
+The browser has a persistent reference-diff workspace. It is not the same as
+adding an `asset/image` node and it is deliberately separate from the design:
+reference pixels are not catalog-validated, revisioned, replayed, or included
+in Kotlin/PNG/SVG exports.
+
+To find it, open the design URL, select **Frame, density and reference** in the
+right inspector rail, then use **Attach file** or paste an image from the
+clipboard. Choose the view that answers the current question:
+
+- **Overlay** for alignment at an adjustable opacity.
+- **Difference** to make matching pixels recede and expose visual mismatches.
+- **Split** for a movable before/after wipe.
+- **Boxes** for layout guides extracted from a compatible SVG.
+
+Adjust opacity, X/Y offset, scale, or the split position before changing the
+document; a badly aligned reference creates false design work. The same panel
+supports markup, component pieces, erasing, promotion of captured catalog
+components, and **Flatten** when the current annotated stack should become the
+next reference. The feature and its storage boundary are documented in
+[`UI_BUILDER_REFERENCE_OVERLAY.md`](https://github.com/yschimke/compose-preview-server/blob/main/docs/design/UI_BUILDER_REFERENCE_OVERLAY.md).
+
+An uploaded reference persists on the remote host beside the design. Before
+uploading a user-supplied screenshot, say that plainly and obtain explicit
+authorization for that image and destination. A request to inspect an
+attachment is not upload permission. Never print its base64 or put a bearer
+token in a URL, repository, comment, or progress update.
+
+At present the browser exposes reference import and diff controls, while the
+catalog MCP may expose no `ui_builder_*reference*` tool. Confirm with
+`tools/list`; do not pretend `put_asset` attaches a reference. When the MCP
+lacks parity, guide the person through the browser controls. Use the reference
+REST routes only when the person explicitly asked you to upload the image and
+the available execution environment can keep the token and pixel payload out
+of logs. Treat missing MCP parity as product feedback, not as evidence that the
+browser feature does not exist.
+
+After attaching a reference, inspect **Difference** or **Split** in the browser
+in addition to exporting the design on its own. For a UI-builder-shell
+reference, explicitly account for the top command bar (undo/redo,
+Design/Preview, code, share, renderer, new and overflow), both action rails,
+the surface/properties bar, zoom/fit controls, and the bottom
+revision/node/live status. Do not call the reference complete while those
+controls are absent merely because the central canvas resembles the target.
+
 ## Working with a person on it
 
 - **You are working as the person who approved your grant.** A design you create
@@ -337,13 +410,33 @@ So decide which you are making, and act on it early:
   say what you changed rather than only that you changed something. Your
   comments are marked `authorKind: agent`, so a channel can tell them from a
   person's.
+- **Check comments at the edges of every visible step.** Read comments before
+  the first edit and after every accepted `apply` or export. Acknowledge or
+  answer new feedback before starting the next part, and report the open-thread
+  count with the revision. This keeps a comment posted during a long build from
+  sitting unseen until the final handoff.
 - **Wait instead of polling.** `ui_builder_await_design` blocks until somebody
   else changes the design and returns what changed;
   `ui_builder_await_comments` does the same for the discussion. Both take a
   cursor you quote (`lastSequence` / `sequence`) and answer `timedOut` when
-  nothing happens, which you answer by calling again with the same cursor. This
-  is cheaper and faster than re-reading the design in a loop, and it is what
-  makes you a participant in a session rather than a poller.
+  nothing happens. Before a bounded wait, tell the person what link and revision
+  are ready, which feedback you are waiting for, and how long you will wait.
+  On timeout, say that no new comments arrived and either continue with the
+  stated next step or hand back control; do not silently recurse forever. Reuse
+  the same cursor for a later wait. This is cheaper and faster than re-reading
+  the design in a loop, and it is what makes you a participant in a session
+  rather than a poller.
+- **Delegate a background watcher when the agent runtime supports it.** For an
+  active collaborative session, give a background task the design id, host,
+  current comment `sequence`, and a bounded window (30 minutes is a useful
+  default). It should loop on `ui_builder_await_comments` with calls shorter
+  than the host's request timeout, reuse the returned cursor, and notify only
+  when a new comment arrives, the grant expires, a material error needs action,
+  or the window ends. It must not mutate the design or discussion. Tell the
+  person when the watcher starts and exactly when it stops, so “background”
+  never implies an invisible permanent service. A delegated task belongs to
+  the current agent task unless the runtime explicitly provides durable
+  automations; it must not promise notification after that task is closed.
 
 ## Keeping a design
 
