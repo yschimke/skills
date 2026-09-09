@@ -314,6 +314,16 @@ So decide which you are making, and act on it early:
   designer left, `ui_builder_post_comment` replies (pinned to a node, a markup
   stroke, or a point on the frame), `ui_builder_resolve_comment_thread` closes
   one. This is how you answer "why did you put the button there".
+- **A comment may leave the editor.** A host can be started with
+  `--ui-builder-comment-webhook`, and then a new thread, a reply and a
+  resolution are posted to a chat channel with a link back to the thread — the
+  author's name, the first 160 characters of what was said, and where it is
+  pinned. Reactions and acknowledgements are deliberately silent, so catching up
+  on a thread never pages anybody. Write a comment as something a PM or an
+  engineer might read in Slack rather than as a note to the designer alone, and
+  say what you changed rather than only that you changed something. Your
+  comments are marked `authorKind: agent`, so a channel can tell them from a
+  person's.
 - **Wait instead of polling.** `ui_builder_await_design` blocks until somebody
   else changes the design and returns what changed;
   `ui_builder_await_comments` does the same for the discussion. Both take a
