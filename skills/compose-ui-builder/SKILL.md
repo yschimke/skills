@@ -113,6 +113,18 @@ The handshake is the ordinary agent-grant one — see
 - **Pass the token as each tool's `token` argument.** An MCP client fixes its
   headers when it connects, so a token approved mid-session cannot become a
   header. Every gated tool takes `token` for exactly this reason.
+- **Collect approval in the background.** Immediately after `request_access`,
+  relay its exact `approveUrl` and `userCode`, then start a bounded background
+  task that calls `poll_access` with the returned request id and device secret.
+  `poll_access` is interval polling rather than a server-held long poll, so
+  obey `pollIntervalSeconds` and stop on approved, denied, expired or unknown;
+  never spin. The collector should hand the token back to the active task
+  without printing it and wake the edit automatically. Do not make the person
+  return and say “done” merely to trigger the first poll. If the runtime cannot
+  delegate background work, keep the current turn open and poll at the stated
+  interval while doing any useful ungated or already-authorized preparation.
+  The approval request itself normally expires after ten minutes, independently
+  of the longer grant TTL being requested.
 
 Grants live in memory: a redeploy drops yours mid-task. A sudden refusal is
 that, not a bug — ask again the same way.
