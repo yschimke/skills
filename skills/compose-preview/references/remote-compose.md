@@ -192,6 +192,132 @@ A working end-to-end example lives in [`samples/remotecompose/`](https://github.
 shapes, so you can see that the capture-and-replay path works end-to-end in
 the plugin's renderer.
 
+## The JSON format: two dialects, not one
+
+AndroidX also defines a **JSON** representation of a Remote Compose document, described by
+`compose/remote/Documentation/parts/remote_compose_schema.json` and `parts/json-parser.md` in the
+AndroidX tree. Before reaching for it, know that "the RemoteCompose JSON format" names two different
+things, that they are not inverses, and that conflating them is where every mistake in this area
+starts.
+
+| | **Authoring JSON** | **Document JSON** |
+| :--- | :--- | :--- |
+| What it is | a source language | a projection of a compiled document |
+| Who reads it | AndroidX's `RemoteComposeJsonParser` | you, `diff`, `jq` |
+| Names things as | `"bg"`, `"fillMaxSize"`, `"@w / 2.0"` | `ColorConstant`, `WidthModifierOperation` |
+| Specified by | AndroidX's `remote_compose_schema.json` | compose-preview, and nothing parses it back |
+
+```
+authoring JSON  --compile-->  .rc (binary)  --dump-->  document JSON
+                                   ^
+                       also written by a real render
+                       capturing a @RemoteComposable preview
+```
+
+One way. Dumping a compiled document does **not** give you back the JSON that produced it:
+compiling collapses names to integer ids, expands `fillMaxSize` into a `WidthModifierOperation`
+carrying a NaN-encoded marker, and flattens the ordered modifier list into the operation stream.
+That is what compilation is, not a gap someone will close.
+
+**Upstream ships the authoring direction only.** There is no official `.rc` → JSON writer in any
+AndroidX artifact; the document dialect is compose-preview's, and it is produced by walking the
+document through AndroidX's own `androidx.compose.remote.core.serialize.Serializable` hook rather
+than by re-reading the wire format.
+
+### Authoring a document as JSON
+
+The schema's only required key is `root`. A minimal document:
+
+```json
+{
+  "header": { "width": 300, "height": 300, "contentDescription": "Hello" },
+  "resources": { "colors": [ { "name": "bg", "value": "#FF102030" } ] },
+  "root": [
+    { "column": {
+        "modifiers": [ "fillMaxSize", { "background": "@colors.bg" }, { "padding": 12.0 } ],
+        "horizontalAlignment": "center",
+        "verticalAlignment": "center",
+        "children": [
+          { "text": { "value": "Hello RC JSON", "fontSize": 24.0, "color": "#FFFFFFFF" } }
+        ] } }
+  ]
+}
+```
+
+Components may be written either as `{ "column": { … } }` (the shorthand the docs recommend) or as
+`{ "type": "column", … }`. Modifiers are an **ordered** array — `.background().padding()` and
+`.padding().background()` are the same set and different pixels — and simple sizing modifiers may
+be bare strings (`"fillMaxWidth"`). Expressions are infix strings referring to variables with `@`
+(`"@w / 2.0"`). Helper objects — modifiers, shapes, click actions — always use the explicit
+`"type"` key even where components do not.
+
+**The trap worth knowing before you write one.** `RemoteComposeJsonParser` accepts `{}` and returns
+a valid, playable, 17-byte header-only document. So does a *generation-library entry*, which wraps
+the real document under a `json` key beside its prose metadata. Nothing downstream complains: the
+bytes are a real document, a bundle packs them, a player replays them, and the preview renders
+blank. `compose-preview rc compile` refuses a document with no `root` for exactly this reason —
+if you are calling the parser directly, check for `root` yourself.
+
+Also: **compiling is not rendering.** The parser runs on a platform whose text measurement and path
+parsing are stubs, so a document whose layout depends on measured text compiles cleanly and still
+has to be measured by a real player before its bounds mean anything.
+
+### `compose-preview rc`
+
+```
+compose-preview rc compile <doc.json> -o <doc.rc>   authoring JSON -> binary document
+compose-preview rc dump <doc.rc> [--compact]        binary document -> document JSON
+compose-preview rc dump <dir>                       every .rc under <dir> -> <stem>.rc.json
+compose-preview rc header <doc.rc> [--json]         declared size, profile, version — no inflate
+```
+
+Offline: no daemon, no Gradle, no project. `rc dump` on a `.rc` you pulled out of a bundle with
+`unzip` is a complete workflow.
+
+`rc header` answers the cheap questions cheaply — and `profiles` is the one to check first when a
+document plays in one host and is blank in another, because a player refuses a profile it does not
+implement by drawing nothing:
+
+```
+$ compose-preview rc header sticker.rc
+version              1.1.0
+size                 300 x 300
+contentDescription   Simple Timer
+profiles             513  (EXPERIMENTAL)
+bytes                1395
+```
+
+**Reading a dump.** Non-finite floats appear as strings, and that is not cosmetic. An id in this
+format does not travel as a number — it travels as a *NaN payload* — so `"width": ["@42", "@42"]`
+is two encoded references, and `"NaN"` is a genuine NaN (`fillMaxWidth` uses one as its "no
+explicit fraction" marker). `$tags` names the operation's role (`COMPONENT`, `MODIFIER`,
+`DRAW_OPERATION`, …) so you can filter a dump to the layout tree without hardcoding type names.
+`$unserialized` marks an operation upstream has not taught to serialize — `Header` always appears
+there, and is decoded properly into the dump's own `header` key, so seeing it twice is expected.
+
+**The one gotcha in the batch mode.** `File.listFiles()` decodes names with `sun.jnu.encoding`;
+under `LANG=C`/`POSIX` that is ASCII, and a preview id containing an em-dash comes back mangled and
+unreadable. `rc dump <dir>` refuses such a tree by name rather than reporting it as empty — but run
+it under `LANG=C.UTF-8` and the question does not arise.
+
+### Where the JSON shows up already
+
+- **A served catalog** answers `GET /render/<id>.rc.json` with the document JSON for any preview it
+  publishes a `.rc` for — the text counterpart of the existing `.rc` lane, which serves bytes for
+  the in-browser player. A document the server can serve but cannot inflate (a bundle baked on a
+  newer Remote Compose alpha than the server links) answers `422` naming the document, rather than
+  failing as a server error.
+- **A delivery branch** carries `documents/<id>.rc.json` when its catalog sets `rc-document-json` on
+  the design-artifacts workflow. That is what makes "did the component change, or did the player
+  draw it differently" answerable from a `git diff` — a question a PNG diff cannot separate from a
+  different antialiasing pass. `remote-m3` in
+  [yschimke/wear-m3-catalog](https://github.com/yschimke/wear-m3-catalog) is the worked example.
+
+The normative account of all of this — including why the dump rides AndroidX's serialization hook
+instead of a hand-written binary reader — is
+[`docs/design/REMOTE_COMPOSE_JSON.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/design/REMOTE_COMPOSE_JSON.md)
+in compose-ai-tools.
+
 ## Building live-updating widgets
 
 Most Remote Compose consumers are widget-like: a Glance widget, a tile,
