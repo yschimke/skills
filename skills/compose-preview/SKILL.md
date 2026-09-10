@@ -57,6 +57,11 @@ Commands:
   extensions run a11y-annotated-preview.render
            One-shot a11y hierarchy + ATF + annotated overlay render
   doctor   Verify Java 17+ + project compatibility (run before Setup)
+  rc       Remote Compose JSON codec, offline (compile | dump | header).
+           `rc dump <doc.rc>` makes a captured .rc readable and diffable;
+           `rc compile <doc.json>` builds one from AndroidX's authoring
+           JSON. The two dialects are NOT inverses — see
+           references/remote-compose.md before assuming a round trip.
 
 Options:
   --module <name>      Target a single module (default: auto-detect)
@@ -395,7 +400,7 @@ Loaded on demand. Read only what the current task needs.
 | [references/resource-previews.md](./references/resource-previews.md) | Android XML resources (`<vector>`, `<animated-vector>`, `<adaptive-icon>`). |
 | [references/wear-ui.md](./references/wear-ui.md) | Wear OS Material 3 Expressive design. |
 | [references/wear-tiles.md](./references/wear-tiles.md) | Wear Tiles (protolayout, not Compose). |
-| [references/remote-compose.md](./references/remote-compose.md) | Remote Compose dialect, `RemoteDocument`, and the wrapper + connector requirement for recorded `.rc` export. |
+| [references/remote-compose.md](./references/remote-compose.md) | Remote Compose dialect, `RemoteDocument`, the wrapper + connector requirement for recorded `.rc` export, and the JSON format — authoring JSON in, document JSON out, and `compose-preview rc`. |
 | [references/agent-cloud.md](./references/agent-cloud.md) | Running compose-preview in Claude Code cloud sandboxes (allowlist, JDK, install paths). |
 | [references/vscode.md](./references/vscode.md) | VS Code extension (humans, not agents). |
 
