@@ -84,56 +84,65 @@ authority and answers with far more — every component's parameters, adapter an
 parity statuses — so reach for it when something is missing from the reference
 file, and reduce it with the recipe at the bottom of that file.
 
-## Two rules that outrank convenience
+## Two habits worth keeping
 
-**1. Follow Material guidance, and that includes responsive layout.**
+**1. Follow Material guidance, responsive layout included.**
 
-A screen is not finished because it looks right at the frame you authored it at.
-Material's adaptive guidance is part of the design, not a later pass, so reach
-for the catalog's adaptive components *first* and fall back to fixed layout only
-where there is nothing to reach for:
+A screen that looks right at the frame you authored it at may still have work
+left, so it is worth reaching for the catalog's adaptive components before
+falling back to fixed layout:
 
 - `layout/supporting-pane-scaffold` is `androidx.compose.material3.adaptive`'s
-  own `SupportingPaneScaffold`. It is given a directive computed from the
-  frame's constraints, so it collapses to one pane on a phone by itself. Put
-  list-detail and content-plus-context screens in it rather than in a `row`.
-- `layout/lazy-grid` with `{"type": "adaptiveGrid", "minimumCellWidthDp": N}`
-  is `GridCells.Adaptive`, and reflows its column count with the width. Prefer
-  it to a fixed column count wherever the item has a natural minimum size.
+  own `SupportingPaneScaffold`. It gets a directive computed from the frame's
+  constraints, so it collapses to one pane on a phone by itself — a good fit for
+  list-detail and content-plus-context screens, better than a `row`.
+- `layout/lazy-grid` with `{"type": "adaptiveGrid", "minimumCellWidthDp": N}` is
+  `GridCells.Adaptive`, and reflows its column count with the width. Usually
+  what you want wherever the item has a natural minimum size.
 - Set `environment.exportDevices` to the devices the screen claims to work on,
-  and **look at every one of them** before calling it done. The set you look at
-  is the set the export writes as `@Preview(device = …)`.
+  and try to look at each before calling it done — the set you look at is the
+  set the export writes as `@Preview(device = …)`.
 
-Never answer a width problem by branching the document — two designs for two
-sizes is the thing adaptive layout exists to avoid, and the builder has one
-document per design on purpose.
+If you find yourself wanting to branch the document on width, that is usually a
+sign an adaptive component fits better: the builder holds one document per
+design, and two designs for two sizes is the thing adaptive layout saves you
+from.
 
-Then check the result at a compact frame and read it honestly. A navigation rail
-that is still a rail at 411dp, a chip row squeezed to one letter per line, a
-tab row breaking its labels over three lines — those are findings, not
-cosmetics, and rule 2 says what to do with them.
+Then read the compact frame honestly. A navigation rail still 88dp wide at
+411dp, a chip row squeezed to one letter per line, a tab row breaking its labels
+over three lines — worth treating as findings rather than cosmetics, which leads
+to the second habit.
 
-**2. Report the bug first. Work around it second, and say that you did.**
+**2. Report the gap before working around it, and say that you worked around it.**
 
 When the catalog, the canvas or an exporter will not do the Material-correct
-thing, the finding is the valuable output — more valuable than the screen. In
-order:
+thing, the finding is often worth more than the screen. Roughly in order:
 
-1. **File it** against
-   [compose-preview-server](https://github.com/yschimke/compose-preview-server/issues)
-   with the node, the property, the message, and which lane refused (canvas,
-   local export, server export — they do not always agree). A design comment
-   pinned to the node with `ui_builder_post_comment` puts it where the designer
-   will see it; an issue puts it where it gets fixed. A real gap is worth both.
+1. **File it**, with the node, the property, the message, and which lane
+   refused — canvas, local export, server export; they do not always agree, and
+   which ones disagree is half the report.
+
+   Where it goes depends on what is missing, because the catalogs are their own
+   projects on their own release trains:
+
+   | The gap | Where it belongs |
+   | --- | --- |
+   | A component the catalog does not have, or one whose declared property it does not honour — no `NavigationSuiteScaffold`, no `FlowRow`, a `contentAlignment` nothing reads | the catalog's own repository: **m3-catalog**, **wear-m3-catalog** |
+   | The builder, the canvas, an exporter or the wire — a shape the canvas draws and the exporter refuses, a validator that disagrees with the server, a dock that clears what you picked | [compose-preview-server](https://github.com/yschimke/compose-preview-server/issues) |
+
+   Not always obvious which, and it is fine to say so: file where you can reach,
+   name the component and the lane, and say which project you think owns it.
+
+   A design comment pinned to the node with `ui_builder_post_comment` also puts
+   it where the designer will see it. For a real gap, usually worth both.
 2. **Then** author the stand-in, if the screen needs one — a `column` of icon
    buttons where a navigation rail should be, rows where a fixed grid should be.
-3. **Label it as a stand-in**, in the comment and in whatever you hand back. An
-   unlabelled workaround reads as the catalog's answer and hides the gap from
-   the next person.
+3. **Say it is a stand-in**, in the comment and in whatever you hand back. An
+   unlabelled workaround tends to read as the catalog's answer, which hides the
+   gap from the next person.
 
-Never quietly lower the design to what the catalog supports. "I used a Row
-because there is no FlowRow" is a useful sentence; a Row with no explanation is
-a screen that looks finished and is not.
+"I used a Row because there is no FlowRow" is a useful sentence. A Row with no
+explanation is a screen that looks finished and is not.
 
 ## Getting in
 
