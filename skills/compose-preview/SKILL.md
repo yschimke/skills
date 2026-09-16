@@ -240,26 +240,6 @@ output stays cheap to read. See
 [references/agent-cloud.md](./references/agent-cloud.md) for the cloud
 install/allowlist details.
 
-## Two rules that outrank convenience
-
-**1. Follow Material guidance, and that includes responsive layout.** A change
-is not verified because one `@Preview` looks right. Render it at a compact, a
-medium and an expanded width before calling it done — `@Preview(device =
-"spec:width=411dp,height=914dp,dpi=160")` and friends cost one render each — and
-prefer the adaptive components (`NavigationSuiteScaffold`,
-`ListDetailPaneScaffold`, `SupportingPaneScaffold`, `GridCells.Adaptive`,
-`FlowRow`) over a fixed layout plus a width branch. A rail that is still a rail
-at 411dp is a finding, not a cosmetic.
-
-**2. Report the bug first. Work around it second, and say that you did.** When a
-component, a renderer or an exporter will not do the Material-correct thing, the
-finding is worth more than the screen: file it, then write the stand-in if the
-work needs one, then label the stand-in as one. An unlabelled workaround reads
-as the framework's answer and hides the gap from the next person.
-
-The long form of both, with the catalog-specific detail, is in the
-[compose-ui-builder](../compose-ui-builder/SKILL.md) skill.
-
 ## Designing composables for previewability
 
 `@Preview` only calls composables with zero arguments (or all-default), so
