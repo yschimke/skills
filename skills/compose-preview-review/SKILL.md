@@ -78,6 +78,25 @@ Pick the workflow that matches the task:
    only with explicit consent — see
    [references/agent-pr.md § Uploading images](./references/agent-pr.md#3-uploading-images-only-with-explicit-consent).
 
+## Two rules that outrank convenience
+
+**1. Follow Material guidance, and that includes responsive layout.** A UI diff
+that is clean at one width has not been reviewed. Render base and head at a
+compact and an expanded frame, and treat a layout that only works at the
+author's frame as a finding: a navigation rail still 88dp wide on a phone, a
+chip row that cannot wrap, a tab row breaking its labels. Ask whether the
+adaptive component exists and was skipped (`NavigationSuiteScaffold`,
+`ListDetailPaneScaffold`, `SupportingPaneScaffold`, `GridCells.Adaptive`,
+`FlowRow`) before accepting a width branch.
+
+**2. Report the bug first. Work around it second, and say that you did.** If the
+PR works around a framework or catalog gap, the review should ask whether the
+gap was filed. An unlabelled workaround is the thing to comment on — it reads as
+the framework's answer and hides the gap from the next person.
+
+The long form of both is in the
+[compose-ui-builder](../compose-ui-builder/SKILL.md) skill.
+
 ## Reference docs
 
 | Path | When to read |

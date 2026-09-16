@@ -84,6 +84,57 @@ authority and answers with far more — every component's parameters, adapter an
 parity statuses — so reach for it when something is missing from the reference
 file, and reduce it with the recipe at the bottom of that file.
 
+## Two rules that outrank convenience
+
+**1. Follow Material guidance, and that includes responsive layout.**
+
+A screen is not finished because it looks right at the frame you authored it at.
+Material's adaptive guidance is part of the design, not a later pass, so reach
+for the catalog's adaptive components *first* and fall back to fixed layout only
+where there is nothing to reach for:
+
+- `layout/supporting-pane-scaffold` is `androidx.compose.material3.adaptive`'s
+  own `SupportingPaneScaffold`. It is given a directive computed from the
+  frame's constraints, so it collapses to one pane on a phone by itself. Put
+  list-detail and content-plus-context screens in it rather than in a `row`.
+- `layout/lazy-grid` with `{"type": "adaptiveGrid", "minimumCellWidthDp": N}`
+  is `GridCells.Adaptive`, and reflows its column count with the width. Prefer
+  it to a fixed column count wherever the item has a natural minimum size.
+- Set `environment.exportDevices` to the devices the screen claims to work on,
+  and **look at every one of them** before calling it done. The set you look at
+  is the set the export writes as `@Preview(device = …)`.
+
+Never answer a width problem by branching the document — two designs for two
+sizes is the thing adaptive layout exists to avoid, and the builder has one
+document per design on purpose.
+
+Then check the result at a compact frame and read it honestly. A navigation rail
+that is still a rail at 411dp, a chip row squeezed to one letter per line, a
+tab row breaking its labels over three lines — those are findings, not
+cosmetics, and rule 2 says what to do with them.
+
+**2. Report the bug first. Work around it second, and say that you did.**
+
+When the catalog, the canvas or an exporter will not do the Material-correct
+thing, the finding is the valuable output — more valuable than the screen. In
+order:
+
+1. **File it** against
+   [compose-preview-server](https://github.com/yschimke/compose-preview-server/issues)
+   with the node, the property, the message, and which lane refused (canvas,
+   local export, server export — they do not always agree). A design comment
+   pinned to the node with `ui_builder_post_comment` puts it where the designer
+   will see it; an issue puts it where it gets fixed. A real gap is worth both.
+2. **Then** author the stand-in, if the screen needs one — a `column` of icon
+   buttons where a navigation rail should be, rows where a fixed grid should be.
+3. **Label it as a stand-in**, in the comment and in whatever you hand back. An
+   unlabelled workaround reads as the catalog's answer and hides the gap from
+   the next person.
+
+Never quietly lower the design to what the catalog supports. "I used a Row
+because there is no FlowRow" is a useful sentence; a Row with no explanation is
+a screen that looks finished and is not.
+
 ## Getting in
 
 The `ui_builder_*` tools are gated on **capabilities** — `ui-builder-read`,
