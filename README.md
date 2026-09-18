@@ -96,7 +96,10 @@ invocation of the stub — there's no separate "now install the CLI" step.
   capability grant (`ui-builder-read/write/export`, not a scope), known-good
   starter documents, the component/slot/enum tables extracted from the 70 KB
   `list_catalogs` call, which components the *exporter* refuses even though the
-  document accepts them, and which calls are cheap. Also covers the browser's
+  document accepts them, and which calls are cheap. Running a **local**
+  session with no host at all is its own section (`ui-builder --no-project`, the
+  `--agent-grant-capabilities` ceiling that decides whether MCP works, and the
+  two MCP surfaces' different tool names). Also covers the browser's
   persistent reference overlay (overlay/difference/split/boxes), progress links
   and bounded comment waits, sharing a design with a person, and the comment
   threads that make an agent a participant rather than a batch job.
