@@ -111,6 +111,25 @@ else works and the startup log says which version it found.
 The port is the server's default (`8723`) unless taken, in which case the next
 free one is used — **read the printed URL, don't assume the port**.
 
+### With a project: name the module
+
+Drop `--no-project` and the server wants a Gradle project and a build host, and
+it discovers *every* module that applies the preview plugin. On a repo with more
+than one module — or with a module whose previews do not render on your machine
+— that is a build you did not ask for, and the server refuses to host more than
+one module anyway. Pass the module:
+
+```sh
+compose-preview ui-builder --module :my-module --no-open
+```
+
+`--module` scopes discovery and the render to that one module, so a broken
+sibling cannot fail the build before the builder starts. (A server distribution
+older than the fix for this ignores the flag, builds everything, and then asks
+you to narrow — update the distribution if you see that.) `--no-project` and
+`--module` are mutually exclusive; the server refuses the pair rather than
+guessing.
+
 ### The flag that decides whether MCP works at all
 
 A local session is closed by default. Three facts, each of which cost an agent
