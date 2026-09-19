@@ -131,11 +131,21 @@ where mDNS resolves it. Two things to know before sharing one:
 - **A LAN address is not a secure context.** `localhost`, `127.0.0.1` and
   `*.localhost` are trusted by browsers; a machine name or a raw LAN IP over
   plain HTTP is not. Browser APIs that require a secure context — clipboard
-  writes, `crypto.subtle`, service workers — are unavailable there, so a feature
-  that works on the local URL can fail only on the network one. If the editor is
-  blank or a control misbehaves on the machine name and works on `127.0.0.1`,
-  check that before anything else. An HTTPS front (a reverse proxy or a tunnel)
-  is what makes the network URL a secure context; `--lan` alone cannot.
+  writes, `crypto.subtle`, `crypto.randomUUID`, service workers — are
+  unavailable there, so a feature that works on the local URL can fail only on
+  the network one. If the editor is blank or a control misbehaves on the machine
+  name and works on `127.0.0.1`, check that before anything else. An HTTPS front
+  (a reverse proxy or a tunnel) is what makes the network URL a secure context;
+  `--lan` alone cannot.
+
+  This is a real failure the guide used to understate: the editor generated its
+  per-page nonce with `crypto.randomUUID`, which is secure-context-only, so on
+  `http://<host>.local:8723/` the whole session died inside a coroutine and the
+  page stayed blank while the console showed only
+  `Exception while trying to handle coroutine exception`
+  ([compose-ui-builder#42](https://github.com/yschimke/compose-ui-builder/pull/42)).
+  A blank page on the network URL and a working one on `127.0.0.1` is that class
+  of bug until proved otherwise; a browser's console is the only place it says so.
 
 ### The flag that decides whether MCP works at all
 
