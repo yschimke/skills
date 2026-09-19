@@ -111,6 +111,32 @@ else works and the startup log says which version it found.
 The port is the server's default (`8723`) unless taken, in which case the next
 free one is used — **read the printed URL, don't assume the port**.
 
+### Reaching it from another device
+
+The server binds **loopback** by default, so the printed `127.0.0.1` URL works
+only on the machine that started it. Add `--lan` to bind all interfaces and
+print the network URL too:
+
+```sh
+compose-preview ui-builder --no-project --no-open --lan
+#   Local:   http://127.0.0.1:8723/?token=…
+#   Network: http://192.168.0.36:8723/?token=…
+```
+
+Both URLs answer, including the machine's own name (`http://<host>.local:8723/`)
+where mDNS resolves it. Two things to know before sharing one:
+
+- **The token in the link is the only gate.** `--lan` prints a warning saying so;
+  share the link only with people you would let see the previews.
+- **A LAN address is not a secure context.** `localhost`, `127.0.0.1` and
+  `*.localhost` are trusted by browsers; a machine name or a raw LAN IP over
+  plain HTTP is not. Browser APIs that require a secure context — clipboard
+  writes, `crypto.subtle`, service workers — are unavailable there, so a feature
+  that works on the local URL can fail only on the network one. If the editor is
+  blank or a control misbehaves on the machine name and works on `127.0.0.1`,
+  check that before anything else. An HTTPS front (a reverse proxy or a tunnel)
+  is what makes the network URL a secure context; `--lan` alone cannot.
+
 ### The flag that decides whether MCP works at all
 
 A local session is closed by default. Three facts, each of which cost an agent
