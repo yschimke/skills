@@ -950,7 +950,7 @@ install_skills_bundle() {
   local tmpfile="$TMP/skills.tar.gz"
   local extract="$TMP/skills-extract"
   log "downloading skill bundles from $SKILLS_REPO@$SKILLS_REF"
-  if ! curl -fL --progress-bar -o "$tmpfile" "$url" 2>/dev/null; then
+  if ! curl --retry 8 --retry-max-time 300 -fL --progress-bar -o "$tmpfile" "$url" 2>/dev/null; then
     log "warning: could not download $url — skipping skill bundles"
     return 1
   fi
