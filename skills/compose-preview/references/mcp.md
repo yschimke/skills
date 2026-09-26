@@ -162,7 +162,13 @@ for the full table) cover the rest:
   explicit pixel bounds) are the token-frugal knobs — see
   [`references/agent-loop.md`](./agent-loop.md). `force = { reason }` is the
   sanctioned escape hatch for stale renders — see the "do not delete
-  `build/classes/`" note above.
+  `build/classes/`" note above. Draft
+  [#1124](https://github.com/yschimke/compose-preview-server/pull/1124) adds
+  `inline: false` for an absolute `pngPath`, dimensions, SHA-256, duration, and
+  session-scoped `changed`; it cannot be combined with `crop`.
+- `find_previews_for_file(path, workspaceId?)` — draft #1124 maps a source path
+  to preview URIs. No `workspaceId` searches all workspaces; an empty array
+  means no previews. Do not reconstruct a URI from a Kotlin name.
 - `render_matrix`, `diff_semantics`, `record_preview` — the Playwright-style
   interaction/regression tools (matrix sweep, pixel-free semantics diff,
   record-to-Compose-UI-test). Covered in
@@ -174,26 +180,29 @@ for the full table) cover the rest:
   heat-map, …) alongside the PNG. See
   [`references/data-products.md`](./data-products.md) for the kind catalogue.
 
-### Shared viewer, prompts, and fallbacks
+### Draft viewer, prompts, and fallbacks
 
-Newer servers expose `ui://compose-preview/viewer` as
-`text/html;profile=mcp-app` and attach it to applicable tools through
-`_meta.ui.resourceUri`. Open it only when the specific result kind carries a
-payload the linked tool/result contract explicitly documents for the viewer,
-and inspect the same result yourself. Current and older results may still
-include base64 image blocks.
+As of 2026-09-26 these remain unreleased drafts: #1124 supplies file lookup/path
+results; [#1126](https://github.com/yschimke/compose-preview-server/pull/1126)
+and [#1130](https://github.com/yschimke/compose-preview-server/pull/1130) supply
+the viewer/resources; [#1128](https://github.com/yschimke/compose-preview-server/pull/1128)
+supplies prompts/variant choice. Use only advertised capabilities and record a
+minimum server version here after release.
 
-The viewer is optional. Preserve all returned text/image blocks. When the
-specific result contains a `resource_link` or local `pngPath`, give that to the
-person as shared evidence too. Use only actions explicitly advertised by the
-app/result, and treat returned model context as a request for the next typed
-operation rather than evidence that an operation landed.
+The viewer and action rules match the remote
+[viewer contract](./catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks):
+a viewer association is not a `resource_link`, fallbacks stay complete, and
+model context does not prove an action ran.
 
-If `prompts/list` advertises `preview-file` or `migrate-wear-m3`, they are
-shortcuts for the workflows in this skill, not replacement instructions. A
-client without prompt discovery follows those workflows directly. Likewise, a
-variant-choice form may arrive through elicitation; without it, list the same
-closed choices in chat and wait for an explicit selection.
+On the local native profile, `preview-file` (required `path`) and
+`migrate-wear-m3` (no arguments) return text instructions, not executed
+workflows. The first uses `find_previews_for_file`; the second still defers API
+choices to the official Wear Compose M3 skill. Without prompt discovery, follow
+the same typed steps.
+
+The only form elicitation is `render_matrix` with `choose: true`; otherwise its
+labelled choices are text. Access still uses `request_access` / `poll_access`
+with the exact URL and code—#1128 adds no URL elicitation.
 
 ## Multi-workspace and worktrees
 

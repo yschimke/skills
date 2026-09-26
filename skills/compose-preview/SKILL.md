@@ -30,11 +30,11 @@ to compare against the latest release (warns when the local copy trails), and
   so the person can inspect the same render. If the harness cannot display the
   render, say which surface is unavailable and why; do not describe an inferred
   visual result as something you saw.
-- When a render result supplies the shared Compose viewer resource or link,
-  use it only for result kinds the linked tool/result contract explicitly
-  documents, then show it to the person after inspecting it yourself. Preserve
-  every returned text/image block and artifact path as the fallback; an MCP App
-  is an enhancement, never the only result.
+- When a render result advertises the shared Compose viewer, inspect only a
+  payload kind that result documents. Share a `resource_link` only when the
+  result actually returns one, and retain its text/image/path fallback. The
+  exact local and remote contracts are in [references/mcp.md](./references/mcp.md)
+  and [references/catalog-mcp.md](./references/catalog-mcp.md).
 - Prefer typed MCP tools and their published input/output schemas. Use a
   dedicated validation tool when the server exposes one. Do not hand-edit
   design or render-manifest JSON as a substitute for a typed operation; if a
@@ -51,21 +51,12 @@ to compare against the latest release (warns when the local copy trails), and
 
 ## Interactive MCP capabilities
 
-Discover capabilities instead of assuming the harness implements them:
-
-- If `prompts/list` offers `preview-file`, use it for the ordinary
-  file-to-previews workflow. Use `migrate-wear-m3` for the migration checklist,
-  while continuing to defer API choices to the official Wear Compose M3 skill.
-  When prompt discovery is absent, follow the equivalent steps in this skill.
-- If a server asks for a closed choice through form elicitation, present that
-  interaction and use only an accepted value. If elicitation is absent,
-  declined, or cancelled, list the same choices in chat and do not infer a
-  selection. Access-grant URL elicitation follows the same rule: otherwise
-  relay the approval URL and verification code as text.
-- Use only viewer actions the app explicitly advertises. Treat returned model
-  context as a request for the next typed operation, not proof that it ran. If
-  an action is absent, use the semantic ref, overrides, or other identifiers
-  from the complete text result instead.
+- Viewer/resource results, file-path lookup, prompts, and variant selection are
+  still unreleased drafts as of 2026-09-26. Discover them from the connected
+  server and follow the exact shipped-vs-draft contracts in the local
+  [MCP](./references/mcp.md#draft-viewer-prompts-and-fallbacks) or remote
+  [catalog MCP](./references/catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks)
+  reference; do not infer a capability from this skill alone.
 
 ## Gradle tasks
 

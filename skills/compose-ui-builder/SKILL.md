@@ -44,12 +44,11 @@ These rules apply before the creation and editing recipes below:
    schema is not available, say so; an export diagnostic is useful but is not
    a substitute for document validation. If hand-editing is unavoidable,
    validate before saving and render again afterwards.
-4. **See the editor after each visible step.** Call `ui_builder_view` after an
-   accepted batch and before calling the visual result done. The editor view,
-   not document JSON or an export alone, is the surface the person judges. If
-   the host does not expose `ui_builder_view`, say that the editor surface is
-   unavailable and do not claim to have seen it. PNG/SVG and native renders
-   remain useful additional checks.
+4. **See the editor after each visible step.** `ui_builder_view` is unreleased
+   and gated on [#1114](https://github.com/yschimke/compose-preview-server/issues/1114).
+   Use it only when advertised. Otherwise inspect PNG/SVG or native output,
+   label it as not the editor viewport, give the browser URL, and never infer
+   selection, overlays, or comment pins from JSON or an export.
 5. **Close temporary copies.** A local copy may be used for a compile check or
    offline experiment only. Announce its path and purpose, keep its recorded
    home pointing at the canonical design, and save the result back to that home
@@ -62,31 +61,10 @@ capability that prevented one of those checks.
 
 ## Viewer, prompts, and interactive decisions
 
-Use the richer MCP surface when the server and harness advertise it, without
-making the workflow depend on it:
-
-- When a visible render or `ui_builder_view` result supplies the shared Compose
-  viewer, use it only when the linked tool/result contract explicitly documents
-  that payload kind, then inspect the same revision. If the result supplies a
-  `resource_link`, show it to the person; otherwise use the embedded viewer and
-  keep every returned text/image block, artifact path, design home, and
-  revision as the shareable fallback. Report when `ui_builder_view` itself is
-  unavailable.
-- Prefer the `review-design` prompt to open a design at its home, read pending
-  comments, view it, and summarize attention needed. Prefer `design-status` for
-  its home, revision, comments, and temporary-copy state. If prompts are not
-  discoverable, perform those exact typed-tool steps directly.
-- R3 decisions are closed choices. When form elicitation is available, use it
-  for save-back/discard/keep, moving a home, or resolving a re-import onto an
-  existing home. Otherwise list the identical choices in chat and wait for an
-  explicit answer. A decline or cancellation is not consent.
-- URL elicitation may present the scoped access approval page. Without it,
-  relay the exact approval URL and verification code in text and continue the
-  documented polling flow. Never ask for the operator token.
-- Use only viewer actions the app explicitly advertises. Returned model context
-  is a request, not proof of mutation; perform and verify the corresponding
-  typed operation. When an action is unavailable, provide the equivalent node
-  id, overrides, tool call, or editor link as text.
+- Viewer/resources and prompts are unreleased drafts as of 2026-09-26. Follow
+  their exact arguments and fallbacks in the
+  [catalog MCP reference](../compose-preview/references/catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks),
+  and never infer a viewer action or mutation from model context.
 
 ## Core creation loop
 
@@ -590,10 +568,10 @@ one call for the lot. Each is its own revision, so:
 Batch *within* a part, though: a container and the child its slot requires go in
 one call, because a slot with a minimum is refused while it is empty.
 
-After each accepted part, call `ui_builder_view` and inspect the editor surface.
-If that tool is absent, state that limitation before continuing and do not
-replace it with an inference from the document JSON. Check server comments at
-the same boundary so feedback lands before the next part.
+After each accepted part, perform the available visual check described in the
+collaboration contract. State when the editor-view tool is absent, and do not
+replace it with an inference from document JSON. Check server comments at the
+same boundary so feedback lands before the next part.
 
 ## Export is also a check
 
@@ -616,19 +594,18 @@ So decide which you are making, and act on it early:
 - **The design is the deliverable** — a mockup, a PNG, a screen a designer takes
   over → use whatever the catalog offers and read the diagnostics as a note about
   the generator rather than a problem with your design.
-- **Server-driven UI is the deliverable** → when the tool surface exposes A2UI
-  export, export the design as A2UI JSON, validate the reported diagnostics,
-  and inspect the rendered A2UI document in the shared viewer. Return the
-  document artifact and, only when the result supplies one, its `resource_link`.
-  If A2UI export or rendering is absent, name that capability gap instead of
-  presenting another format as equivalent.
+- **Server-driven UI is the deliverable** → on an A2UI-capable catalog pin,
+  call `ui_builder_export` with `format: "json"` and read its diagnostics.
+  Verify visuals separately with `format: "png"` or advertised native render;
+  the viewer does not render A2UI. Return a `resource_link` only when supplied,
+  and do not treat another JSON format as equivalent.
 
 ## Seeing what you built
 
-- **`ui_builder_view`** — the editor as the person sees it, including viewport,
-  selection, overlays, and comment pins. Use it after each visible step and for
-  the final check. Some deployments do not expose it yet; say so when it is
-  absent rather than claiming an export is the editor view.
+- **`ui_builder_view`** — unreleased behind
+  [#1114](https://github.com/yschimke/compose-preview-server/issues/1114).
+  When advertised, it is the editor viewport, selection, overlays, and comment
+  pins. Otherwise say it is absent; an export is not the editor view.
 - **`ui_builder_export` `format: "compose"`** — the generated Kotlin, plus
   `diagnostics` naming anything the generator refused. Empty diagnostics is the
   gate a designer sees in the browser's code pane, so it is a real check on the

@@ -96,26 +96,30 @@ Every catalog tool takes either a `uri`, or a `catalog` + `previewId` pair.
 `list_projects` is how you learn the catalog ids; nothing needs client
 reconfiguration when a catalog is added or retired.
 
-### Shared viewer and interactive capability fallbacks
+### Draft viewer and interactive capability fallbacks
 
-When available, `ui://compose-preview/viewer` is the shared MCP App. Applicable
-tool definitions identify it with `_meta.ui.resourceUri`; open it only when the
-linked tool/result contract explicitly documents viewer support for that result
-kind. If that result contains a `resource_link`, inspect the same revision and
-give the link to the person. Do not assume every linked tool or result kind has
-viewer rendering yet.
+As of 2026-09-26 these are open drafts, not a released contract: the MCP App is
+[#1126](https://github.com/yschimke/compose-preview-server/pull/1126), linked
+resources are [#1130](https://github.com/yschimke/compose-preview-server/pull/1130),
+and prompts/variant choice are
+[#1128](https://github.com/yschimke/compose-preview-server/pull/1128). Use only
+advertised capabilities; after release, record the minimum server version here.
 
-Every result remains usable without MCP Apps. Preserve its text, structured
-metadata, image block, artifact URL/path, design home, revision, and stable
-node/ref. Use only viewer actions the app explicitly advertises. If an action is
-unavailable, state the equivalent typed tool call or editor link instead of
-claiming the action ran.
-
-Servers may also advertise `review-design` and `design-status` through
-`prompts/list`. Treat them as discoverable shortcuts; perform the documented
-home, comment, view, and status calls yourself when the harness does not expose
-prompts. URL elicitation may show the access approval page, but the fallback is
-still the exact approval URL plus verification code and the same polling flow.
+- `ui://compose-preview/viewer` (`text/html;profile=mcp-app`) is attached with
+  `_meta.ui.resourceUri`. Open only documented payloads. The association is not
+  a link: share a `resource_link` only when the result returns one; otherwise
+  retain the embedded viewer plus complete text/image/artifact fallback.
+- With UI Builder configured, `review-design` and `design-status` are text-only
+  prompts with required `designId`; they instruct, but do not perform, typed
+  calls. `ui_builder_view` remains gated on
+  [#1114](https://github.com/yschimke/compose-preview-server/issues/1114), and
+  PNG/native output is not the editor view.
+- The only form elicitation is `render_matrix` with `choose: true`; unsupported
+  clients receive the labelled choices as text. R3 decisions remain chat
+  choices. Access remains the exact URL/code `request_access` / `poll_access`
+  flow—there is no URL elicitation.
+- Use only advertised actions; model context requests a later typed call and
+  does not prove it ran. The draft viewer does not render A2UI documents.
 
 ### `resources/read` before `render_preview`
 
