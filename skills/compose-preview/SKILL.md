@@ -18,6 +18,23 @@ Run `compose-preview --version` to see the installed CLI bundle, `compose-previe
 to compare against the latest release (warns when the local copy trails), and
 `compose-preview update` to re-run the bootstrap installer.
 
+## Non-negotiable agent loop
+
+- After changing Compose UI, render the affected preview and **look at the
+  resulting image on the surface where the person will judge it**. Use the
+  typed MCP render tool when available, or the CLI and its reported `pngPath`;
+  then open that image with the host's image viewer. Source, semantics, hashes,
+  and a successful build are useful checks, but none of them proves what the
+  UI looks like.
+- Showable evidence is part of the result. Keep the returned image or file path
+  so the person can inspect the same render. If the harness cannot display the
+  render, say which surface is unavailable and why; do not describe an inferred
+  visual result as something you saw.
+- Prefer typed MCP tools and their published input/output schemas. Use a
+  dedicated validation tool when the server exposes one. Do not hand-edit
+  design or render-manifest JSON as a substitute for a typed operation; if a
+  required typed or validation capability is absent, name that gap plainly.
+
 ## What this skill provides
 
 - A Gradle plugin (`ee.schimke.composeai.preview`) that discovers `@Preview`
@@ -137,10 +154,12 @@ residual computed from `counts`.
 
 ## Iterating on a design
 
-`list` → edit → `show --json` → read the PNGs whose `changed: true`. Gradle
+`list` → edit → `show --json` → view the PNGs whose `changed: true`. Gradle
 caching means re-renders only redo what changed; the `changed` flag lets
-agents skip reading PNGs that didn't move. Always read the PNG after a UI
-change — don't assume the change looks correct.
+agents skip opening PNGs that did not move. Always view the PNG after a UI
+change on the surface where the person will judge it. If that surface is not
+available to the current harness, say so explicitly; do not assume the change
+looks correct.
 
 ### Render only the preview you're iterating on
 

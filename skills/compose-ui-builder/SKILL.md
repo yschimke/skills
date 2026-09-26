@@ -1,6 +1,6 @@
 ---
 name: compose-ui-builder
-description: Author and edit a Compose UI design over MCP against a compose-preview serve deployment — create a screen or a Wear widget, insert and edit nodes, and export the Kotlin, PNG or SVG. Also use when no host exists and the builder must be run locally (ui-builder --no-project). Use when asked to build, change, or review a UI Builder design (a URL like /ui-builder/<catalog>/<designId>), to turn a design into Compose code, or to collaborate with a designer on one.
+description: Author and edit a Compose UI design over MCP against a compose-preview serve deployment — create a screen or a Wear widget, insert and edit nodes, and export the Kotlin, PNG or SVG. Also use when no host exists and the builder must be run locally (ui-builder --no-project). Use when asked to build, change, or review a UI Builder design (a URL like /ui-builder/catalog/design-id), to turn a design into Compose code, or to collaborate with a designer on one.
 ---
 
 # Compose UI Builder
@@ -23,9 +23,48 @@ under `skills/compose-ui-builder/`. The server ships from
 its human-facing guide is
 [`docs/UI_BUILDER_GETTING_STARTED.md`](https://github.com/yschimke/compose-preview-server/blob/main/docs/UI_BUILDER_GETTING_STARTED.md).
 
-## Get to the first edit in five calls
+## Firm collaboration contract
 
-Everything below is the long version. This is the whole loop:
+These rules apply before the creation and editing recipes below:
+
+1. **Work at the recorded home.** For an existing design, start with
+   `ui_builder_get_design` and read its `home`. A server-homed design is edited
+   on that server; a repo-homed design is edited at its recorded `.uid` path.
+   Do not export a server design, edit the copy locally, and re-import it. If
+   the response does not yet contain `home`, say that the canonical home cannot
+   be verified with the current tooling. Do not infer or rewrite it.
+2. **Keep discussion at the home.** For a server-homed design, call
+   `ui_builder_list_comments` before the first edit, reply and resolve there,
+   and check again before finishing. For a repo-homed design, use its linked PR
+   or issue. Link to that discussion with `ui_builder_set_links`; do not split
+   it across chat, an issue, and server comments.
+3. **Use typed operations and validation.** Prefer `ui_builder_apply` and the
+   tool schemas over editing document JSON. Call `ui_builder_validate` before
+   saving or finishing when the host exposes it. If validation or a required
+   schema is not available, say so; an export diagnostic is useful but is not
+   a substitute for document validation. If hand-editing is unavoidable,
+   validate before saving and render again afterwards.
+4. **See the editor after each visible step.** Call `ui_builder_view` after an
+   accepted batch and before calling the visual result done. The editor view,
+   not document JSON or an export alone, is the surface the person judges. If
+   the host does not expose `ui_builder_view`, say that the editor surface is
+   unavailable and do not claim to have seen it. PNG/SVG and native renders
+   remain useful additional checks.
+5. **Close temporary copies.** A local copy may be used for a compile check or
+   offline experiment only. Announce its path and purpose, keep its recorded
+   home pointing at the canonical design, and save the result back to that home
+   or discard the copy before finishing. Moving a design between server and
+   repo homes requires explicit approval.
+
+Before finishing, validate when possible, obtain the final editor view, and
+check for unread or unacknowledged comments at the design's home. Report any
+capability that prevented one of those checks.
+
+## Core creation loop
+
+Everything below is the long version. This compact example shows the core
+creation calls; the home, comment, validation, and editor-view checks above
+still apply:
 
 ```jsonc
 // 1. request_access  — capabilities, not scope (see "Getting in")
@@ -61,11 +100,12 @@ Do not make a person infer progress from a silent series of MCP calls. A useful
 update is: “Desktop reference is at revision 4; the header and rails are in;
 there are no open comments; next I am comparing it with the attached reference.”
 
-Before creating anything, orient yourself:
+Before creating or editing anything, orient yourself:
 
 1. Look for an existing design or checked-in fixture with the requested name.
-   Read the current design, its links, and its comments before deciding to copy,
-   edit, or create it.
+   Call `ui_builder_get_design`, read its recorded home and links, and read the
+   discussion at that home before deciding to edit or create. Do not copy an
+   existing design merely to avoid working at its home.
 2. Open the canonical path URL returned by the design identity:
    `https://<host>/ui-builder/<catalogSystemId>/<designId>`. Do not invent an
    old query-string URL; the path carries both the catalog and design.
@@ -522,6 +562,11 @@ one call for the lot. Each is its own revision, so:
 Batch *within* a part, though: a container and the child its slot requires go in
 one call, because a slot with a minimum is refused while it is empty.
 
+After each accepted part, call `ui_builder_view` and inspect the editor surface.
+If that tool is absent, state that limitation before continuing and do not
+replace it with an inference from the document JSON. Check server comments at
+the same boundary so feedback lands before the next part.
+
 ## Export is also a check
 
 A design and its Kotlin are two different deliverables, and a design can be
@@ -546,12 +591,17 @@ So decide which you are making, and act on it early:
 
 ## Seeing what you built
 
+- **`ui_builder_view`** — the editor as the person sees it, including viewport,
+  selection, overlays, and comment pins. Use it after each visible step and for
+  the final check. Some deployments do not expose it yet; say so when it is
+  absent rather than claiming an export is the editor view.
 - **`ui_builder_export` `format: "compose"`** — the generated Kotlin, plus
   `diagnostics` naming anything the generator refused. Empty diagnostics is the
   gate a designer sees in the browser's code pane, so it is a real check on the
   design, not just a formatting step.
 - **`format: "png"`** (or `"svg"`) — base64 in `artifact.content`, a few KB for a
-  simple screen and the most reliable way to *look* at your work. Needs the
+  simple screen and a reliable view of the rendered document. It does not show
+  the editor viewport, selection, reference overlay, or comment pins. Needs the
   server on Java 21+; a host without it says so.
 - **`ui_builder_render_native`** compiles the design with real Compose on the
   host and reports where each node drew (`nodeBounds`, `taggedNodeIds`). It is a
@@ -678,9 +728,9 @@ controls are absent merely because the central canvas resembles the target.
 
 ## Keeping a design
 
-A live design exists only in the server's state directory. To version one, the
-server repo ships `scripts/ui-builder/design-sync.mjs`, which exports a design as
-an operations fixture (and imports one back as a fresh live design):
+A server-homed design remains canonical on its recorded server. The server repo
+ships `scripts/ui-builder/design-sync.mjs`, which can make an operations fixture
+for a compile check, review artifact, or explicitly approved move to a repo:
 
 ```sh
 COMPOSE_PREVIEW_UI_BUILDER_TOKEN=… node scripts/ui-builder/design-sync.mjs export my-widget \
@@ -694,6 +744,12 @@ format (`compose-ui-builder-operations/v1-candidate`) is a **different envelope*
 from the `DesignMutationV1` operations you send to `apply` — do not copy one into
 the other; its `insertNode` puts the parent at the top level, `apply`'s puts it
 under `location`.
+
+Exporting this fixture does not move the design's home. Announce the temporary
+copy and either apply its result back at the recorded home or discard it before
+finishing. Changing the canonical home to the repo is a separate action that
+requires the person's explicit approval and updates the recorded home rather
+than silently creating two authoritative designs.
 
 ## Gotchas
 
