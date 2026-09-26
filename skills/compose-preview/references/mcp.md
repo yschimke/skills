@@ -162,13 +162,16 @@ for the full table) cover the rest:
   explicit pixel bounds) are the token-frugal knobs — see
   [`references/agent-loop.md`](./agent-loop.md). `force = { reason }` is the
   sanctioned escape hatch for stale renders — see the "do not delete
-  `build/classes/`" note above. Draft
-  [#1124](https://github.com/yschimke/compose-preview-server/pull/1124) adds
-  `inline: false` for an absolute `pngPath`, dimensions, SHA-256, duration, and
-  session-scoped `changed`; it cannot be combined with `crop`.
-- `find_previews_for_file(path, workspaceId?)` — draft #1124 maps a source path
-  to preview URIs. No `workspaceId` searches all workspaces; an empty array
-  means no previews. Do not reconstruct a URI from a Kotlin name.
+  `build/classes/`" note above. The local CLI distribution does not ship this
+  yet: [compose-ai-tools#5583](https://github.com/yschimke/compose-ai-tools/issues/5583)
+  tracks the split, while implementation draft
+  [compose-preview-server#1124](https://github.com/yschimke/compose-preview-server/pull/1124)
+  adds `inline: false` for an absolute `pngPath`, dimensions, SHA-256,
+  duration, and session-scoped `changed`; it cannot be combined with `crop`.
+- `find_previews_for_file(path, workspaceId?)` — the same unreleased local CLI
+  change maps a source path to preview URIs. No `workspaceId` searches all
+  workspaces; an empty array means no previews. Do not reconstruct a URI from a
+  Kotlin name or use the tool until the local `tools/list` advertises it.
 - `render_matrix`, `diff_semantics`, `record_preview` — the Playwright-style
   interaction/regression tools (matrix sweep, pixel-free semantics diff,
   record-to-Compose-UI-test). Covered in
@@ -182,12 +185,12 @@ for the full table) cover the rest:
 
 ### Draft viewer, prompts, and fallbacks
 
-As of 2026-09-26 these remain unreleased drafts: #1124 supplies file lookup/path
-results; [#1126](https://github.com/yschimke/compose-preview-server/pull/1126)
-and [#1130](https://github.com/yschimke/compose-preview-server/pull/1130) supply
-the viewer/resources; [#1128](https://github.com/yschimke/compose-preview-server/pull/1128)
-supplies prompts/variant choice. Use only advertised capabilities and record a
-minimum server version here after release.
+As of 2026-09-26 these remain unreleased drafts. Local file lookup/path results
+need a future `compose-preview` CLI distribution after compose-ai-tools#5583's
+split and compose-preview-server#1124's implementation. Server drafts #1126
+and #1130 supply the viewer/resources; #1128 supplies prompts/variant choice.
+Use only advertised capabilities. After release, record the minimum local CLI
+version separately from the minimum remote server version.
 
 The viewer and action rules match the remote
 [viewer contract](./catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks):
@@ -201,8 +204,9 @@ choices to the official Wear Compose M3 skill. Without prompt discovery, follow
 the same typed steps.
 
 The only form elicitation is `render_matrix` with `choose: true`; otherwise its
-labelled choices are text. Access still uses `request_access` / `poll_access`
-with the exact URL and code—#1128 adds no URL elicitation.
+labelled choices are text. Local stdio is credential-free and has no access-
+grant flow; the remote URL/code fallback is documented only in
+[`catalog-mcp.md`](./catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks).
 
 ## Multi-workspace and worktrees
 
