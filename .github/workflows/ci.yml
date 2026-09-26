@@ -26,10 +26,27 @@ jobs:
       - name: Validate JSON manifests
         run: |
           set -euo pipefail
-          for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
+          for f in plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
             jq . "$f" >/dev/null
             echo "ok: $f"
           done
+
+      - name: Antigravity and Claude manifests agree
+        run: |
+          set -euo pipefail
+          for field in name description; do
+            antigravity=$(jq -r ".$field" plugin.json)
+            claude=$(jq -r ".$field" .claude-plugin/plugin.json)
+            if [[ "$antigravity" != "$claude" ]]; then
+              echo "plugin.json $field '$antigravity' != .claude-plugin/plugin.json $field '$claude'" >&2
+              exit 1
+            fi
+          done
+          if ! jq -e 'keys == ["$schema", "description", "name"]' plugin.json >/dev/null; then
+            echo "plugin.json must contain only the Antigravity v1 schema, name and description" >&2
+            exit 1
+          fi
+          echo "ok: Antigravity manifest contains skills metadata only"
 
       - name: Skill frontmatter matches directory name
         # Each skills/<name>/SKILL.md must declare `name: <name>` in its
