@@ -322,6 +322,15 @@ compose-preview mcp install                  # auto-detects Antigravity
 compose-preview mcp install --antigravity    # force the Antigravity config write
 ```
 
+On Antigravity, Claude Code or Codex, the
+[`compose-ag-plugin`](https://github.com/yschimke/compose-ag-plugin#install)
+plugins are an alternative to `mcp install`. `compose-preview` wires this MCP
+server, and `compose-catalogs` wires the hosted catalog and UI Builder. The
+install commands for each harness are in this repo's
+[README](https://github.com/yschimke/skills#per-harness-plugins). Use one route
+or the other, not both: two registrations of the same server give you two copies
+of every tool.
+
 `mcp install` is a one-time bootstrap. If a render misbehaves, do **not**
 re-run it and do **not** kill the daemon — run `compose-preview mcp doctor`
 first and follow the verdict it prints. The supervisor respawns daemons
