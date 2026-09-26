@@ -30,6 +30,11 @@ to compare against the latest release (warns when the local copy trails), and
   so the person can inspect the same render. If the harness cannot display the
   render, say which surface is unavailable and why; do not describe an inferred
   visual result as something you saw.
+- When a render result supplies the shared Compose viewer resource or link,
+  use it only for result kinds the linked tool/result contract explicitly
+  documents, then show it to the person after inspecting it yourself. Preserve
+  every returned text/image block and artifact path as the fallback; an MCP App
+  is an enhancement, never the only result.
 - Prefer typed MCP tools and their published input/output schemas. Use a
   dedicated validation tool when the server exposes one. Do not hand-edit
   design or render-manifest JSON as a substitute for a typed operation; if a
@@ -43,6 +48,24 @@ to compare against the latest release (warns when the local copy trails), and
   and surfaces rendered PNG paths.
 - A VS Code extension with a preview panel, CodeLens and hover actions on
   `@Preview` functions, and commands for rendering all or a single file.
+
+## Interactive MCP capabilities
+
+Discover capabilities instead of assuming the harness implements them:
+
+- If `prompts/list` offers `preview-file`, use it for the ordinary
+  file-to-previews workflow. Use `migrate-wear-m3` for the migration checklist,
+  while continuing to defer API choices to the official Wear Compose M3 skill.
+  When prompt discovery is absent, follow the equivalent steps in this skill.
+- If a server asks for a closed choice through form elicitation, present that
+  interaction and use only an accepted value. If elicitation is absent,
+  declined, or cancelled, list the same choices in chat and do not infer a
+  selection. Access-grant URL elicitation follows the same rule: otherwise
+  relay the approval URL and verification code as text.
+- Use only viewer actions the app explicitly advertises. Treat returned model
+  context as a request for the next typed operation, not proof that it ran. If
+  an action is absent, use the semantic ref, overrides, or other identifiers
+  from the complete text result instead.
 
 ## Gradle tasks
 
