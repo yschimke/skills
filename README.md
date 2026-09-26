@@ -13,7 +13,8 @@ tell the agent how to drive it.
 ## Install
 
 Three install paths — all of them end up with a working `compose-preview`
-CLI on `$PATH`. The two skill-marketplace paths ship a self-bootstrapping
+CLI on `$PATH`. To add the MCP servers and harness wiring as well, see
+[Per-harness plugins](#per-harness-plugins) below. The two skill-marketplace paths ship a self-bootstrapping
 stub at `skills/compose-preview/scripts/compose-preview`; the first time
 that stub is invoked it runs the canonical installer (`--cli-only`) and
 re-execs into the real CLI.
@@ -43,6 +44,44 @@ npx skills add yschimke/skills
 
 With the two marketplace paths, the CLI download happens on first
 invocation of the stub — there's no separate "now install the CLI" step.
+
+### Per-harness plugins
+
+These skills cover *how* to drive the tools. The MCP servers and harness
+wiring come from separate plugins in
+[`yschimke/compose-ag-plugin`](https://github.com/yschimke/compose-ag-plugin):
+- `compose-catalogs` connects to the hosted catalog and UI Builder;
+- `compose-preview` connects to the local `compose-preview mcp serve`.
+
+Install the skills from this repo, then whichever of those plugins you need:
+
+```sh
+# Antigravity
+# Install the canonical skills. Harness discovery is still being verified in
+# yschimke/compose-ag-plugin#6.
+npx skills add yschimke/skills --skill compose-preview \
+  --skill compose-ui-builder --agent antigravity --global --yes
+# Clone yschimke/compose-ag-plugin, then install either local plugin directory.
+agy plugin install ./plugins/compose-catalogs
+agy plugin install ./plugins/compose-preview
+agy plugin enable compose-preview
+
+# Claude Code
+/plugin marketplace add yschimke/skills
+/plugin install yschimke-skills@yschimke-skills
+/plugin marketplace add yschimke/compose-ag-plugin
+/plugin install compose-catalogs@compose-ag-plugin
+/plugin install compose-preview@compose-ag-plugin
+
+# Codex
+codex plugin marketplace add yschimke/skills
+codex plugin marketplace add yschimke/compose-ag-plugin
+# Then enable yschimke-skills, compose-catalogs, and compose-preview from /plugins.
+```
+
+The wiring plugins carry no copies of these skills, so installing both
+doesn't create duplicates. For OpenCode, see
+[compose-ag-plugin's OpenCode guide](https://github.com/yschimke/compose-ag-plugin/blob/main/docs/opencode.md).
 
 ## Skills
 
