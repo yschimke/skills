@@ -96,6 +96,27 @@ Every catalog tool takes either a `uri`, or a `catalog` + `previewId` pair.
 `list_projects` is how you learn the catalog ids; nothing needs client
 reconfiguration when a catalog is added or retired.
 
+### Shared viewer and interactive capability fallbacks
+
+When available, `ui://compose-preview/viewer` is the shared MCP App. Applicable
+tool definitions identify it with `_meta.ui.resourceUri`; open it only when the
+linked tool/result contract explicitly documents viewer support for that result
+kind. If that result contains a `resource_link`, inspect the same revision and
+give the link to the person. Do not assume every linked tool or result kind has
+viewer rendering yet.
+
+Every result remains usable without MCP Apps. Preserve its text, structured
+metadata, image block, artifact URL/path, design home, revision, and stable
+node/ref. Use only viewer actions the app explicitly advertises. If an action is
+unavailable, state the equivalent typed tool call or editor link instead of
+claiming the action ran.
+
+Servers may also advertise `review-design` and `design-status` through
+`prompts/list`. Treat them as discoverable shortcuts; perform the documented
+home, comment, view, and status calls yourself when the harness does not expose
+prompts. URL elicitation may show the access approval page, but the fallback is
+still the exact approval URL plus verification code and the same polling flow.
+
 ### `resources/read` before `render_preview`
 
 They are different lanes, not two spellings of one. `resources/read` returns a

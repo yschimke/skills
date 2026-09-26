@@ -60,6 +60,34 @@ Before finishing, validate when possible, obtain the final editor view, and
 check for unread or unacknowledged comments at the design's home. Report any
 capability that prevented one of those checks.
 
+## Viewer, prompts, and interactive decisions
+
+Use the richer MCP surface when the server and harness advertise it, without
+making the workflow depend on it:
+
+- When a visible render or `ui_builder_view` result supplies the shared Compose
+  viewer, use it only when the linked tool/result contract explicitly documents
+  that payload kind, then inspect the same revision. If the result supplies a
+  `resource_link`, show it to the person; otherwise use the embedded viewer and
+  keep every returned text/image block, artifact path, design home, and
+  revision as the shareable fallback. Report when `ui_builder_view` itself is
+  unavailable.
+- Prefer the `review-design` prompt to open a design at its home, read pending
+  comments, view it, and summarize attention needed. Prefer `design-status` for
+  its home, revision, comments, and temporary-copy state. If prompts are not
+  discoverable, perform those exact typed-tool steps directly.
+- R3 decisions are closed choices. When form elicitation is available, use it
+  for save-back/discard/keep, moving a home, or resolving a re-import onto an
+  existing home. Otherwise list the identical choices in chat and wait for an
+  explicit answer. A decline or cancellation is not consent.
+- URL elicitation may present the scoped access approval page. Without it,
+  relay the exact approval URL and verification code in text and continue the
+  documented polling flow. Never ask for the operator token.
+- Use only viewer actions the app explicitly advertises. Returned model context
+  is a request, not proof of mutation; perform and verify the corresponding
+  typed operation. When an action is unavailable, provide the equivalent node
+  id, overrides, tool call, or editor link as text.
+
 ## Core creation loop
 
 Everything below is the long version. This compact example shows the core
@@ -588,6 +616,12 @@ So decide which you are making, and act on it early:
 - **The design is the deliverable** — a mockup, a PNG, a screen a designer takes
   over → use whatever the catalog offers and read the diagnostics as a note about
   the generator rather than a problem with your design.
+- **Server-driven UI is the deliverable** → when the tool surface exposes A2UI
+  export, export the design as A2UI JSON, validate the reported diagnostics,
+  and inspect the rendered A2UI document in the shared viewer. Return the
+  document artifact and, only when the result supplies one, its `resource_link`.
+  If A2UI export or rendering is absent, name that capability gap instead of
+  presenting another format as equivalent.
 
 ## Seeing what you built
 

@@ -174,6 +174,27 @@ for the full table) cover the rest:
   heat-map, …) alongside the PNG. See
   [`references/data-products.md`](./data-products.md) for the kind catalogue.
 
+### Shared viewer, prompts, and fallbacks
+
+Newer servers expose `ui://compose-preview/viewer` as
+`text/html;profile=mcp-app` and attach it to applicable tools through
+`_meta.ui.resourceUri`. Open it only when the specific result kind carries a
+payload the linked tool/result contract explicitly documents for the viewer,
+and inspect the same result yourself. Current and older results may still
+include base64 image blocks.
+
+The viewer is optional. Preserve all returned text/image blocks. When the
+specific result contains a `resource_link` or local `pngPath`, give that to the
+person as shared evidence too. Use only actions explicitly advertised by the
+app/result, and treat returned model context as a request for the next typed
+operation rather than evidence that an operation landed.
+
+If `prompts/list` advertises `preview-file` or `migrate-wear-m3`, they are
+shortcuts for the workflows in this skill, not replacement instructions. A
+client without prompt discovery follows those workflows directly. Likewise, a
+variant-choice form may arrive through elicitation; without it, list the same
+closed choices in chat and wait for an explicit selection.
+
 ## Multi-workspace and worktrees
 
 `WorkspaceId.derive(rootProjectName, path)` is
