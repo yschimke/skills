@@ -56,8 +56,9 @@ single changing value can make every PNG noisy.
 - Pin the time shown by `TimeText` in preview fixtures. Inject a fixed time
   source rather than reading the wall clock.
 - For long stitched captures, suppress transient scroll-indicator animation
-  when `LocalScrollCaptureInProgress.current` is true. Keep production
-  behaviour unchanged outside that renderer-provided signal.
+  when `LocalScrollCaptureInProgress.current` is true. This local requires
+  Compose UI 1.7 or newer; on older projects, do not add the reference. Keep
+  production behaviour unchanged outside that renderer-provided signal.
 - Build preview fixtures from the screen-level composable so the preview can
   supply deterministic scaffolding, time, state, and data without changing the
   production app root.
