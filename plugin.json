@@ -1,0 +1,5 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "description": "Compose UI preview and PR-review skills for Claude Code, Codex, and Gemini.",
+  "name": "yschimke-skills"
+}

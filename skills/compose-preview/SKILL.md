@@ -398,7 +398,7 @@ Loaded on demand. Read only what the current task needs.
 | [references/agent-loop.md](./references/agent-loop.md) | Playwright-style, token-frugal interaction loop: target by semantic ref (not pixels, Desktop + Android), `observe=semantics\|hash`, `diff_semantics`, `render_preview crop` (one element), `render_matrix`, `record_preview emitTest=true`, and typed render-failure `kind`s. |
 | [references/cmp-shared.md](./references/cmp-shared.md) | Compose Multiplatform `:shared` modules (`commonMain` previews via Desktop pipeline). |
 | [references/resource-previews.md](./references/resource-previews.md) | Android XML resources (`<vector>`, `<animated-vector>`, `<adaptive-icon>`). |
-| [references/wear-ui.md](./references/wear-ui.md) | Wear OS Material 3 Expressive design. |
+| [references/wear-ui.md](./references/wear-ui.md) | Rendering and verifying Wear UI; API and migration choices defer to Android's official Wear Compose M3 skill. |
 | [references/wear-tiles.md](./references/wear-tiles.md) | Wear Tiles (protolayout, not Compose). |
 | [references/remote-compose.md](./references/remote-compose.md) | Remote Compose dialect, `RemoteDocument`, the wrapper + connector requirement for recorded `.rc` export, and the JSON format — authoring JSON in, document JSON out, and `compose-preview rc`. |
 | [references/agent-cloud.md](./references/agent-cloud.md) | Running compose-preview in Claude Code cloud sandboxes (allowlist, JDK, install paths). |
