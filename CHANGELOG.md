@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/yschimke/skills/compare/v0.1.4...v0.1.5) (2026-09-26)
+
+
+### Bug Fixes
+
+* **install:** retry skill bundle downloads ([7eb60ae](https://github.com/yschimke/skills/commit/7eb60ae638ca000099f2aa285cc8b5aea85d95c2))
+* **install:** retry skill bundle downloads ([aef3c46](https://github.com/yschimke/skills/commit/aef3c4635cea0a7ac795042dae2057ad4477ef36))
+
 ## [0.1.4](https://github.com/yschimke/skills/compare/v0.1.3...v0.1.4) (2026-09-06)
 
 
