@@ -23,7 +23,7 @@ workspace itself (MCP roots or cwd).
    if the person asked about it.
 2. **Look.** Open the image yourself. Clients that read files should pass
    `inline=false`: the result is JSON `{uri, pngPath, widthPx, heightPx, sha256}`,
-   and you read `pngPath` with your file reader (R1). Describe only what you
+   and you read `pngPath` with your file reader, so you see what the person sees. Describe only what you
    saw. If you can't view images here, say so plainly. Don't infer.
 3. **Reply** with what the render shows and keep `pngPath` so the person can
    open the same image.
