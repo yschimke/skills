@@ -101,7 +101,8 @@ compose-preview mcp doctor
 when run from a project checkout. Detection per host:
 
 - **Claude Code**: `claude` on PATH, or `~/.claude/` exists. Registered via
-  `claude mcp add --scope user` (idempotent — the install upserts).
+  `claude mcp add --scope user` when missing; a broken entry is repaired in
+  place and a healthy one is left alone.
 - **Codex**: `codex` on PATH, or `~/.codex/` exists. The
   `[mcp_servers.compose-preview-mcp]` table is replaced in place (or appended)
   in `~/.codex/config.toml`.
@@ -109,8 +110,17 @@ when run from a project checkout. Detection per host:
   `ANTIGRAVITY_CLI_ALIAS`, or `~/.gemini/antigravity/` exists. The MCP server
   entry is merged into `~/.gemini/antigravity/mcp_config.json`.
 
-All three host writers store the absolute launcher path because the host may
-launch the server from a different working directory than the Gradle root.
+Every host entry is global: `<stable launcher> mcp serve`, with no
+`--project` (the server finds the project from the client's roots or working
+directory). The launcher is the stable absolute path, such as
+`~/.local/bin/compose-preview`, never a versioned
+`compose-preview-<version>/bin/` directory that the next upgrade deletes.
+`compose-preview mcp register` registers hosts without touching Gradle.
+
+If a host fails to start the server with `ENOENT` on a
+`.../compose-preview-<version>/bin/compose-preview` path, or every session is
+pinned to one project, run `compose-preview update` (it runs
+`compose-preview mcp repair`), or `compose-preview mcp repair` directly.
 Beyond host registration, `mcp install` does three things behind the scenes:
 
 1. Runs `composePreviewDaemonStart` for every module that applies the plugin,
