@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.6](https://github.com/yschimke/skills/compare/v0.1.5...v0.1.6) (2026-09-27)
+
+
+### Features
+
+* **install:** default to compose-preview + compose-ui-builder; npx-less skill updates ([#100](https://github.com/yschimke/skills/issues/100)) ([920475f](https://github.com/yschimke/skills/commit/920475fd3be6d1415cf5e89dd3ff81b9b3e44498))
+
+
+### Bug Fixes
+
+* **install:** keep the CLI out of npx-managed skill folders ([#101](https://github.com/yschimke/skills/issues/101)) ([90f0553](https://github.com/yschimke/skills/commit/90f05538d8275577fd9cecaf1cb88158247c1cf5))
+* **install:** let compose-preview update handle npx-managed skills ([#98](https://github.com/yschimke/skills/issues/98)) ([790662e](https://github.com/yschimke/skills/commit/790662e8a700ff89a9e9456dea35786d56166d04))
+* **install:** put ~/.local/bin on PATH and drop old CLI versions ([#95](https://github.com/yschimke/skills/issues/95)) ([d1871c2](https://github.com/yschimke/skills/commit/d1871c20466fa1a5bec8842ad90c40131315b8e6))
+
 ## [0.1.5](https://github.com/yschimke/skills/compare/v0.1.4...v0.1.5) (2026-09-27)
 
 
