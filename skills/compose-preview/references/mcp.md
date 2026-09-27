@@ -253,3 +253,29 @@ see the dedicated [`compose-preview-review/references/mcp-review.md`](../../comp
   — daemon JSON-RPC wire format the MCP shim translates from.
 - [`compose-preview-review/references/mcp-review.md`](../../compose-preview-review/references/mcp-review.md)
   — agent-driven PR review using two MCP workspaces (base + head).
+
+## Evidence rules (moved from SKILL.md)
+
+- After changing Compose UI, render the affected preview and **look at the
+  resulting image on the surface where the person will judge it**. Use the
+  typed MCP render tool when available, or the CLI and its reported `pngPath`;
+  then open that image with the host's image viewer. Source, semantics, hashes,
+  and a successful build are useful checks, but none of them proves what the
+  UI looks like.
+- Showable evidence is part of the result. Keep the returned image or file path
+  so the person can inspect the same render. If the harness cannot display the
+  render, say which surface is unavailable and why; do not describe an inferred
+  visual result as something you saw.
+- Prefer typed MCP tools and their published input/output schemas. Use a
+  dedicated validation tool when the server exposes one. Do not hand-edit
+  design or render-manifest JSON as a substitute for a typed operation; if a
+  required typed or validation capability is absent, name that gap plainly.
+
+### Interactive MCP capabilities
+
+- The shared viewer, `resource_link` results, file-path lookup, prompts, and
+  `render_matrix` variant choice require a compose-preview-server release after
+  v3.74.0 (none has shipped them yet). Until then, treat them as absent and use
+  text/image/path results. Use only what the server advertises; details in
+  [mcp.md](./mcp.md#draft-viewer-prompts-and-fallbacks) and
+  [catalog-mcp.md](./catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks).
