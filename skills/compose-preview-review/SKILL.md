@@ -22,6 +22,7 @@ the renderer, CLI, and Gradle plugin. Check first with
    `bash ~/.agents/skills/compose-preview/scripts/compose-preview --version`
    (first run installs the CLI and puts it on `PATH`).
 2. Otherwise `npx skills add yschimke/skills --global --yes`, then run that stub.
+   Update later with `compose-preview update` (CLI) and `npx skills update` (skills).
 3. No Node? `curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash`
 
 ## Source

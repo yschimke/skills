@@ -25,7 +25,8 @@ with per-agent links. The stub at `skills/compose-preview/scripts/compose-previe
 runs the canonical installer with `--cli-only` on its first run: it downloads
 the CLI, links `~/.local/bin/compose-preview`, adds `~/.local/bin` to your
 bash/zsh/fish startup files, and re-execs into the real CLI. Open a new
-terminal afterwards; `compose-preview update` keeps the CLI current.
+terminal afterwards. To update: `compose-preview update` updates the CLI (and
+PATH), and `npx skills update` updates the skills.
 
 **Fallback: curl the installer** — when there's no Node, or you want the CLI
 and every skill bundle (with per-host links for Claude Code and Codex under
