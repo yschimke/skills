@@ -12,13 +12,13 @@ is built for import into Claude Design (and similar design tools).
 
 This skill assumes the **compose-preview** skill is installed — it owns the
 renderer, CLI, and Gradle plugin that produce the PNGs this skill arranges.
-Check first with `compose-preview --version`; if it's missing, ask the user to
-run the bootstrap installer (which covers the compose-preview skills):
+Check first with `compose-preview --version`; if it's missing:
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
-  | bash
-```
+1. Run the stub bundled with the compose-preview skill, if it's on disk:
+   `bash ~/.agents/skills/compose-preview/scripts/compose-preview --version`
+   (first run installs the CLI and puts it on `PATH`).
+2. Otherwise `npx skills add yschimke/skills --global --yes`, then run that stub.
+3. No Node? `curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash`
 
 ## Source
 

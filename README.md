@@ -12,38 +12,36 @@ tell the agent how to drive it.
 
 ## Install
 
-Three install paths — all of them end up with a working `compose-preview`
-CLI on `$PATH`. To add the MCP servers and harness wiring as well, see
-[Per-harness plugins](#per-harness-plugins) below. The two skill-marketplace paths ship a self-bootstrapping
-stub at `skills/compose-preview/scripts/compose-preview`; the first time
-that stub is invoked it runs the canonical installer (`--cli-only`) and
-re-execs into the real CLI.
-
-**Curl the installer directly** (gets the CLI + every skill bundle below +
-per-host symlinks for Claude Code and Codex into `~/.agents/skills/` in one
-shot):
+**Default: the [skills CLI](https://skills.sh).** Install the skill content,
+then run the bundled `compose-preview` stub once to get the CLI:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
-  | bash
+npx skills add yschimke/skills --global --yes
+~/.agents/skills/compose-preview/scripts/compose-preview --version   # first run installs the CLI and puts it on PATH
 ```
 
-**Install as a Claude Code plugin** — drops the skill content (including
-the bootstrap stub) into `~/.claude/plugins/`:
+`npx skills add` installs the skill content only, into `~/.agents/skills/`
+with per-agent links. The stub at `skills/compose-preview/scripts/compose-preview`
+runs the canonical installer with `--cli-only` on its first run: it downloads
+the CLI, links `~/.local/bin/compose-preview`, adds `~/.local/bin` to your
+bash/zsh/fish startup files, and re-execs into the real CLI. Open a new
+terminal afterwards; `compose-preview update` keeps the CLI current.
 
-```
-/plugin marketplace add yschimke/skills
-/plugin install yschimke-skills@yschimke-skills
+**Fallback: curl the installer** — when there's no Node, or you want the CLI
+and every skill bundle (with per-host links for Claude Code and Codex under
+`~/.agents/skills/`) in one step:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash
 ```
 
-**Or via the [skills CLI](https://skills.sh):**
+Pass `--no-modify-path` (`… | bash -s -- --no-modify-path`) to leave your
+shell startup files alone.
 
-```
-npx skills add yschimke/skills
-```
-
-With the two marketplace paths, the CLI download happens on first
-invocation of the stub — there's no separate "now install the CLI" step.
+**Alternative: a Claude Code or Codex plugin marketplace** — see
+[Per-harness plugins](#per-harness-plugins) below, which also adds the MCP
+servers and harness wiring. The plugin ships the same bootstrap stub, so the
+CLI download happens on its first invocation.
 
 ### Per-harness plugins
 
@@ -56,11 +54,10 @@ wiring come from separate plugins in
 Install the skills from this repo, then whichever of those plugins you need:
 
 ```sh
-# Antigravity
-# Install the canonical skills. Harness discovery is still being verified in
-# yschimke/compose-ag-plugin#6.
-npx skills add yschimke/skills --skill compose-preview \
-  --skill compose-ui-builder --agent antigravity --global --yes
+# Antigravity (does not load ~/.agents/skills, so use the plugin route).
+# To be verified: yschimke/compose-ag-plugin#6.
+git clone https://github.com/yschimke/skills
+agy plugin install ./skills
 # Clone yschimke/compose-ag-plugin, then install either local plugin directory.
 agy plugin install ./plugins/compose-catalogs
 agy plugin install ./plugins/compose-preview
