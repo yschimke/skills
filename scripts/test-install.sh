@@ -253,6 +253,58 @@ check "url_is_downloadable probes with a ranged GET, not a HEAD" \
 
 unset -f curl
 
+# ---- ensure_bin_on_path / prune_old_cli_versions -------------------------
+#
+# `compose-preview update` re-runs install.sh; when the CLI was already current
+# it exited before the PATH hint, so ~/.local/bin never reached PATH. The fix
+# writes a marked block to each shell's startup file, exactly once.
+
+PATH_MARKER="$(grep -m1 '^PATH_MARKER=' "$INSTALL_SH" | sed 's/^PATH_MARKER="//; s/"$//')"
+FAKE_HOME="$WORK/home"
+mkdir -p "$FAKE_HOME/.config/fish"
+: >"$FAKE_HOME/.bashrc"
+: >"$FAKE_HOME/.bash_profile"
+: >"$FAKE_HOME/.zshrc"
+run_path_setup() {
+  HOME="$FAKE_HOME" XDG_CONFIG_HOME="$FAKE_HOME/.config" ZDOTDIR="$FAKE_HOME" \
+    BIN_DIR="$FAKE_HOME/.local/bin" MODIFY_PATH="${1:-1}" CLAUDE_CLOUD="${2:-0}" \
+    PATH="/usr/bin:/bin" ensure_bin_on_path 2>/dev/null
+}
+run_path_setup
+run_path_setup
+check "PATH block lands in .bashrc exactly once" \
+  "1" "$(grep -c 'compose-preview: put the CLI on PATH' "$FAKE_HOME/.bashrc")"
+check "PATH block lands in .bash_profile exactly once" \
+  "1" "$(grep -c 'compose-preview: put the CLI on PATH' "$FAKE_HOME/.bash_profile")"
+check "PATH block lands in .zshrc exactly once" \
+  "1" "$(grep -c 'compose-preview: put the CLI on PATH' "$FAKE_HOME/.zshrc")"
+check "PATH block is written relative to \$HOME" \
+  "yes" "$(grep -Fq 'export PATH="$HOME/.local/bin:$PATH"' "$FAKE_HOME/.bashrc" && echo yes)"
+check "fish gets its own conf.d file" \
+  "yes" "$(grep -Fq 'set -gx PATH "$HOME/.local/bin" $PATH' "$FAKE_HOME/.config/fish/conf.d/compose-preview.fish" && echo yes)"
+check "the bash block really puts the dir on PATH" \
+  "yes" "$(HOME="$FAKE_HOME" PATH=/usr/bin:/bin bash --norc --noprofile -c ". '$FAKE_HOME/.bashrc'; case :\$PATH: in *:$FAKE_HOME/.local/bin:*) echo yes;; esac")"
+check "the bash block doesn't duplicate an existing PATH entry" \
+  "1" "$(HOME="$FAKE_HOME" PATH="$FAKE_HOME/.local/bin:/usr/bin" bash --norc --noprofile -c ". '$FAKE_HOME/.bashrc'; echo \$PATH" | tr ':' '\n' | grep -c "^$FAKE_HOME/.local/bin$")"
+if command -v fish >/dev/null 2>&1; then
+  check "the fish file really puts the dir on PATH" \
+    "yes" "$(HOME="$FAKE_HOME" fish --no-config -c "source '$FAKE_HOME/.config/fish/conf.d/compose-preview.fish'; contains -- '$FAKE_HOME/.local/bin' \$PATH; and echo yes")"
+fi
+
+OPT_OUT_HOME="$WORK/home-optout"; mkdir -p "$OPT_OUT_HOME"; : >"$OPT_OUT_HOME/.bashrc"
+HOME="$OPT_OUT_HOME" BIN_DIR="$OPT_OUT_HOME/.local/bin" MODIFY_PATH=0 CLAUDE_CLOUD=0 \
+  ensure_bin_on_path 2>/dev/null
+check "--no-modify-path leaves startup files alone" "0" "$(wc -c <"$OPT_OUT_HOME/.bashrc" | tr -d ' ')"
+HOME="$OPT_OUT_HOME" BIN_DIR="$OPT_OUT_HOME/.local/bin" MODIFY_PATH=1 CLAUDE_CLOUD=1 \
+  ensure_bin_on_path 2>/dev/null
+check "cloud sandboxes leave startup files alone" "0" "$(wc -c <"$OPT_OUT_HOME/.bashrc" | tr -d ' ')"
+
+CLI_DEST="$WORK/cli"
+mkdir -p "$CLI_DEST/compose-preview-2.7.0/bin" "$CLI_DEST/compose-preview-2.28.0/bin" "$CLI_DEST/other"
+CLI_DEST="$CLI_DEST" VERSION=2.28.0 prune_old_cli_versions 2>/dev/null
+check "prune_old_cli_versions keeps only the current CLI" \
+  "compose-preview-2.28.0 other" "$(ls "$CLI_DEST" | tr '\n' ' ' | sed 's/ $//')"
+
 # ---- the script itself parses ---------------------------------------------
 
 bash -n "$INSTALL_SH" 2>"$WORK/syntax.err"
