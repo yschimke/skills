@@ -270,8 +270,9 @@ installed_repo_skills() {
 # `compose-preview update` refreshes both. Never fatal: the CLI is done by now.
 update_skills_via_npx() {
   [[ "$SKILLS_VIA_NPX" == 1 ]] || return 0
-  local names=()
-  mapfile -t names < <(installed_repo_skills)
+  local names=() name
+  # No mapfile: macOS runs `curl | bash` under bash 3.2.
+  while IFS= read -r name; do names+=("$name"); done < <(installed_repo_skills)
   (( ${#names[@]} )) || return 0
   if ! command -v npx >/dev/null 2>&1; then
     log "npx not found; update the skills with: npx skills update -g ${names[*]}"
