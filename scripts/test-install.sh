@@ -320,6 +320,33 @@ check "previously installed companions keep updating" \
   "compose-ui-builder figma-catalog-import" "$(ALL_SKILLS=0 SKILLS_REQUESTED= ws)"
 check "an unknown --skills name is rejected" \
   "1" "$(bash "$INSTALL_SH" --skills nope --cli-only >/dev/null 2>&1; echo $?)"
+# ---- skills_managed_elsewhere ---------------------------------------------
+#
+# An npx or plugin install has SKILL.md but no `.skill-version` (only this
+# installer writes it), so `compose-preview update` must leave that content alone.
+NPX_SKILL="$WORK/npx/compose-preview"; mkdir -p "$NPX_SKILL"; : >"$NPX_SKILL/SKILL.md"
+check "npx-installed skill content is managed elsewhere" \
+  "yes" "$(SKILL_DIR="$NPX_SKILL" skills_managed_elsewhere && echo yes || echo no)"
+OURS_SKILL="$WORK/ours/compose-preview"; mkdir -p "$OURS_SKILL"; : >"$OURS_SKILL/SKILL.md"; echo abc >"$OURS_SKILL/.skill-version"
+check "installer-owned skill content is refreshed" \
+  "no" "$(SKILL_DIR="$OURS_SKILL" skills_managed_elsewhere && echo yes || echo no)"
+check "a fresh machine is not managed elsewhere" \
+  "no" "$(SKILL_DIR="$WORK/none/compose-preview" skills_managed_elsewhere && echo yes || echo no)"
+
+# installed_repo_skills names only the repo's skills the user actually has.
+eval "$(sed -n '/^COMPANION_SKILLS=(/,/^)/p' "$INSTALL_SH")"
+ROOT_SK="$WORK/root"; mkdir -p "$ROOT_SK/compose-preview" "$ROOT_SK/compose-preview-ci" "$ROOT_SK/someone-else"
+: >"$ROOT_SK/compose-preview/SKILL.md"; : >"$ROOT_SK/compose-preview-ci/SKILL.md"; : >"$ROOT_SK/someone-else/SKILL.md"
+check "installed_repo_skills lists only kept repo skills" \
+  "compose-preview compose-preview-ci" "$(SKILL_DIR="$ROOT_SK/compose-preview" installed_repo_skills | paste -sd' ')"
+check "update_skills_via_npx is a no-op for curl installs" \
+  "" "$(SKILLS_VIA_NPX=0 SKILL_DIR="$ROOT_SK/compose-preview" update_skills_via_npx 2>&1)"
+
+FAKE_NPX_BIN="$WORK/npxbin"; mkdir -p "$FAKE_NPX_BIN"
+printf '#!/bin/sh\necho "$*" >"%s/npx.args"\n' "$WORK" >"$FAKE_NPX_BIN/npx"; chmod +x "$FAKE_NPX_BIN/npx"
+PATH="$FAKE_NPX_BIN:$PATH" SKILLS_VIA_NPX=1 SKILL_DIR="$ROOT_SK/compose-preview" update_skills_via_npx 2>/dev/null
+check "update_skills_via_npx updates the kept skills globally" \
+  "-y skills update -g -y compose-preview compose-preview-ci" "$(cat "$WORK/npx.args")"
 
 # ---- the script itself parses ---------------------------------------------
 

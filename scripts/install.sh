@@ -54,6 +54,9 @@
 #                                              # add skills to the default set
 #                                              # (compose-preview, compose-ui-builder)
 #   scripts/install.sh --all-skills            # install every skill in the repo
+#   scripts/install.sh --with-skills           # refresh skill content even when
+#                                              # another tool (npx skills, a
+#                                              # plugin) installed it
 #   scripts/install.sh --no-modify-path        # don't add ~/.local/bin to shell
 #                                              # startup files (also MODIFY_PATH=0)
 #   scripts/install.sh --android-sdk           # also install the Android SDK
@@ -156,6 +159,7 @@ INSTALL_ANDROID_SDK="${INSTALL_ANDROID_SDK:-0}"
 JDKS_REQUESTED="${JDKS:-}"
 ANDROID_HOME_INPUT="${ANDROID_HOME:-}"
 CLI_ONLY="${CLI_ONLY:-0}"
+WITH_SKILLS="${WITH_SKILLS:-0}"
 MODIFY_PATH="${MODIFY_PATH:-1}"
 
 # Argument parsing — flags first, then positional VERSION. Flags can appear in
@@ -168,6 +172,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --android-sdk) INSTALL_ANDROID_SDK=1; shift ;;
     --cli-only) CLI_ONLY=1; shift ;;
+    --with-skills) WITH_SKILLS=1; shift ;;
     --no-modify-path) MODIFY_PATH=0; shift ;;
     --all-skills) ALL_SKILLS=1; shift ;;
     --skills)
@@ -260,6 +265,53 @@ sha256_of() {
 
 require curl
 require tar
+
+# ---- Who manages the skill content? --------------------------------------
+#
+# `npx skills add yschimke/skills` and the plugin marketplaces install the skill
+# markdown themselves; only this script writes `.skill-version`. When the
+# compose-preview skill is on disk without that marker, another tool owns it,
+# so refresh only the CLI. Otherwise `compose-preview update` (which re-runs
+# this script) would rewrite files npx tracks, re-add skills the user left out,
+# and add per-host links they never asked for. `npx skills update` updates the
+# skills (update_skills_via_npx runs it for you); `--with-skills` forces the
+# old behaviour.
+skills_managed_elsewhere() {
+  [[ -f "$SKILL_DIR/SKILL.md" && ! -f "$SKILL_DIR/.skill-version" ]]
+}
+SKILLS_VIA_NPX=0
+if [[ "$CLI_ONLY" != 1 && "$WITH_SKILLS" != 1 ]] && skills_managed_elsewhere; then
+  log "skill content in $SKILL_DIR is managed by another tool (npx skills or a plugin); leaving it to that tool"
+  CLI_ONLY=1
+  SKILLS_VIA_NPX=1
+fi
+
+# The skills from this repo that are installed in the skills root. `npx skills
+# update` takes installed names, so we only name the ones the user kept.
+installed_repo_skills() {
+  local root name
+  root="$(dirname "$SKILL_DIR")"
+  for name in compose-preview "${COMPANION_SKILLS[@]}"; do
+    [[ -f "$root/$name/SKILL.md" ]] && printf '%s\n' "$name"
+  done
+}
+
+# Hand the skill update to the tool that owns the files, so one
+# `compose-preview update` refreshes both. Never fatal: the CLI is done by now.
+update_skills_via_npx() {
+  [[ "$SKILLS_VIA_NPX" == 1 ]] || return 0
+  local names=() name
+  # No mapfile: macOS runs `curl | bash` under bash 3.2.
+  while IFS= read -r name; do names+=("$name"); done < <(installed_repo_skills)
+  (( ${#names[@]} )) || return 0
+  if ! command -v npx >/dev/null 2>&1; then
+    log "npx not found; update the skills with: npx skills update -g ${names[*]}"
+    return 0
+  fi
+  log "updating skills with npx skills: ${names[*]}"
+  npx -y skills update -g -y "${names[@]}" </dev/null >&2 \
+    || log "npx skills update failed; rerun it yourself: npx skills update -g ${names[*]}"
+}
 
 # ---- Per-host symlinks + legacy gemini-mirror cleanup ---------------------
 #
@@ -1167,6 +1219,7 @@ if [[ "$INSTALLED_VERSION" == "$VERSION" && -x "$LAUNCHER" ]]; then
   maybe_write_env_file
   prune_old_cli_versions
   ensure_bin_on_path
+  update_skills_via_npx
   exit 0
 fi
 
@@ -1283,6 +1336,7 @@ maybe_write_env_file
 
 prune_old_cli_versions
 ensure_bin_on_path
+update_skills_via_npx
 
 [[ "$CLI_ONLY" == 1 ]] || link_skills_for_detected_hosts
 
