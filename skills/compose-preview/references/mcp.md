@@ -162,7 +162,16 @@ for the full table) cover the rest:
   explicit pixel bounds) are the token-frugal knobs — see
   [`references/agent-loop.md`](./agent-loop.md). `force = { reason }` is the
   sanctioned escape hatch for stale renders — see the "do not delete
-  `build/classes/`" note above.
+  `build/classes/`" note above. The local CLI distribution does not ship this
+  yet: [compose-ai-tools#5583](https://github.com/yschimke/compose-ai-tools/issues/5583)
+  tracks the split, while implementation draft
+  [compose-preview-server#1124](https://github.com/yschimke/compose-preview-server/pull/1124)
+  adds `inline: false` for an absolute `pngPath`, dimensions, SHA-256,
+  duration, and session-scoped `changed`; it cannot be combined with `crop`.
+- `find_previews_for_file(path, workspaceId?)` — the same unreleased local CLI
+  change maps a source path to preview URIs. No `workspaceId` searches all
+  workspaces; an empty array means no previews. Do not reconstruct a URI from a
+  Kotlin name or use the tool until the local `tools/list` advertises it.
 - `render_matrix`, `diff_semantics`, `record_preview` — the Playwright-style
   interaction/regression tools (matrix sweep, pixel-free semantics diff,
   record-to-Compose-UI-test). Covered in
@@ -173,6 +182,32 @@ for the full table) cover the rest:
   fetch structured per-render data (a11y findings, layout tree, recomposition
   heat-map, …) alongside the PNG. See
   [`references/data-products.md`](./data-products.md) for the kind catalogue.
+
+### Draft viewer, prompts, and fallbacks
+
+**Requires** a compose-preview-server release after v3.74.0 containing #1126
+and #1130 (viewer/resources) and #1128 (prompts, variant choice), and — for
+local file lookup/path results — a `compose-preview` CLI distribution that
+ships compose-preview-server#1124 after compose-ai-tools#5583's split. None is
+released yet. **Until then**, treat every item in this section as absent and
+use inline renders, CLI `pngPath`s and chat-listed choices. Even after release,
+use only what the local `tools/list` / `prompts/list` advertises.
+
+The viewer and action rules match the remote
+[viewer contract](./catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks):
+a viewer association is not a `resource_link`, fallbacks stay complete, and
+model context does not prove an action ran.
+
+On the local native profile, `preview-file` (required `path`) and
+`migrate-wear-m3` (no arguments) return text instructions, not executed
+workflows. The first uses `find_previews_for_file`; the second still defers API
+choices to the official Wear Compose M3 skill. Without prompt discovery, follow
+the same typed steps.
+
+The only form elicitation is `render_matrix` with `choose: true`; otherwise its
+labelled choices are text. Local stdio is credential-free and has no access-
+grant flow; the remote URL/code fallback is documented only in
+[`catalog-mcp.md`](./catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks).
 
 ## Multi-workspace and worktrees
 

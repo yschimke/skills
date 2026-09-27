@@ -44,6 +44,15 @@ to compare against the latest release (warns when the local copy trails), and
 - A VS Code extension with a preview panel, CodeLens and hover actions on
   `@Preview` functions, and commands for rendering all or a single file.
 
+## Interactive MCP capabilities
+
+- The shared viewer, `resource_link` results, file-path lookup, prompts, and
+  `render_matrix` variant choice require a compose-preview-server release after
+  v3.74.0 (none has shipped them yet). Until then, treat them as absent and use
+  text/image/path results. Use only what the server advertises; details in
+  [mcp.md](./references/mcp.md#draft-viewer-prompts-and-fallbacks) and
+  [catalog-mcp.md](./references/catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks).
+
 ## Gradle tasks
 
 Applied to each module that declares the plugin:
