@@ -318,6 +318,21 @@ check "installer-owned skill content is refreshed" \
 check "a fresh machine is not managed elsewhere" \
   "no" "$(SKILL_DIR="$WORK/none/compose-preview" skills_managed_elsewhere && echo yes || echo no)"
 
+# installed_repo_skills names only the repo's skills the user actually has.
+eval "$(sed -n '/^COMPANION_SKILLS=(/,/^)/p' "$INSTALL_SH")"
+ROOT_SK="$WORK/root"; mkdir -p "$ROOT_SK/compose-preview" "$ROOT_SK/compose-preview-ci" "$ROOT_SK/someone-else"
+: >"$ROOT_SK/compose-preview/SKILL.md"; : >"$ROOT_SK/compose-preview-ci/SKILL.md"; : >"$ROOT_SK/someone-else/SKILL.md"
+check "installed_repo_skills lists only kept repo skills" \
+  "compose-preview compose-preview-ci" "$(SKILL_DIR="$ROOT_SK/compose-preview" installed_repo_skills | paste -sd' ')"
+check "update_skills_via_npx is a no-op for curl installs" \
+  "" "$(SKILLS_VIA_NPX=0 SKILL_DIR="$ROOT_SK/compose-preview" update_skills_via_npx 2>&1)"
+
+FAKE_NPX_BIN="$WORK/npxbin"; mkdir -p "$FAKE_NPX_BIN"
+printf '#!/bin/sh\necho "$*" >"%s/npx.args"\n' "$WORK" >"$FAKE_NPX_BIN/npx"; chmod +x "$FAKE_NPX_BIN/npx"
+PATH="$FAKE_NPX_BIN:$PATH" SKILLS_VIA_NPX=1 SKILL_DIR="$ROOT_SK/compose-preview" update_skills_via_npx 2>/dev/null
+check "update_skills_via_npx updates the kept skills globally" \
+  "-y skills update -g -y compose-preview compose-preview-ci" "$(cat "$WORK/npx.args")"
+
 # ---- the script itself parses ---------------------------------------------
 
 bash -n "$INSTALL_SH" 2>"$WORK/syntax.err"

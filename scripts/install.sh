@@ -244,15 +244,43 @@ require tar
 # so refresh only the CLI. Otherwise `compose-preview update` (which re-runs
 # this script) would rewrite files npx tracks, re-add skills the user left out,
 # and add per-host links they never asked for. `npx skills update` updates the
-# skills; `--with-skills` forces the old behaviour.
+# skills (update_skills_via_npx runs it for you); `--with-skills` forces the
+# old behaviour.
 skills_managed_elsewhere() {
   [[ -f "$SKILL_DIR/SKILL.md" && ! -f "$SKILL_DIR/.skill-version" ]]
 }
+SKILLS_VIA_NPX=0
 if [[ "$CLI_ONLY" != 1 && "$WITH_SKILLS" != 1 ]] && skills_managed_elsewhere; then
-  log "skill content in $SKILL_DIR is managed by another tool (npx skills or a plugin); updating the CLI only"
-  log "update skills with 'npx skills update', or rerun with --with-skills"
+  log "skill content in $SKILL_DIR is managed by another tool (npx skills or a plugin); leaving it to that tool"
   CLI_ONLY=1
+  SKILLS_VIA_NPX=1
 fi
+
+# The skills from this repo that are installed in the skills root. `npx skills
+# update` takes installed names, so we only name the ones the user kept.
+installed_repo_skills() {
+  local root name
+  root="$(dirname "$SKILL_DIR")"
+  for name in compose-preview "${COMPANION_SKILLS[@]}"; do
+    [[ -f "$root/$name/SKILL.md" ]] && printf '%s\n' "$name"
+  done
+}
+
+# Hand the skill update to the tool that owns the files, so one
+# `compose-preview update` refreshes both. Never fatal: the CLI is done by now.
+update_skills_via_npx() {
+  [[ "$SKILLS_VIA_NPX" == 1 ]] || return 0
+  local names=()
+  mapfile -t names < <(installed_repo_skills)
+  (( ${#names[@]} )) || return 0
+  if ! command -v npx >/dev/null 2>&1; then
+    log "npx not found; update the skills with: npx skills update -g ${names[*]}"
+    return 0
+  fi
+  log "updating skills with npx skills: ${names[*]}"
+  npx -y skills update -g -y "${names[@]}" </dev/null >&2 \
+    || log "npx skills update failed; rerun it yourself: npx skills update -g ${names[*]}"
+}
 
 # ---- Per-host symlinks + legacy gemini-mirror cleanup ---------------------
 #
@@ -1134,6 +1162,7 @@ if [[ "$INSTALLED_VERSION" == "$VERSION" && -x "$LAUNCHER" ]]; then
   maybe_write_env_file
   prune_old_cli_versions
   ensure_bin_on_path
+  update_skills_via_npx
   exit 0
 fi
 
@@ -1250,6 +1279,7 @@ maybe_write_env_file
 
 prune_old_cli_versions
 ensure_bin_on_path
+update_skills_via_npx
 
 [[ "$CLI_ONLY" == 1 ]] || link_skills_for_detected_hosts
 
