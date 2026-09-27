@@ -50,6 +50,9 @@
 #                                              # marketplace install. The
 #                                              # bundled bin/compose-preview
 #                                              # stub passes this on first run.
+#   scripts/install.sh --with-skills           # refresh skill content even when
+#                                              # another tool (npx skills, a
+#                                              # plugin) installed it
 #   scripts/install.sh --no-modify-path        # don't add ~/.local/bin to shell
 #                                              # startup files (also MODIFY_PATH=0)
 #   scripts/install.sh --android-sdk           # also install the Android SDK
@@ -142,6 +145,7 @@ INSTALL_ANDROID_SDK="${INSTALL_ANDROID_SDK:-0}"
 JDKS_REQUESTED="${JDKS:-}"
 ANDROID_HOME_INPUT="${ANDROID_HOME:-}"
 CLI_ONLY="${CLI_ONLY:-0}"
+WITH_SKILLS="${WITH_SKILLS:-0}"
 MODIFY_PATH="${MODIFY_PATH:-1}"
 
 # Argument parsing — flags first, then positional VERSION. Flags can appear in
@@ -154,6 +158,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --android-sdk) INSTALL_ANDROID_SDK=1; shift ;;
     --cli-only) CLI_ONLY=1; shift ;;
+    --with-skills) WITH_SKILLS=1; shift ;;
     --no-modify-path) MODIFY_PATH=0; shift ;;
     --jdk|--jdks)
       [[ $# -ge 2 ]] || { echo "error: $1 requires a value" >&2; exit 1; }
@@ -230,6 +235,24 @@ sha256_of() {
 
 require curl
 require tar
+
+# ---- Who manages the skill content? --------------------------------------
+#
+# `npx skills add yschimke/skills` and the plugin marketplaces install the skill
+# markdown themselves; only this script writes `.skill-version`. When the
+# compose-preview skill is on disk without that marker, another tool owns it,
+# so refresh only the CLI. Otherwise `compose-preview update` (which re-runs
+# this script) would rewrite files npx tracks, re-add skills the user left out,
+# and add per-host links they never asked for. `npx skills update` updates the
+# skills; `--with-skills` forces the old behaviour.
+skills_managed_elsewhere() {
+  [[ -f "$SKILL_DIR/SKILL.md" && ! -f "$SKILL_DIR/.skill-version" ]]
+}
+if [[ "$CLI_ONLY" != 1 && "$WITH_SKILLS" != 1 ]] && skills_managed_elsewhere; then
+  log "skill content in $SKILL_DIR is managed by another tool (npx skills or a plugin); updating the CLI only"
+  log "update skills with 'npx skills update', or rerun with --with-skills"
+  CLI_ONLY=1
+fi
 
 # ---- Per-host symlinks + legacy gemini-mirror cleanup ---------------------
 #

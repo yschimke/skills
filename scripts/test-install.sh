@@ -305,6 +305,19 @@ CLI_DEST="$CLI_DEST" VERSION=2.28.0 prune_old_cli_versions 2>/dev/null
 check "prune_old_cli_versions keeps only the current CLI" \
   "compose-preview-2.28.0 other" "$(ls "$CLI_DEST" | tr '\n' ' ' | sed 's/ $//')"
 
+# ---- skills_managed_elsewhere ---------------------------------------------
+#
+# An npx or plugin install has SKILL.md but no `.skill-version` (only this
+# installer writes it), so `compose-preview update` must leave that content alone.
+NPX_SKILL="$WORK/npx/compose-preview"; mkdir -p "$NPX_SKILL"; : >"$NPX_SKILL/SKILL.md"
+check "npx-installed skill content is managed elsewhere" \
+  "yes" "$(SKILL_DIR="$NPX_SKILL" skills_managed_elsewhere && echo yes || echo no)"
+OURS_SKILL="$WORK/ours/compose-preview"; mkdir -p "$OURS_SKILL"; : >"$OURS_SKILL/SKILL.md"; echo abc >"$OURS_SKILL/.skill-version"
+check "installer-owned skill content is refreshed" \
+  "no" "$(SKILL_DIR="$OURS_SKILL" skills_managed_elsewhere && echo yes || echo no)"
+check "a fresh machine is not managed elsewhere" \
+  "no" "$(SKILL_DIR="$WORK/none/compose-preview" skills_managed_elsewhere && echo yes || echo no)"
+
 # ---- the script itself parses ---------------------------------------------
 
 bash -n "$INSTALL_SH" 2>"$WORK/syntax.err"
