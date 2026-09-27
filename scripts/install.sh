@@ -50,6 +50,10 @@
 #                                              # marketplace install. The
 #                                              # bundled bin/compose-preview
 #                                              # stub passes this on first run.
+#   scripts/install.sh --skills compose-preview-ci,compose-preview-review
+#                                              # add skills to the default set
+#                                              # (compose-preview, compose-ui-builder)
+#   scripts/install.sh --all-skills            # install every skill in the repo
 #   scripts/install.sh --with-skills           # refresh skill content even when
 #                                              # another tool (npx skills, a
 #                                              # plugin) installed it
@@ -140,6 +144,16 @@ COMPANION_SKILLS=(
   figma-catalog-import
   design-parity-review
 )
+# Installed by default next to compose-preview. The rest are opt-in: each
+# skill's description loads into every agent session, and a long list of
+# near-miss skills pulls agents into reading the wrong one first. Pick more
+# with `--skills a,b` (or SKILLS=a,b) or `--all-skills` (ALL_SKILLS=1). Skills
+# this script installed before (they carry `.skill-version`) keep updating.
+DEFAULT_COMPANION_SKILLS=(
+  compose-ui-builder
+)
+SKILLS_REQUESTED="${SKILLS:-}"
+ALL_SKILLS="${ALL_SKILLS:-0}"
 PREFIX="${PREFIX:-$HOME/.local}"
 INSTALL_ANDROID_SDK="${INSTALL_ANDROID_SDK:-0}"
 JDKS_REQUESTED="${JDKS:-}"
@@ -160,6 +174,11 @@ while [[ $# -gt 0 ]]; do
     --cli-only) CLI_ONLY=1; shift ;;
     --with-skills) WITH_SKILLS=1; shift ;;
     --no-modify-path) MODIFY_PATH=0; shift ;;
+    --all-skills) ALL_SKILLS=1; shift ;;
+    --skills)
+      [[ $# -ge 2 ]] || { echo "error: $1 requires a value" >&2; exit 1; }
+      SKILLS_REQUESTED="$2"; shift 2 ;;
+    --skills=*) SKILLS_REQUESTED="${1#*=}"; shift ;;
     --jdk|--jdks)
       [[ $# -ge 2 ]] || { echo "error: $1 requires a value" >&2; exit 1; }
       JDKS_REQUESTED="$2"; shift 2 ;;
@@ -172,6 +191,17 @@ while [[ $# -gt 0 ]]; do
 done
 set -- "${positional[@]+"${positional[@]}"}"
 VERSION="${1:-${VERSION:-}}"
+
+for _req in ${SKILLS_REQUESTED//,/ }; do
+  [[ "$_req" == compose-preview ]] && continue
+  _known=0
+  for _name in "${COMPANION_SKILLS[@]}"; do [[ "$_name" == "$_req" ]] && _known=1; done
+  if [[ "$_known" != 1 ]]; then
+    echo "error: unknown skill '$_req' (known: compose-preview ${COMPANION_SKILLS[*]})" >&2
+    exit 1
+  fi
+done
+unset _req _known _name
 
 BIN_DIR="$PREFIX/bin"
 
@@ -267,20 +297,26 @@ installed_repo_skills() {
 }
 
 # Hand the skill update to the tool that owns the files, so one
-# `compose-preview update` refreshes both. Never fatal: the CLI is done by now.
+# `compose-preview update` refreshes both. Without npx (or if it fails), fall
+# back to refreshing the same folders from the repo tarball. Never fatal: the
+# CLI is done by now.
 update_skills_via_npx() {
   [[ "$SKILLS_VIA_NPX" == 1 ]] || return 0
   local names=() name
   # No mapfile: macOS runs `curl | bash` under bash 3.2.
   while IFS= read -r name; do names+=("$name"); done < <(installed_repo_skills)
   (( ${#names[@]} )) || return 0
-  if ! command -v npx >/dev/null 2>&1; then
-    log "npx not found; update the skills with: npx skills update -g ${names[*]}"
-    return 0
+  if command -v npx >/dev/null 2>&1; then
+    log "updating skills with npx skills: ${names[*]}"
+    npx -y skills update -g -y "${names[@]}" </dev/null >&2 && return 0
+    log "npx skills update failed; refreshing the skill files directly instead"
+  else
+    log "npx not found; refreshing the skill files directly instead"
   fi
-  log "updating skills with npx skills: ${names[*]}"
-  npx -y skills update -g -y "${names[@]}" </dev/null >&2 \
-    || log "npx skills update failed; rerun it yourself: npx skills update -g ${names[*]}"
+  # Same content npx would fetch (this repo's main), copied over the existing
+  # folders. No `.skill-version`, so npx still owns them once Node is back.
+  install_skills_bundle --in-place "${names[@]}" \
+    || log "could not refresh skills; later run: npx skills update -g ${names[*]}"
 }
 
 # ---- Per-host symlinks + legacy gemini-mirror cleanup ---------------------
@@ -981,17 +1017,54 @@ resolve_skills_sha() {
 # record the upstream SHA; re-runs at the same SHA are no-ops. Stale files
 # from previous installs are removed only for top-level entries the new
 # bundle carries, so `cli/` and `bin/` (added later) are left alone.
+# Companion skills to install or refresh, one per line: the defaults (or
+# every companion with --all-skills), plus any asked for with --skills, plus
+# any this script installed before. Plain loops, no associative arrays or
+# mapfile: macOS runs `curl | bash` under bash 3.2.
+wanted_companion_skills() {
+  local skills_root; skills_root="$(dirname "$SKILL_DIR")"
+  local name
+  for name in "${COMPANION_SKILLS[@]}"; do
+    if [[ "$ALL_SKILLS" == 1 ]] \
+      || skill_in_list "$name" "${DEFAULT_COMPANION_SKILLS[*]}" \
+      || skill_in_list "$name" "$SKILLS_REQUESTED" \
+      || [[ -f "$skills_root/$name/.skill-version" ]]; then
+      printf '%s\n' "$name"
+    fi
+  done
+}
+
+# skill_in_list NAME LIST — LIST is comma- or space-separated.
+skill_in_list() {
+  local item
+  for item in ${2//,/ }; do [[ "$item" == "$1" ]] && return 0; done
+  return 1
+}
+
 install_skills_bundle() {
   local sha=""
   sha="$(resolve_skills_sha || true)"
 
   # Short-circuit only when *every* bundle is already at the resolved SHA. A
-  # newly added companion has no marker, so adding one to COMPANION_SKILLS
-  # re-downloads once and then goes quiet again.
+  # newly wanted companion has no marker, so asking for one (or adding one to
+  # DEFAULT_COMPANION_SKILLS) re-downloads once and then goes quiet again.
   local skills_root; skills_root="$(dirname "$SKILL_DIR")"
   local up_to_date=1 name dir
-  if [[ -n "$sha" ]]; then
-    for dir in "$SKILL_DIR" "${COMPANION_SKILLS[@]/#/$skills_root/}"; do
+  local wanted=()
+  # `--in-place NAME...`: refresh exactly these skills without writing
+  # `.skill-version`, so content another tool owns stays marked as theirs.
+  # Used when that tool (npx) isn't available to update them itself.
+  local in_place=0
+  if [[ "${1:-}" == --in-place ]]; then
+    in_place=1; shift
+    for name in "$@"; do [[ "$name" == compose-preview ]] || wanted+=("$name"); done
+  else
+    while IFS= read -r name; do wanted+=("$name"); done < <(wanted_companion_skills)
+  fi
+  if [[ "$in_place" == 1 ]]; then
+    up_to_date=0
+  elif [[ -n "$sha" ]]; then
+    for dir in "$SKILL_DIR" "${wanted[@]/#/$skills_root/}"; do
       [[ "$(cat "$dir/.skill-version" 2>/dev/null || true)" == "$sha" ]] || { up_to_date=0; break; }
     done
   else
@@ -1036,12 +1109,14 @@ install_skills_bundle() {
       rm -rf "$dir/$entry"
     done < <(find "$src" -mindepth 1 -maxdepth 1 | sort -u)
     cp -R "$src/." "$dir/"
-    printf '%s\n' "${sha:-unknown}" > "$dir/.skill-version"
+    [[ "$in_place" == 1 ]] || printf '%s\n' "${sha:-unknown}" > "$dir/.skill-version"
   }
 
-  _extract_one_skill "compose-preview" "$SKILL_DIR" || true
+  if [[ "$in_place" != 1 || -f "$SKILL_DIR/SKILL.md" ]]; then
+    _extract_one_skill "compose-preview" "$SKILL_DIR" || true
+  fi
   local companion
-  for companion in "${COMPANION_SKILLS[@]}"; do
+  for companion in "${wanted[@]+"${wanted[@]}"}"; do
     _extract_one_skill "$companion" "$skills_root/$companion" || true
   done
 }

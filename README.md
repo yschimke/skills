@@ -16,7 +16,7 @@ tell the agent how to drive it.
 then run the bundled `compose-preview` stub once to get the CLI:
 
 ```sh
-npx skills add yschimke/skills --global --yes
+npx skills add yschimke/skills --global --yes --skill compose-preview --skill compose-ui-builder
 ~/.agents/skills/compose-preview/scripts/compose-preview --version   # first run installs the CLI and puts it on PATH
 ```
 
@@ -28,9 +28,20 @@ bash/zsh/fish startup files, and re-execs into the real CLI. Open a new
 terminal afterwards. To update: `compose-preview update` updates the CLI (and
 PATH), and `npx skills update` updates the skills.
 
+The default is two skills: `compose-preview` (render, inspect, CLI and MCP)
+and `compose-ui-builder` (author designs over MCP). Every installed skill's
+description loads into each agent session, so the rest are opt-in. Add them
+by name with another `--skill` (for example `--skill compose-preview-review
+--skill compose-preview-ci`), or drop the `--skill` flags to pick from the
+list. The other skills: `compose-preview-review`, `compose-preview-ci`,
+`compose-preview-design-board`, `compose-design-catalog`,
+`figma-catalog-import`, `design-parity-review`.
+
 **Fallback: curl the installer** — when there's no Node, or you want the CLI
-and every skill bundle (with per-host links for Claude Code and Codex under
-`~/.agents/skills/`) in one step:
+and the same two default skills (with per-host links for Claude Code and
+Codex under `~/.agents/skills/`) in one step. Add skills with
+`bash -s -- --skills compose-preview-review,compose-preview-ci`, or take them
+all with `bash -s -- --all-skills`:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash

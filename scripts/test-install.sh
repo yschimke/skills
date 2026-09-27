@@ -305,6 +305,21 @@ CLI_DEST="$CLI_DEST" VERSION=2.28.0 prune_old_cli_versions 2>/dev/null
 check "prune_old_cli_versions keeps only the current CLI" \
   "compose-preview-2.28.0 other" "$(ls "$CLI_DEST" | tr '\n' ' ' | sed 's/ $//')"
 
+# ---- wanted_companion_skills ----------------------------------------------
+eval "$(sed -n '/^COMPANION_SKILLS=(/,/^)/p; /^DEFAULT_COMPANION_SKILLS=(/,/^)/p' "$INSTALL_SH")"
+WS_ROOT="$WORK/ws"; mkdir -p "$WS_ROOT/compose-preview"
+ws() { SKILL_DIR="$WS_ROOT/compose-preview" wanted_companion_skills | paste -sd' ' -; }
+check "default companion set is compose-ui-builder only" \
+  "compose-ui-builder" "$(ALL_SKILLS=0 SKILLS_REQUESTED= ws)"
+check "--skills adds to the default set" \
+  "compose-preview-review compose-preview-ci compose-ui-builder" "$(ALL_SKILLS=0 SKILLS_REQUESTED=compose-preview-ci,compose-preview-review ws)"
+check "--all-skills installs every companion" \
+  "${COMPANION_SKILLS[*]}" "$(ALL_SKILLS=1 SKILLS_REQUESTED= ws)"
+mkdir -p "$WS_ROOT/figma-catalog-import"; echo abc >"$WS_ROOT/figma-catalog-import/.skill-version"
+check "previously installed companions keep updating" \
+  "compose-ui-builder figma-catalog-import" "$(ALL_SKILLS=0 SKILLS_REQUESTED= ws)"
+check "an unknown --skills name is rejected" \
+  "1" "$(bash "$INSTALL_SH" --skills nope --cli-only >/dev/null 2>&1; echo $?)"
 # ---- skills_managed_elsewhere ---------------------------------------------
 #
 # An npx or plugin install has SKILL.md but no `.skill-version` (only this
@@ -332,6 +347,40 @@ printf '#!/bin/sh\necho "$*" >"%s/npx.args"\n' "$WORK" >"$FAKE_NPX_BIN/npx"; chm
 PATH="$FAKE_NPX_BIN:$PATH" SKILLS_VIA_NPX=1 SKILL_DIR="$ROOT_SK/compose-preview" update_skills_via_npx 2>/dev/null
 check "update_skills_via_npx updates the kept skills globally" \
   "-y skills update -g -y compose-preview compose-preview-ci" "$(cat "$WORK/npx.args")"
+
+# No npx, or npx fails: fall back to refreshing the same folders in place.
+# Run in subshells so the install_skills_bundle stub doesn't leak.
+NO_NPX_BIN="$WORK/nonpx"; mkdir -p "$NO_NPX_BIN"
+for tool in bash sh cat paste dirname; do ln -sf "$(command -v $tool)" "$NO_NPX_BIN/$tool"; done
+check "without npx, skills are refreshed in place" \
+  "--in-place compose-preview compose-preview-ci" \
+  "$( install_skills_bundle() { echo "$*"; }
+      PATH="$NO_NPX_BIN" SKILLS_VIA_NPX=1 SKILL_DIR="$ROOT_SK/compose-preview" update_skills_via_npx 2>/dev/null )"
+FAIL_NPX_BIN="$WORK/failnpx"; mkdir -p "$FAIL_NPX_BIN"
+printf '#!/bin/sh\nexit 1\n' >"$FAIL_NPX_BIN/npx"; chmod +x "$FAIL_NPX_BIN/npx"
+check "a failed npx update falls back to refreshing in place" \
+  "--in-place compose-preview compose-preview-ci" \
+  "$( install_skills_bundle() { echo "$*"; }
+      PATH="$FAIL_NPX_BIN:$PATH" SKILLS_VIA_NPX=1 SKILL_DIR="$ROOT_SK/compose-preview" update_skills_via_npx 2>/dev/null )"
+
+# The in-place refresh copies the named skills and writes no marker.
+IP_SRC="$WORK/ipsrc/skills-main/skills"
+mkdir -p "$IP_SRC/compose-preview" "$IP_SRC/compose-preview-ci" "$IP_SRC/compose-ui-builder"
+for n in compose-preview compose-preview-ci compose-ui-builder; do echo new >"$IP_SRC/$n/SKILL.md"; done
+tar -czf "$WORK/ip.tar.gz" -C "$WORK/ipsrc" skills-main
+IP_ROOT="$WORK/iproot"; mkdir -p "$IP_ROOT/compose-preview" "$IP_ROOT/compose-preview-ci"
+echo old >"$IP_ROOT/compose-preview/SKILL.md"; echo old >"$IP_ROOT/compose-preview-ci/SKILL.md"
+(
+  TMP="$WORK/iptmp"; mkdir -p "$TMP"; SKILLS_REPO=yschimke/skills SKILLS_REF=main
+  resolve_skills_sha() { echo abc123; }
+  curl() { while [[ $# -gt 0 ]]; do [[ "$1" == -o ]] && { cp "$WORK/ip.tar.gz" "$2"; return 0; }; shift; done; }
+  SKILL_DIR="$IP_ROOT/compose-preview" install_skills_bundle --in-place compose-preview compose-preview-ci 2>/dev/null
+)
+check "in-place refresh updates the named skills" \
+  "new new" "$(cat "$IP_ROOT/compose-preview/SKILL.md" "$IP_ROOT/compose-preview-ci/SKILL.md" | paste -sd' ' -)"
+check "in-place refresh adds no other skills and writes no marker" \
+  "compose-preview compose-preview-ci|" \
+  "$(ls "$IP_ROOT" | paste -sd' ' -)|$(ls "$IP_ROOT"/*/.skill-version 2>/dev/null)"
 
 # ---- the script itself parses ---------------------------------------------
 

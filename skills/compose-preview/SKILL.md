@@ -312,10 +312,11 @@ If `compose-preview` isn't on `$PATH`, install it in this order:
    [skills CLI](https://skills.sh), then run the stub:
 
    ```sh
-   npx skills add yschimke/skills --global --yes
+   npx skills add yschimke/skills --global --yes --skill compose-preview --skill compose-ui-builder
    ~/.agents/skills/compose-preview/scripts/compose-preview --version
    ```
-3. **No Node?** Use the canonical installer (CLI + every skill in one step;
+3. **No Node?** Use the canonical installer (CLI + the default skills in one
+   step; `--all-skills` for every skill;
    add `-s -- --no-modify-path` to leave shell startup files alone):
 
    ```sh
@@ -457,7 +458,7 @@ render, diff, text comment). Wiring the CI that does this automatically —
 `compose-preview/main` baselines, PR-comment GitHub Actions, the fork-safe
 two-stage split — is the
 [**compose-preview-ci** skill](../compose-preview-ci/SKILL.md).
-`npx skills add yschimke/skills --global --yes` installs all of them together
-(or, without Node, the
+They are opt-in: add one with `npx skills add yschimke/skills --global --yes
+--skill <name>` (or, without Node, the
 [`scripts/install.sh`](https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh)
-fallback).
+fallback with `--skills <name>`).
