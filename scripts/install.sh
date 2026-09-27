@@ -1234,6 +1234,19 @@ prune_old_cli_versions() {
   done
 }
 
+# Older CLIs registered MCP host entries (~/.claude.json, Antigravity, Codex,
+# OpenCode) with the versioned launcher .../compose-preview-<version>/bin/,
+# which prune_old_cli_versions deletes, and could pin a global entry to one
+# project. `mcp repair` points them at the stable launcher. Skipped on CLIs
+# that predate the subcommand.
+repair_mcp_host_entries() {
+  local launcher="$BIN_DIR/compose-preview"
+  [[ -x "$launcher" ]] || launcher="$LAUNCHER"
+  "$launcher" mcp help 2>/dev/null | grep -qE '^[[:space:]]+repair[[:space:]]' || return 0
+  PATH="$BIN_DIR:$PATH" "$launcher" mcp repair \
+    || log "warning: 'compose-preview mcp repair' failed; run it by hand"
+}
+
 # ---- Same-version short-circuit ------------------------------------------
 # Refreshes any symlinks the caller might have blown away and refreshes the
 # skill bundles from upstream (cheap — install_skills_bundle is a no-op when
@@ -1249,6 +1262,7 @@ if [[ "$INSTALLED_VERSION" == "$VERSION" && -x "$LAUNCHER" ]]; then
   [[ "$CLI_ONLY" == 1 ]] || link_skills_for_detected_hosts
   maybe_write_env_file
   prune_old_cli_versions
+  repair_mcp_host_entries
   ensure_bin_on_path
   update_skills_via_npx
   exit 0
@@ -1366,6 +1380,7 @@ maybe_write_env_file
 # ---- PATH setup and cleanup ----------------------------------------------
 
 prune_old_cli_versions
+repair_mcp_host_entries
 ensure_bin_on_path
 update_skills_via_npx
 
