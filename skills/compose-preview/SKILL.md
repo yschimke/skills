@@ -295,30 +295,36 @@ is already available — if it is, you're done. Don't blindly re-run the
 installer between previews; the script is idempotent for same-version runs
 but still does network probes.
 
-If `compose-preview` isn't on `$PATH`, this skill ships a self-bootstrapping
-stub. Invoking it once downloads the real CLI and re-execs:
+If `compose-preview` isn't on `$PATH`, install it in this order:
 
-```sh
-bash "$SKILL_DIR/scripts/compose-preview" --version
-```
+1. **Run the stub bundled with this skill** (preferred — no Node needed). Its
+   first run downloads the real CLI, links `~/.local/bin/compose-preview`,
+   adds `~/.local/bin` to bash/zsh/fish startup files, and re-execs:
 
-(replace `$SKILL_DIR` with the absolute path to this skill bundle, e.g.
-`~/.claude/plugins/yschimke-skills/skills/compose-preview/` or
-`~/.claude/skills/compose-preview/`). Subsequent invocations of
-`compose-preview` find the installed CLI on `$PATH` and skip the
-bootstrap.
+   ```sh
+   bash "$SKILL_DIR/scripts/compose-preview" --version
+   ```
 
-To install (or upgrade) explicitly, point any consumer at the canonical
-installer:
+   (`$SKILL_DIR` is the absolute path to this skill bundle, e.g.
+   `~/.agents/skills/compose-preview/` or
+   `~/.claude/plugins/yschimke-skills/skills/compose-preview/`.)
+2. **No bundle on disk?** Install the skills with the
+   [skills CLI](https://skills.sh), then run the stub:
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
-  | bash
-compose-preview doctor
-```
+   ```sh
+   npx skills add yschimke/skills --global --yes
+   ~/.agents/skills/compose-preview/scripts/compose-preview --version
+   ```
+3. **No Node?** Use the canonical installer (CLI + every skill in one step;
+   add `-s -- --no-modify-path` to leave shell startup files alone):
 
-Re-running the same command upgrades to the latest release; pin a specific
-version by appending it (`… | bash -s -- 1.79.0`).
+   ```sh
+   curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash
+   ```
+
+Then `compose-preview doctor`. A new shell picks up `~/.local/bin`;
+`compose-preview update` upgrades later, and re-running the curl installer
+also upgrades (pin a version with `… | bash -s -- 1.79.0`).
 
 `doctor` verifies Java 17+ on `PATH` (JDK 21/25 are fine — the renderer is
 compiled to JDK 17 bytecode). If the install path isn't on `PATH`, the
@@ -449,7 +455,8 @@ authoring agent-opened PRs, and reviewing UI PRs locally (base + head
 render, diff, text comment). Wiring the CI that does this automatically —
 `compose-preview/main` baselines, PR-comment GitHub Actions, the fork-safe
 two-stage split — is the
-[**compose-preview-ci** skill](../compose-preview-ci/SKILL.md). The
-bootstrap installer
-([`scripts/install.sh`](https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh))
-sets all of them up together.
+[**compose-preview-ci** skill](../compose-preview-ci/SKILL.md).
+`npx skills add yschimke/skills --global --yes` installs all of them together
+(or, without Node, the
+[`scripts/install.sh`](https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh)
+fallback).
