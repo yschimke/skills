@@ -786,7 +786,19 @@ fi
 # re-invocation that wants the existing version can short-circuit without
 # touching the network at all.
 
-CLI_VERSION_FILE="$SKILL_DIR/.cli-version"
+# Where the CLI lives. Normally inside $SKILL_DIR, but when another tool owns
+# that folder (npx skills, a plugin) it replaces the whole folder on update,
+# which deleted `cli/` and left ~/.local/bin/compose-preview dangling. Then the
+# CLI goes to its own data dir instead.
+resolve_cli_home() {
+  if skills_managed_elsewhere; then
+    printf '%s\n' "${COMPOSE_PREVIEW_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/compose-preview}"
+  else
+    printf '%s\n' "$SKILL_DIR"
+  fi
+}
+CLI_HOME="$(resolve_cli_home)"
+CLI_VERSION_FILE="$CLI_HOME/.cli-version"
 INSTALLED_VERSION="$(cat "$CLI_VERSION_FILE" 2>/dev/null || true)"
 
 # Releases from this version onward carry a readiness asset uploaded only after
@@ -937,9 +949,9 @@ fi
 CLI_ASSET="compose-preview-${VERSION}.tar.gz"
 CLI_URL="https://github.com/$REPO/releases/download/v${VERSION}/${CLI_ASSET}"
 
-CLI_DEST="$SKILL_DIR/cli"
+CLI_DEST="$CLI_HOME/cli"
 LAUNCHER="$CLI_DEST/compose-preview-${VERSION}/bin/compose-preview"
-SKILL_LAUNCHER="$SKILL_DIR/bin/compose-preview"
+SKILL_LAUNCHER="$CLI_HOME/bin/compose-preview"
 
 # Companion skills install as siblings of $SKILL_DIR (see COMPANION_SKILLS).
 # They ship separately from compose-preview so an agent loading one of them
@@ -1230,7 +1242,7 @@ prune_old_cli_versions() {
 if [[ "$INSTALLED_VERSION" == "$VERSION" && -x "$LAUNCHER" ]]; then
   log "compose-preview CLI $VERSION already installed"
   [[ "$CLI_ONLY" == 1 ]] || install_skills_bundle || true
-  mkdir -p "$SKILL_DIR/bin" "$BIN_DIR"
+  mkdir -p "$CLI_HOME/bin" "$BIN_DIR"
   ln -sfn "../cli/compose-preview-${VERSION}/bin/compose-preview" "$SKILL_LAUNCHER"
   ln -sfn "$LAUNCHER" "$BIN_DIR/compose-preview"
   "$LAUNCHER" --help >/dev/null 2>&1 || die "installed launcher is broken: $LAUNCHER"
@@ -1326,12 +1338,12 @@ fi
 
 [[ -x "$LAUNCHER" ]] || die "launcher not found after extract: $LAUNCHER"
 
-mkdir -p "$SKILL_DIR"
+mkdir -p "$CLI_HOME"
 printf '%s\n' "$VERSION" > "$CLI_VERSION_FILE"
 
 # ---- Wire up the in-bundle launcher --------------------------------------
 
-mkdir -p "$SKILL_DIR/bin"
+mkdir -p "$CLI_HOME/bin"
 ln -sf "../cli/compose-preview-${VERSION}/bin/compose-preview" "$SKILL_LAUNCHER"
 log "skill bundle launcher: $SKILL_LAUNCHER"
 

@@ -333,6 +333,20 @@ check "installer-owned skill content is refreshed" \
 check "a fresh machine is not managed elsewhere" \
   "no" "$(SKILL_DIR="$WORK/none/compose-preview" skills_managed_elsewhere && echo yes || echo no)"
 
+# ---- resolve_cli_home ------------------------------------------------------
+# npx replaces the whole skill folder on update, so the CLI must not live there.
+CH_HOME="$WORK/chhome"; mkdir -p "$CH_HOME"
+check "npx-managed skills put the CLI in the data dir" \
+  "$CH_HOME/.local/share/compose-preview" \
+  "$(HOME="$CH_HOME" XDG_DATA_HOME= COMPOSE_PREVIEW_HOME= SKILL_DIR="$NPX_SKILL" resolve_cli_home)"
+check "XDG_DATA_HOME is honoured" \
+  "$CH_HOME/xdg/compose-preview" \
+  "$(HOME="$CH_HOME" XDG_DATA_HOME="$CH_HOME/xdg" COMPOSE_PREVIEW_HOME= SKILL_DIR="$NPX_SKILL" resolve_cli_home)"
+check "installer-owned skills keep the CLI in the skill dir" \
+  "$OURS_SKILL" "$(SKILL_DIR="$OURS_SKILL" resolve_cli_home)"
+check "a fresh machine keeps the CLI in the skill dir" \
+  "$WORK/none/compose-preview" "$(SKILL_DIR="$WORK/none/compose-preview" resolve_cli_home)"
+
 # installed_repo_skills names only the repo's skills the user actually has.
 eval "$(sed -n '/^COMPANION_SKILLS=(/,/^)/p' "$INSTALL_SH")"
 ROOT_SK="$WORK/root"; mkdir -p "$ROOT_SK/compose-preview" "$ROOT_SK/compose-preview-ci" "$ROOT_SK/someone-else"
