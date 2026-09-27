@@ -42,6 +42,7 @@ resolve_real_cli() {
   local candidate
   for candidate in \
       "$HOME/.local/bin/compose-preview" \
+      "${COMPOSE_PREVIEW_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/compose-preview}/bin/compose-preview" \
       "$HOME/.agents/skills/compose-preview/bin/compose-preview"; do
     [[ -x "$candidate" ]] || continue
     [[ "$(readlink -f "$candidate")" == "$self" ]] && continue
