@@ -50,6 +50,8 @@
 #                                              # marketplace install. The
 #                                              # bundled bin/compose-preview
 #                                              # stub passes this on first run.
+#   scripts/install.sh --no-modify-path        # don't add ~/.local/bin to shell
+#                                              # startup files (also MODIFY_PATH=0)
 #   scripts/install.sh --android-sdk           # also install the Android SDK
 #                                              # (cmdline-tools + platforms;android-36
 #                                              # + platform-tools + build-tools;36.0.0,
@@ -140,6 +142,7 @@ INSTALL_ANDROID_SDK="${INSTALL_ANDROID_SDK:-0}"
 JDKS_REQUESTED="${JDKS:-}"
 ANDROID_HOME_INPUT="${ANDROID_HOME:-}"
 CLI_ONLY="${CLI_ONLY:-0}"
+MODIFY_PATH="${MODIFY_PATH:-1}"
 
 # Argument parsing — flags first, then positional VERSION. Flags can appear in
 # any order. Unknown flags are an error so typos don't get silently swallowed.
@@ -151,6 +154,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --android-sdk) INSTALL_ANDROID_SDK=1; shift ;;
     --cli-only) CLI_ONLY=1; shift ;;
+    --no-modify-path) MODIFY_PATH=0; shift ;;
     --jdk|--jdks)
       [[ $# -ge 2 ]] || { echo "error: $1 requires a value" >&2; exit 1; }
       JDKS_REQUESTED="$2"; shift 2 ;;
@@ -990,6 +994,107 @@ install_skills_bundle() {
   done
 }
 
+# ---- PATH setup and old-version cleanup -----------------------------------
+#
+# `compose-preview` is linked into $BIN_DIR (~/.local/bin), which many shells
+# don't put on PATH. Printing a hint wasn't enough: it scrolled past, and the
+# same-version short-circuit (what `compose-preview update` hits when already
+# current) never printed it at all. So add $BIN_DIR to the startup files of the
+# shells this user has, once, inside a marked block that is easy to find and
+# remove. Skipped in cloud sandboxes (they get $CLAUDE_ENV_FILE instead) and
+# with --no-modify-path / MODIFY_PATH=0.
+
+PATH_MARKER="# compose-preview: put the CLI on PATH (added by yschimke/skills scripts/install.sh)"
+
+# $BIN_DIR written relative to $HOME when possible, so the line survives a
+# renamed home directory and reads naturally in dotfiles.
+path_entry_for_rc() {
+  case "$BIN_DIR" in
+    "$HOME"/*) printf '%s' "\$HOME/${BIN_DIR#"$HOME"/}" ;;
+    *) printf '%s' "$BIN_DIR" ;;
+  esac
+}
+
+# Appends the POSIX-shell block to <file> unless it is already there.
+# Prints the file name when it changed something.
+add_path_block_posix() {
+  local file="$1" entry
+  entry="$(path_entry_for_rc)"
+  [[ -f "$file" ]] && grep -Fq "$PATH_MARKER" "$file" && return 0
+  mkdir -p "$(dirname "$file")"
+  {
+    printf '\n%s\n' "$PATH_MARKER"
+    printf 'case ":$PATH:" in *":%s:"*) ;; *) export PATH="%s:$PATH" ;; esac\n' "$entry" "$entry"
+  } >>"$file"
+  printf '%s\n' "$file"
+}
+
+# fish reads every file in conf.d, so ours is a file of its own that the
+# script owns outright and simply rewrites.
+write_fish_path_file() {
+  local dir="${XDG_CONFIG_HOME:-$HOME/.config}/fish/conf.d" entry
+  local file="$dir/compose-preview.fish"
+  entry="$(path_entry_for_rc)"
+  local body
+  body="$(printf '%s\nif not contains -- "%s" $PATH\n    set -gx PATH "%s" $PATH\nend\n' "$PATH_MARKER" "$entry" "$entry")"
+  [[ -f "$file" && "$(cat "$file")" == "$body" ]] && return 0
+  mkdir -p "$dir"
+  printf '%s\n' "$body" >"$file"
+  printf '%s\n' "$file"
+}
+
+has_shell() { # has_shell <name> <config-path-that-implies-it>
+  command -v "$1" >/dev/null 2>&1 || [[ -e "$2" ]]
+}
+
+ensure_bin_on_path() {
+  [[ "$MODIFY_PATH" == 1 && "$CLAUDE_CLOUD" != 1 ]] || return 0
+  local changed=()
+  local f
+  # bash: interactive shells read ~/.bashrc; login shells (macOS Terminal)
+  # read ~/.bash_profile, falling back to ~/.profile.
+  if has_shell bash "$HOME/.bashrc"; then
+    f="$(add_path_block_posix "$HOME/.bashrc")" && [[ -n "$f" ]] && changed+=("$f")
+    if [[ -f "$HOME/.bash_profile" ]]; then
+      f="$(add_path_block_posix "$HOME/.bash_profile")" && [[ -n "$f" ]] && changed+=("$f")
+    elif [[ -f "$HOME/.profile" ]]; then
+      f="$(add_path_block_posix "$HOME/.profile")" && [[ -n "$f" ]] && changed+=("$f")
+    fi
+  fi
+  if has_shell zsh "${ZDOTDIR:-$HOME}/.zshrc"; then
+    f="$(add_path_block_posix "${ZDOTDIR:-$HOME}/.zshrc")" && [[ -n "$f" ]] && changed+=("$f")
+  fi
+  if has_shell fish "${XDG_CONFIG_HOME:-$HOME/.config}/fish"; then
+    f="$(write_fish_path_file)" && [[ -n "$f" ]] && changed+=("$f")
+  fi
+  if (( ${#changed[@]} > 0 )); then
+    log "added $BIN_DIR to PATH in: ${changed[*]}"
+    log "open a new terminal (or source that file) to use 'compose-preview'"
+  fi
+  case ":$PATH:" in
+    *":$BIN_DIR:"*) ;;
+    *)
+      if (( ${#changed[@]} == 0 )); then
+        log "note: $BIN_DIR is not on this shell's PATH; add it to your shell's startup file"
+      fi
+      ;;
+  esac
+}
+
+# Remove CLI versions other than the one just linked. Old versions otherwise
+# pile up, and a stale MCP config can keep launching one (a 2.7.0 `mcp serve`
+# kept running alongside 2.28.0).
+prune_old_cli_versions() {
+  local keep="compose-preview-$VERSION" d
+  [[ -d "$CLI_DEST" ]] || return 0
+  for d in "$CLI_DEST"/compose-preview-*; do
+    [[ -d "$d" ]] || continue
+    [[ "$(basename "$d")" == "$keep" ]] && continue
+    rm -rf "$d"
+    log "removed old CLI $(basename "$d")"
+  done
+}
+
 # ---- Same-version short-circuit ------------------------------------------
 # Refreshes any symlinks the caller might have blown away and refreshes the
 # skill bundles from upstream (cheap — install_skills_bundle is a no-op when
@@ -1004,6 +1109,8 @@ if [[ "$INSTALLED_VERSION" == "$VERSION" && -x "$LAUNCHER" ]]; then
   "$LAUNCHER" --help >/dev/null 2>&1 || die "installed launcher is broken: $LAUNCHER"
   [[ "$CLI_ONLY" == 1 ]] || link_skills_for_detected_hosts
   maybe_write_env_file
+  prune_old_cli_versions
+  ensure_bin_on_path
   exit 0
 fi
 
@@ -1116,23 +1223,10 @@ fi
 
 maybe_write_env_file
 
-# ---- PATH advice ----------------------------------------------------------
+# ---- PATH setup and cleanup ----------------------------------------------
 
-case ":$PATH:" in
-  *":$BIN_DIR:"*) ;;
-  *)
-    if [[ "$CLAUDE_CLOUD" != 1 ]]; then
-      cat >&2 <<EOF
-
-note: $BIN_DIR is not on your PATH.
-
-  bash/zsh:  echo 'export PATH="$BIN_DIR:\$PATH"' >> ~/.bashrc  # or ~/.zshrc
-  fish:      fish_add_path $BIN_DIR
-
-EOF
-    fi
-    ;;
-esac
+prune_old_cli_versions
+ensure_bin_on_path
 
 [[ "$CLI_ONLY" == 1 ]] || link_skills_for_detected_hosts
 
