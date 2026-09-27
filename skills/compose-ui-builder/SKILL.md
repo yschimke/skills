@@ -61,10 +61,9 @@ capability that prevented one of those checks.
 
 ## Viewer, prompts, and interactive decisions
 
-- Viewer/resources and prompts are unreleased drafts as of 2026-09-26. Follow
-  their exact arguments and fallbacks in the
-  [catalog MCP reference](../compose-preview/references/catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks),
-  and never infer a viewer action or mutation from model context.
+- Viewer and prompts need a compose-preview-server release after v3.74.0; until
+  then treat them as absent. See the
+  [catalog MCP reference](../compose-preview/references/catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks).
 
 ## Core creation loop
 

@@ -98,12 +98,14 @@ reconfiguration when a catalog is added or retired.
 
 ### Draft viewer and interactive capability fallbacks
 
-As of 2026-09-26 these are open drafts, not a released contract: the MCP App is
-[#1126](https://github.com/yschimke/compose-preview-server/pull/1126), linked
-resources are [#1130](https://github.com/yschimke/compose-preview-server/pull/1130),
-and prompts/variant choice are
-[#1128](https://github.com/yschimke/compose-preview-server/pull/1128). Use only
-advertised capabilities; after release, record the minimum server version here.
+**Requires compose-preview-server ≥ the first release after v3.74.0 that
+contains** [#1126](https://github.com/yschimke/compose-preview-server/pull/1126)
+(MCP App viewer), [#1130](https://github.com/yschimke/compose-preview-server/pull/1130)
+(linked resources) and [#1128](https://github.com/yschimke/compose-preview-server/pull/1128)
+(prompts, variant choice). None is released yet. **Until then**, none of the
+items below exists: use the text/image result, list matrix variants in chat,
+and use `request_access` / `poll_access` for access. Even after release, use
+only what `tools/list`, `prompts/list` and tool `_meta` advertise.
 
 - `ui://compose-preview/viewer` (`text/html;profile=mcp-app`) is attached with
   `_meta.ui.resourceUri`. Open only documented payloads. The association is not
@@ -115,9 +117,9 @@ advertised capabilities; after release, record the minimum server version here.
   [#1114](https://github.com/yschimke/compose-preview-server/issues/1114), and
   PNG/native output is not the editor view.
 - The only form elicitation is `render_matrix` with `choose: true`; unsupported
-  clients receive the labelled choices as text. R3 decisions remain chat
-  choices. Access remains the exact URL/code `request_access` / `poll_access`
-  flow—there is no URL elicitation.
+  clients receive the labelled choices as text. R3 decisions (save back,
+  discard, move a home) remain chat choices. Access remains the exact URL/code
+  `request_access` / `poll_access` flow; do not expect URL elicitation.
 - Use only advertised actions; model context requests a later typed call and
   does not prove it ran. The draft viewer does not render A2UI documents.
 

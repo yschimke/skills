@@ -30,11 +30,6 @@ to compare against the latest release (warns when the local copy trails), and
   so the person can inspect the same render. If the harness cannot display the
   render, say which surface is unavailable and why; do not describe an inferred
   visual result as something you saw.
-- When a render result advertises the shared Compose viewer, inspect only a
-  payload kind that result documents. Share a `resource_link` only when the
-  result actually returns one, and retain its text/image/path fallback. The
-  exact local and remote contracts are in [references/mcp.md](./references/mcp.md)
-  and [references/catalog-mcp.md](./references/catalog-mcp.md).
 - Prefer typed MCP tools and their published input/output schemas. Use a
   dedicated validation tool when the server exposes one. Do not hand-edit
   design or render-manifest JSON as a substitute for a typed operation; if a
@@ -51,12 +46,12 @@ to compare against the latest release (warns when the local copy trails), and
 
 ## Interactive MCP capabilities
 
-- Viewer/resource results, file-path lookup, prompts, and variant selection are
-  still unreleased drafts as of 2026-09-26. Discover them from the connected
-  server and follow the exact shipped-vs-draft contracts in the local
-  [MCP](./references/mcp.md#draft-viewer-prompts-and-fallbacks) or remote
-  [catalog MCP](./references/catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks)
-  reference; do not infer a capability from this skill alone.
+- The shared viewer, `resource_link` results, file-path lookup, prompts, and
+  `render_matrix` variant choice require a compose-preview-server release after
+  v3.74.0 (none has shipped them yet). Until then, treat them as absent and use
+  text/image/path results. Use only what the server advertises; details in
+  [mcp.md](./references/mcp.md#draft-viewer-prompts-and-fallbacks) and
+  [catalog-mcp.md](./references/catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks).
 
 ## Gradle tasks
 

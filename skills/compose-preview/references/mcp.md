@@ -185,12 +185,13 @@ for the full table) cover the rest:
 
 ### Draft viewer, prompts, and fallbacks
 
-As of 2026-09-26 these remain unreleased drafts. Local file lookup/path results
-need a future `compose-preview` CLI distribution after compose-ai-tools#5583's
-split and compose-preview-server#1124's implementation. Server drafts #1126
-and #1130 supply the viewer/resources; #1128 supplies prompts/variant choice.
-Use only advertised capabilities. After release, record the minimum local CLI
-version separately from the minimum remote server version.
+**Requires** a compose-preview-server release after v3.74.0 containing #1126
+and #1130 (viewer/resources) and #1128 (prompts, variant choice), and — for
+local file lookup/path results — a `compose-preview` CLI distribution that
+ships compose-preview-server#1124 after compose-ai-tools#5583's split. None is
+released yet. **Until then**, treat every item in this section as absent and
+use inline renders, CLI `pngPath`s and chat-listed choices. Even after release,
+use only what the local `tools/list` / `prompts/list` advertises.
 
 The viewer and action rules match the remote
 [viewer contract](./catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks):
