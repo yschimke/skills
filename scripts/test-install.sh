@@ -305,6 +305,22 @@ CLI_DEST="$CLI_DEST" VERSION=2.28.0 prune_old_cli_versions 2>/dev/null
 check "prune_old_cli_versions keeps only the current CLI" \
   "compose-preview-2.28.0 other" "$(ls "$CLI_DEST" | tr '\n' ' ' | sed 's/ $//')"
 
+# ---- wanted_companion_skills ----------------------------------------------
+eval "$(sed -n '/^COMPANION_SKILLS=(/,/^)/p; /^DEFAULT_COMPANION_SKILLS=(/,/^)/p' "$INSTALL_SH")"
+WS_ROOT="$WORK/ws"; mkdir -p "$WS_ROOT/compose-preview"
+ws() { SKILL_DIR="$WS_ROOT/compose-preview" wanted_companion_skills | paste -sd' ' -; }
+check "default companion set is compose-ui-builder only" \
+  "compose-ui-builder" "$(ALL_SKILLS=0 SKILLS_REQUESTED= ws)"
+check "--skills adds to the default set" \
+  "compose-preview-review compose-preview-ci compose-ui-builder" "$(ALL_SKILLS=0 SKILLS_REQUESTED=compose-preview-ci,compose-preview-review ws)"
+check "--all-skills installs every companion" \
+  "${COMPANION_SKILLS[*]}" "$(ALL_SKILLS=1 SKILLS_REQUESTED= ws)"
+mkdir -p "$WS_ROOT/figma-catalog-import"; echo abc >"$WS_ROOT/figma-catalog-import/.skill-version"
+check "previously installed companions keep updating" \
+  "compose-ui-builder figma-catalog-import" "$(ALL_SKILLS=0 SKILLS_REQUESTED= ws)"
+check "an unknown --skills name is rejected" \
+  "1" "$(bash "$INSTALL_SH" --skills nope --cli-only >/dev/null 2>&1; echo $?)"
+
 # ---- the script itself parses ---------------------------------------------
 
 bash -n "$INSTALL_SH" 2>"$WORK/syntax.err"
