@@ -68,12 +68,14 @@ Install the skills from this repo, then whichever of those plugins you need:
 ```sh
 # Antigravity (does not load ~/.agents/skills, so use the plugin route).
 # To be verified: yschimke/compose-ag-plugin#6.
+# Run from one parent folder (e.g. ~/workspace) so both clones sit side by side.
 git clone https://github.com/yschimke/skills
+git clone https://github.com/yschimke/compose-ag-plugin
 agy plugin install ./skills
-# Clone yschimke/compose-ag-plugin, then install either local plugin directory.
-agy plugin install ./plugins/compose-catalogs
-agy plugin install ./plugins/compose-preview
+agy plugin install ./compose-ag-plugin/plugins/compose-preview
 agy plugin enable compose-preview
+agy plugin install ./compose-ag-plugin/plugins/compose-catalogs   # optional
+python3 compose-ag-plugin/scripts/antigravity-check.py            # verify
 
 # Claude Code
 /plugin marketplace add yschimke/skills
