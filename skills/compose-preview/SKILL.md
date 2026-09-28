@@ -28,6 +28,10 @@ workspace itself (MCP roots or cwd).
 3. **Reply** with what the render shows and keep `pngPath` so the person can
    open the same image.
 
+**Never fake a render.** Don't hand-build an HTML, CSS or SVG mock of a
+preview, or draw one from the source, and present it as the UI. Only output
+from the render tools counts. If rendering fails, say so with the error.
+
 **After a source edit**, call `render_preview` again. `notify_file_changed` is
 optional. **If the result says it is stale**, make exactly one more call with
 `force: {"reason": "<why>"}`. **Never** run `./gradlew`, `clean`, or delete
