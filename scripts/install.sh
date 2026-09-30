@@ -1140,8 +1140,10 @@ install_skills_bundle() {
 # same-version short-circuit (what `compose-preview update` hits when already
 # current) never printed it at all. So add $BIN_DIR to the startup files of the
 # shells this user has, once, inside a marked block that is easy to find and
-# remove. Skipped in cloud sandboxes (they get $CLAUDE_ENV_FILE instead) and
-# with --no-modify-path / MODIFY_PATH=0.
+# remove. Skipped in cloud sandboxes (they get $CLAUDE_ENV_FILE instead), with
+# --no-modify-path / MODIFY_PATH=0, and whenever $BIN_DIR is already on PATH:
+# the user's own dotfiles handle it, and touching them would dirty a
+# version-controlled home directory on every `compose-preview update`.
 
 PATH_MARKER="# compose-preview: put the CLI on PATH (added by yschimke/skills scripts/install.sh)"
 
@@ -1154,12 +1156,28 @@ path_entry_for_rc() {
   esac
 }
 
-# Appends the POSIX-shell block to <file> unless it is already there.
-# Prints the file name when it changed something.
+# True when <file> already mentions $BIN_DIR in any common spelling (our
+# marker, $HOME/..., ~/..., or the absolute path), e.g. a hand-written
+# `path_prepend "$HOME/.local/bin"`.
+file_mentions_bin_dir() {
+  local file="$1" rel
+  [[ -f "$file" ]] || return 1
+  grep -Fq -e "$PATH_MARKER" -e "$BIN_DIR" -e "$(path_entry_for_rc)" "$file" && return 0
+  case "$BIN_DIR" in
+    "$HOME"/*)
+      rel="${BIN_DIR#"$HOME"/}"
+      grep -Fq -e "~/$rel" -e "\${HOME}/$rel" "$file" && return 0
+      ;;
+  esac
+  return 1
+}
+
+# Appends the POSIX-shell block to <file> unless it (or another entry for
+# $BIN_DIR) is already there. Prints the file name when it changed something.
 add_path_block_posix() {
   local file="$1" entry
   entry="$(path_entry_for_rc)"
-  [[ -f "$file" ]] && grep -Fq "$PATH_MARKER" "$file" && return 0
+  file_mentions_bin_dir "$file" && return 0
   mkdir -p "$(dirname "$file")"
   {
     printf '\n%s\n' "$PATH_MARKER"
@@ -1188,6 +1206,10 @@ has_shell() { # has_shell <name> <config-path-that-implies-it>
 
 ensure_bin_on_path() {
   [[ "$MODIFY_PATH" == 1 && "$CLAUDE_CLOUD" != 1 ]] || return 0
+  # Already reachable: leave every startup file alone.
+  case ":$PATH:" in
+    *":$BIN_DIR:"* | *":$BIN_DIR/:"*) return 0 ;;
+  esac
   local changed=()
   local f
   # bash: interactive shells read ~/.bashrc; login shells (macOS Terminal)
@@ -1209,15 +1231,10 @@ ensure_bin_on_path() {
   if (( ${#changed[@]} > 0 )); then
     log "added $BIN_DIR to PATH in: ${changed[*]}"
     log "open a new terminal (or source that file) to use 'compose-preview'"
+    log "(pass --no-modify-path or set MODIFY_PATH=0 to skip this)"
+  else
+    log "note: $BIN_DIR is not on this shell's PATH; open a new terminal, or add it to your shell's startup file"
   fi
-  case ":$PATH:" in
-    *":$BIN_DIR:"*) ;;
-    *)
-      if (( ${#changed[@]} == 0 )); then
-        log "note: $BIN_DIR is not on this shell's PATH; add it to your shell's startup file"
-      fi
-      ;;
-  esac
 }
 
 # Remove CLI versions other than the one just linked. Old versions otherwise

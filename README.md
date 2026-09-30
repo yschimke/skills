@@ -47,8 +47,11 @@ all with `bash -s -- --all-skills`:
 curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash
 ```
 
-Pass `--no-modify-path` (`… | bash -s -- --no-modify-path`) to leave your
-shell startup files alone.
+The installer adds `~/.local/bin` to your shell startup files only when it
+isn't already on `PATH` and no startup file already mentions it. Pass
+`--no-modify-path` (`… | bash -s -- --no-modify-path`), or set
+`MODIFY_PATH=0` (e.g. `MODIFY_PATH=0 compose-preview update`), to leave them
+alone entirely.
 
 **Alternative: a Claude Code or Codex plugin marketplace** — see
 [Per-harness plugins](#per-harness-plugins) below, which also adds the MCP
