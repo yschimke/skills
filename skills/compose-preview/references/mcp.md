@@ -172,16 +172,14 @@ for the full table) cover the rest:
   explicit pixel bounds) are the token-frugal knobs — see
   [`references/agent-loop.md`](./agent-loop.md). `force = { reason }` is the
   sanctioned escape hatch for stale renders — see the "do not delete
-  `build/classes/`" note above. The local CLI distribution does not ship this
-  yet: [compose-ai-tools#5583](https://github.com/yschimke/compose-ai-tools/issues/5583)
-  tracks the split, while implementation draft
-  [compose-preview-server#1124](https://github.com/yschimke/compose-preview-server/pull/1124)
-  adds `inline: false` for an absolute `pngPath`, dimensions, SHA-256,
-  duration, and session-scoped `changed`; it cannot be combined with `crop`.
-- `find_previews_for_file(path, workspaceId?)` — the same unreleased local CLI
-  change maps a source path to preview URIs. No `workspaceId` searches all
-  workspaces; an empty array means no previews. Do not reconstruct a URI from a
-  Kotlin name or use the tool until the local `tools/list` advertises it.
+  `build/classes/`" note above. `inline: false` returns an absolute `pngPath`,
+  dimensions, SHA-256, duration and session-scoped `changed` instead of an
+  inline observation; it overrides `observe` and cannot be combined with
+  `crop`. Clients that read files should pass it and read `pngPath` only when
+  they need to look.
+- `find_previews_for_file(path, workspaceId?)` — maps a source path to preview
+  URIs. No `workspaceId` searches all workspaces; an empty array means no
+  previews. Do not reconstruct a URI from a Kotlin name.
 - `render_matrix`, `diff_semantics`, `record_preview` — the Playwright-style
   interaction/regression tools (matrix sweep, pixel-free semantics diff,
   record-to-Compose-UI-test). Covered in
