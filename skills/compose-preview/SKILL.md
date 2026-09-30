@@ -76,6 +76,30 @@ Update with `compose-preview update` (skills: `npx skills update`). Plugin
 setup, MCP registration, and the Gradle init script are in
 [setup.md](./references/setup.md).
 
+## Working with platform skills
+
+An official platform skill, such as Android's
+[Wear Compose Material 3 skill](https://developer.android.com/agents/skills/wear/wear-compose-m3/skill),
+owns API, dependency and migration choices. This skill only renders and
+verifies:
+
+- **Defer.** Follow the platform skill for which component, API or version to
+  use. Don't treat this skill's references as a second API guide.
+- **Changes are expected.** During a migration a changed hash or image is
+  information, not a regression. Only a render failure or a new accessibility
+  error blocks. Don't restore old screenshots or tune the UI to match them.
+- **Mind the catalog version.** A hosted catalog renders one fixed library
+  version, which may differ from the project's `libs.versions.toml`. See
+  [catalog-mcp.md § Choosing a component](./references/catalog-mcp.md#choosing-a-component-with-a-platform-skill).
+
+**Migration workflow.** Before editing, `find_previews_for_file` for each file
+and record a baseline with `render_preview observe=hash`. Make the platform
+skill's edits, re-render, and report failures and new accessibility errors
+(`get_preview_data kind=a11y/atf`) as blockers. Show a before/after for one to
+three key screens, and check a small round device and the largest font scale
+on Wear. Details:
+[wear-ui.md § Verification workflow](./references/wear-ui.md#verification-workflow).
+
 ## Reference index
 
 Read only what the task needs.

@@ -154,6 +154,26 @@ for the same reason. `observe` takes:
 single catalog lease and are reported together, so N combinations cost one
 round trip instead of N. It is capped, and `observe` there is `hash` or `png`.
 
+### Choosing a component with a platform skill
+
+When a platform skill maps an old component to several new ones (for example
+Wear M2.5 `Chip` to M3 `Button`, `FilledTonalButton` or `CompactButton`), show
+the options before choosing:
+
+1. Find each candidate's preview with `catalog_list_previews` on the matching
+   catalog (for example `wear-m3`).
+2. Read the published snapshots with `resources/read`; they cost no render.
+   Use `catalog_render_matrix` only to compare one candidate across devices or
+   font scales.
+3. Put the options side by side for the person, or pick one and say why. The
+   platform skill still decides which ones are valid.
+
+A catalog renders one fixed library version. The catalog MCP doesn't report
+that version today, so say so, and name the version in the project's
+`libs.versions.toml`. Treat a catalog render as a guide to the component's
+look, not proof of how the project's version renders; render the project's own
+preview after the change.
+
 ### History, and telling a change from a flake
 
 `catalog_history_list` reports whether a preview is **unstable** — re-renders
