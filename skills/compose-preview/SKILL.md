@@ -12,25 +12,34 @@ from [compose-preview-server](https://github.com/yschimke/compose-preview-server
 
 ## Render first
 
-With the local MCP server attached (compose-preview-server 3.78.0+), one call
-is enough. **Do not explore first.** No `list_projects`, `status`, grepping
-source, or running Gradle before the first render; the server registers the
-workspace itself (MCP roots or cwd).
+With the local MCP server attached (compose-preview-server 3.78.0+), its
+`initialize` instructions say how to call it: `render_preview
+preview=<FunctionName>`, no exploring or registering first, no hand-built
+mocks. Follow them. This skill adds the budget: a routine render is at most
+three tool calls, with no base64 in the reply and images only when you need to
+see them.
 
-1. **Render.** `render_preview` with `preview: "<FunctionName>"` (the function
-   name, or an FQN suffix like `home.HomeScreenPreview`). If it returns
-   `otherMatches`, those are the other variants; pick one and render again only
-   if the person asked about it.
-2. **Look.** Open the image yourself. Clients that read files should pass
-   `inline=false`: the result is JSON `{uri, pngPath, widthPx, heightPx, sha256}`,
-   and you read `pngPath` with your file reader, so you see what the person sees. Describe only what you
-   saw. If you can't view images here, say so plainly. Don't infer.
-3. **Reply** with what the render shows and keep `pngPath` so the person can
-   open the same image.
+1. **Render.** If your client reads local files (Claude Code, Codex, Gemini
+   CLI, OpenCode, Antigravity), pass `inline=false`. The result is `pngPath`,
+   `sha256`, dimensions and `changed`, with no image tokens. If it lists
+   `otherMatches`, render one only if the person asked about it.
+2. **Look only when you need to.** Read `pngPath` with your file reader
+   before you describe or judge the UI; that is what the person sees. Skip the
+   read when `changed` or `sha256` already answers the question, such as
+   "did my edit land?". Describe only what you saw. If you can't view images
+   here, say so plainly.
+3. **Reply** briefly, with `pngPath` so the person can open the same image.
 
-**Never fake a render.** Don't hand-build an HTML, CSS or SVG mock of a
-preview, or draw one from the source, and present it as the UI. Only output
-from the render tools counts. If rendering fails, say so with the error.
+**Sweeps use hashes.** For more than one render (variants, devices, font
+scales, locales, a before/after check), pass `observe=hash` or use
+`render_matrix`, which returns per-cell hashes. Fetch pixels only for the
+final screen or the cells whose hash moved.
+
+**Hand multi-render reviews to `design-reviewer`.** If a `design-reviewer`
+subagent is available (the compose-ag-plugin plugins ship one), delegate
+accessibility, font-scale, round-device and other matrix checks to it so the
+images stay out of your context, and relay its verdict and paths. Without one,
+run the sweep yourself with hashes.
 
 **After a source edit**, call `render_preview` again. `notify_file_changed` is
 optional. **If the result says it is stale**, make exactly one more call with
@@ -39,14 +48,15 @@ optional. **If the result says it is stale**, make exactly one more call with
 [mcp.md § Troubleshooting](./references/mcp.md#troubleshooting-first--when-not-to-act)
 (start with `compose-preview mcp doctor`).
 
-**Cheaper looks.** `observe` defaults to semantics (a cheap text tree). Pass
-`observe=png` for pixels and `observe=hash` for "did it change?" sweeps across
-many previews. Add `details: ["a11y", "layout"]` for accessibility findings or
-the layout tree alongside the render.
+**Details on request.** Add `details: ["a11y", "layout"]` only when the
+person asks about accessibility or layout. `observe=png` returns inline pixels
+for clients that can't read files.
 
 **No MCP tool?** Use the CLI: `compose-preview show --json --filter <Name>`,
 then read the entry's `pngPath`. Stale: `--force=<reason>`, once. See
-[cli.md](./references/cli.md).
+[cli.md](./references/cli.md). On either path, only output from the render
+tools is a render: never a hand-built HTML, CSS or SVG mock. Report a failed
+render with its error.
 
 **Not previewable** (takes a ViewModel or injected service)? Propose extracting
 a stateless inner composable and preview that
