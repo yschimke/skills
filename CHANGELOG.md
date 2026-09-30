@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.7](https://github.com/yschimke/skills/compare/v0.1.6...v0.1.7) (2026-09-30)
+
+
+### Bug Fixes
+
+* **install:** don't touch shell startup files when ~/.local/bin is already on PATH ([d575d92](https://github.com/yschimke/skills/commit/d575d92c79aed6104d3158f0154e4bd215322d37))
+* **install:** don't touch shell startup files when ~/.local/bin is already on PATH ([1fa22b4](https://github.com/yschimke/skills/commit/1fa22b4bae6b903450658be6556c9870ae25689b)), closes [#108](https://github.com/yschimke/skills/issues/108)
+* **install:** repair versioned MCP host entries after upgrading ([#104](https://github.com/yschimke/skills/issues/104)) ([bfb349e](https://github.com/yschimke/skills/commit/bfb349eaa767dd32ed2da4ab0b8ba8c27e9e490e))
+* never fake a preview render with a hand-built mock ([#106](https://github.com/yschimke/skills/issues/106)) ([3a53a38](https://github.com/yschimke/skills/commit/3a53a38fe6a036dd39f2e548dc8efe0ab24c2e1a))
+
 ## [0.1.6](https://github.com/yschimke/skills/compare/v0.1.5...v0.1.6) (2026-09-27)
 
 
