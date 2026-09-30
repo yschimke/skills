@@ -14,9 +14,10 @@ not loaded rather than treating this rendering reference as an API authority.
 
 ## Verification workflow
 
-1. Before editing, discover the previews for the affected screen and render a
-   hash baseline. Save before-images for one to three screens the person will
-   judge when the harness can show files.
+1. Before editing, run `find_previews_for_file` for each file you will change
+   and render a baseline with `render_preview observe=hash`. Save
+   before-images for one to three screens the person will judge when the
+   harness can show files.
 2. Make the API and migration changes prescribed by the platform skill.
 3. Sweep the preview variants with hashes first. Render PNGs only for changed
    or representative cells, then actually view those images before describing
@@ -24,9 +25,10 @@ not loaded rather than treating this rendering reference as an API authority.
 4. Check a small round device and the largest declared font scale explicitly.
    Multi-preview annotations can expand one function into many renders, so do
    not load every PNG into model context.
-5. Run the accessibility data product or `compose-preview a11y`. Render
-   failures and new accessibility errors are blockers. Pixel or hash changes
-   are information, not failures: a migration is expected to change the UI.
+5. Run the accessibility data product (`get_preview_data kind=a11y/atf`) or
+   `compose-preview a11y`. Render failures and new accessibility errors are
+   blockers. Pixel or hash changes are information, not failures: a migration
+   is expected to change the UI.
 
 Use `history_diff` or saved paths for a before/after comparison when available.
 Never claim that a Wear screen looks correct from source, semantics, or hashes

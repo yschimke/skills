@@ -59,6 +59,13 @@ Before finishing, validate when possible, obtain the final editor view, and
 check for unread or unacknowledged comments at the design's home. Report any
 capability that prevented one of those checks.
 
+**Working with platform skills.** When an official platform skill is loaded
+(for example Android's Wear Compose Material 3 skill), it decides which
+components and APIs are right. The builder's catalog decides what a design can
+contain today. If they disagree, say so rather than picking silently. A catalog
+renders one fixed library version, which may differ from the project that will
+receive the exported Kotlin.
+
 ## Viewer, prompts, and interactive decisions
 
 - Viewer and prompts need a compose-preview-server release after v3.74.0; until
