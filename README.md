@@ -49,9 +49,10 @@ curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/instal
 
 The installer adds `~/.local/bin` to your shell startup files only when it
 isn't already on `PATH` and no startup file already mentions it. Pass
-`--no-modify-path` (`… | bash -s -- --no-modify-path`), or set
-`MODIFY_PATH=0` (e.g. `MODIFY_PATH=0 compose-preview update`), to leave them
-alone entirely.
+`--no-modify-path` (`… | bash -s -- --no-modify-path`, or
+`compose-preview update --no-modify-path`) to leave them alone entirely;
+`MODIFY_PATH=0` in the environment does the same, including for older CLIs
+whose `update` doesn't accept the flag.
 
 **Alternative: a Claude Code or Codex plugin marketplace** — see
 [Per-harness plugins](#per-harness-plugins) below, which also adds the MCP

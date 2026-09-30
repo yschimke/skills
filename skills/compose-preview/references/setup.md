@@ -55,8 +55,9 @@ Then `compose-preview doctor`. A new shell picks up `~/.local/bin`. To update:
 npx-installed skills; re-running the curl installer also upgrades (pin a
 version with `… | bash -s -- 1.79.0`). The installer only touches shell
 startup files when `~/.local/bin` isn't already on `PATH` and no startup file
-mentions it; to opt out entirely, run `MODIFY_PATH=0 compose-preview update`
-(or `… | bash -s -- --no-modify-path`).
+mentions it; to opt out entirely, run `compose-preview update --no-modify-path`
+(older CLIs: `MODIFY_PATH=0 compose-preview update`; curl installer:
+`… | bash -s -- --no-modify-path`).
 
 `doctor` verifies Java 17+ on `PATH` (JDK 21/25 are fine — the renderer is
 compiled to JDK 17 bytecode). If the install path isn't on `PATH`, the
