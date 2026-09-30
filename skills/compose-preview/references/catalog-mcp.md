@@ -77,23 +77,27 @@ expect to re-render, rather than discovering it one `403` at a time.
 | Tool | Scope | What it is for |
 | --- | --- | --- |
 | `status` | `preview` | Readiness and the aggregate catalog set. |
-| `list_projects` | `preview` | Every remote catalog, with its stable id and preview count. |
-| `list_previews` | `preview` | Previews and published metadata, across every catalog or one named catalog. |
+| `catalog_list_projects` | `preview` | Every remote catalog, with its stable id and preview count. |
+| `catalog_list_previews` | `preview` | Previews and published metadata, across every catalog or one named catalog. |
 | `resources/list`, `resources/read` | `preview` | The **published snapshot** lane — read a preview's already-rendered PNG. No render is spent. |
-| `render_preview` | `live` | The **made-to-order** lane: render one preview, optionally with `overrides`. |
-| `render_matrix` | `live` | One preview across the cross-product of `axes`, in a single call. |
-| `list_devices` | `preview` | The ids the `device` override accepts, with each frame's dp size and density. |
-| `history_list` | `preview` | One preview's render timeline. |
-| `history_diff` | `preview` | Did the last publish move this preview? |
-| `history_read` | `preview` | One historical render's pixels, by `commit` or `blob`. |
-| `diff_semantics` | `live` | Compare two previews' semantics by authored `testTag`. |
-| `list_data_products` | `preview` | Which structured products a preview exposes. |
-| `get_preview_data` | `live` | Fetch the merged a11y or annotation product. |
+| `catalog_render_preview` | `live` | The **made-to-order** lane: render one preview, optionally with `overrides`. |
+| `catalog_render_matrix` | `live` | One preview across the cross-product of `axes`, in a single call. |
+| `catalog_list_devices` | `preview` | The ids the `device` override accepts, with each frame's dp size and density. |
+| `catalog_history_list` | `preview` | One preview's render timeline. |
+| `catalog_history_diff` | `preview` | Did the last publish move this preview? |
+| `catalog_history_read` | `preview` | One historical render's pixels, by `commit` or `blob`. |
+| `catalog_diff_semantics` | `live` | Compare two previews' semantics by authored `testTag`. |
+| `catalog_list_data_products` | `preview` | Which structured products a preview exposes. |
+| `catalog_get_preview_data` | `live` | Fetch the merged a11y or annotation product. |
 | `list-all-documentation`, `get-documentation-for-story` | `preview` | Storybook-MCP-compatible discovery aliases. |
 | `preview-stories` | `live` | Storybook-MCP-compatible rendering alias. |
 
+The data tools carry a `catalog_` prefix (servers after 3.87) so they never shadow the
+local `compose-preview` server's `render_preview` and friends when both are
+connected. Older servers list the bare names; the local server always does.
+
 Every catalog tool takes either a `uri`, or a `catalog` + `previewId` pair.
-`list_projects` is how you learn the catalog ids; nothing needs client
+`catalog_list_projects` is how you learn the catalog ids; nothing needs client
 reconfiguration when a catalog is added or retired.
 
 ### Draft viewer and interactive capability fallbacks
@@ -116,23 +120,23 @@ only what `tools/list`, `prompts/list` and tool `_meta` advertise.
   calls. `ui_builder_view` remains gated on
   [#1114](https://github.com/yschimke/compose-preview-server/issues/1114), and
   PNG/native output is not the editor view.
-- The only form elicitation is `render_matrix` with `choose: true`; unsupported
+- The only form elicitation is `catalog_render_matrix` with `choose: true`; unsupported
   clients receive the labelled choices as text. R3 decisions (save back,
   discard, move a home) remain chat choices. Access remains the exact URL/code
   `request_access` / `poll_access` flow; do not expect URL elicitation.
 - Use only advertised actions; model context requests a later typed call and
   does not prove it ran. The draft viewer does not render A2UI documents.
 
-### `resources/read` before `render_preview`
+### `resources/read` before `catalog_render_preview`
 
 They are different lanes, not two spellings of one. `resources/read` returns a
-snapshot that already exists and costs the host nothing; `render_preview`
+snapshot that already exists and costs the host nothing; `catalog_render_preview`
 spends that machine's CPU and needs `live`. If you only want to *look* at a
 published render, read the resource.
 
 ### Observations: stay token-frugal
 
-`render_preview` defaults to a semantics observation, not pixels — the same
+`catalog_render_preview` defaults to a semantics observation, not pixels — the same
 stance as the local loop in [`references/agent-loop.md`](./agent-loop.md), and
 for the same reason. `observe` takes:
 
@@ -141,27 +145,27 @@ for the same reason. `observe` takes:
 - `svg` — the `compose/figma-svg` vector export, returned as SVG **source** in
   a text block, not as a base64 image. That is deliberate: almost no MCP client
   renders SVG from an image block, and a vector consumer (a Figma round-trip, a
-  diff, a DOM capture) wants the markup. `list_previews` reports `svgAvailable`
+  diff, a DOM capture) wants the markup. `catalog_list_previews` reports `svgAvailable`
   per preview, so check there instead of asking and reading the refusal.
 - `scroll-png` / `scroll-svg` — the full-page capture of a scrollable screen
   rather than the viewport crop.
 
-`render_matrix` is the one to reach for when comparing axes: the cells share a
+`catalog_render_matrix` is the one to reach for when comparing axes: the cells share a
 single catalog lease and are reported together, so N combinations cost one
 round trip instead of N. It is capped, and `observe` there is `hash` or `png`.
 
 ### History, and telling a change from a flake
 
-`history_list` reports whether a preview is **unstable** — re-renders
-differently on every publish — alongside its timeline, and `history_diff`
+`catalog_history_list` reports whether a preview is **unstable** — re-renders
+differently on every publish — alongside its timeline, and `catalog_history_diff`
 carries the same flag. Check it before reporting a diff as a regression: a
-difference on a nondeterministic preview is not a change. `history_diff`
+difference on a nondeterministic preview is not a change. `catalog_history_diff`
 compares metadata, so "did the bytes move?" is answered without fetching either
-image; reach for `history_read` only when you want the pixels.
+image; reach for `catalog_history_read` only when you want the pixels.
 
 Where the server holds the timeline it comes back inline. Where the catalog is
 published from a delivery branch, the manifest lives on that branch and
-`history_list` tells you where to fetch it rather than pretending to have it.
+`catalog_history_list` tells you where to fetch it rather than pretending to have it.
 
 ## See also
 
@@ -170,6 +174,6 @@ published from a delivery branch, the manifest lives on that branch and
 - [`references/mcp.md`](./mcp.md) — the local daemon MCP, for when you have a
   checkout.
 - [`references/data-products.md`](./data-products.md) — the `kind` vocabulary
-  `list_data_products` / `get_preview_data` speak.
+  `catalog_list_data_products` / `catalog_get_preview_data` speak.
 - [`references/agent-loop.md`](./agent-loop.md) — the token-frugal
   observe/diff loop these tools mirror.
