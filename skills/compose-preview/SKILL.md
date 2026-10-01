@@ -1,6 +1,6 @@
 ---
 name: compose-preview
-description: Render a Jetpack Compose or Compose Multiplatform @Preview to PNG in one call (MCP render_preview, or the compose-preview CLI) and look at it. Use to verify UI changes, iterate on designs, and compare before/after.
+description: Render a Jetpack Compose or Compose Multiplatform @Preview to PNG in one call (MCP render_preview, or the compose-preview CLI) and look at it. Use whenever someone asks to render, show, or see what a composable, @Preview or Compose component looks like (including library components such as Material 3 or Wear M3 EdgeButton, which come from the hosted catalog), after editing Compose UI to verify it, and to compare before/after.
 ---
 
 # Compose Preview
@@ -19,6 +19,10 @@ mocks. Follow them. This skill adds the budget: a routine render is at most
 three tool calls, with no base64 in the reply and images only when you need to
 see them.
 
+Your first call is the render. Don't grep for the preview or read its source
+first: the server finds it by function name. Look things up only if the render
+fails.
+
 1. **Render.** If your client reads local files (Claude Code, Codex, Gemini
    CLI, OpenCode, Antigravity), pass `inline=false`. The result is `pngPath`,
    `sha256`, dimensions and `changed`, with no image tokens. If it lists
@@ -29,6 +33,17 @@ see them.
    "did my edit land?". Describe only what you saw. If you can't view images
    here, say so plainly.
 3. **Reply** briefly, with `pngPath` so the person can open the same image.
+   Don't write "the image above": in a terminal or print-mode harness the
+   person doesn't see images your tools return. Point at `pngPath` instead.
+
+**Library components come from the catalog.** When the person names a
+library component (Material 3, Wear M3 `EdgeButton`, …) rather than one of
+their own previews, use the hosted catalog (`compose-catalogs`):
+`catalog_list_previews`, then read the published snapshot with
+`resources/read`. Request `live` access only to change knobs with
+`catalog_render_preview`. **Never** add preview files to the person's project
+to show a library component unless they ask for one. See
+[catalog-mcp.md](./references/catalog-mcp.md#resourcesread-before-catalog_render_preview).
 
 **Sweeps use hashes.** For more than one render (variants, devices, font
 scales, locales, a before/after check), pass `observe=hash` or use
