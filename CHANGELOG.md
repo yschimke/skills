@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.8](https://github.com/yschimke/skills/compare/v0.1.7...v0.1.8) (2026-10-01)
+
+
+### Bug Fixes
+
+* **compose-preview:** render first, route library components to the catalog ([0ddaa49](https://github.com/yschimke/skills/commit/0ddaa4978d151dfd9174053783b175194e568e72))
+* **compose-preview:** render first, route library components to the catalog ([304fd82](https://github.com/yschimke/skills/commit/304fd823345b0824b18ba3b614e0fc7d8ddfa25a))
+
 ## [0.1.7](https://github.com/yschimke/skills/compare/v0.1.6...v0.1.7) (2026-09-30)
 
 
