@@ -121,8 +121,9 @@ Before creating or editing anything, orient yourself:
 2. Open the canonical path URL returned by the design identity:
    `https://<host>/ui-builder/<catalogSystemId>/<designId>`. Do not invent an
    old query-string URL; the path carries both the catalog and design.
-3. If the request names or attaches a visual reference, open **Frame, density
-   and reference** in the browser and check whether one is already attached.
+3. If the request names or attaches a visual reference, check whether one is
+   already attached (`ui_builder_compare_reference`, or **Frame, density and
+   reference** in the browser).
    The full reference workflow is under [Compare with a reference](#compare-with-a-reference).
 4. Report the link, revision, open-comment count, and the first planned part
    before editing. This is the point where the person can correct the target
@@ -631,47 +632,81 @@ So decide which you are making, and act on it early:
 
 ## Compare with a reference
 
-The browser has a persistent reference-diff workspace. It is not the same as
-adding an `asset/image` node and it is deliberately separate from the design:
-reference pixels are not catalog-validated, revisioned, replayed, or included
-in Kotlin/PNG/SVG exports.
+A reference is the picture a design is built against — a Figma frame, a
+screenshot of a shipped screen, a mock. It is kept **beside** the design, not in
+it: no node holds it, no export sees it, the revision does not move. That is
+different from an `asset/image` node, and `ui_builder_put_asset` does not attach
+one.
 
-To find it, open the design URL, select **Frame, density and reference** in the
-right inspector rail, then use **Attach file** or paste an image from the
-clipboard. Choose the view that answers the current question:
+### Over MCP
+
+Check `tools/list` for `ui_builder_set_reference` and
+`ui_builder_compare_reference`. They need a compose-preview-server release that
+carries them and a host that keeps reference overlays; when they are absent,
+use the browser route below and say that the MCP lacks them.
+
+1. **Get the picture.** From Figma, use your Figma tools to take a screenshot of
+   the frame (the node the user linked) and note its export scale; from a file
+   or an attachment, read the bytes. Never invent or redraw a reference.
+2. **Ask before uploading.** The reference is stored on the remote host. A
+   request to *look at* an attachment is not permission to upload it: say where
+   it will be stored and get an explicit yes. Never print its base64.
+3. **Attach it:** `ui_builder_set_reference` with `designId`, `imageBase64`,
+   `density` (pixels per dp — 2 for a Figma 2x export, 2.625 for a Pixel
+   screenshot) and `sourceUrl` (the Figma frame link, kept as provenance). Also
+   record the frame with `ui_builder_set_links` (`reference`).
+4. **Read the facts** in the reply before changing anything: the picture's size
+   in dp, where its density came from, whether it is a `screen`, a `tallScreen`,
+   or a `region` (a component crop), and `pixelComparable`. A region is only
+   comparable at its `actual` size, and a picture of another shape is compared
+   by eye only — say so rather than "fixing" what a misplaced picture shows.
+5. **Measure:** `ui_builder_compare_reference` with `differences` reports the
+   share of pixels that differ and up to eight regions in dp, each with the
+   layer it falls in. Add `nodeIds` for the layers you want to line up: each
+   comes back with where it sits in the reference, the `alignment` (move, size,
+   font size) and the exact `operations` for `ui_builder_apply`. Matching layers
+   needs the native render, which needs the `ui-builder-export` grant.
+6. **Apply what you agree with** through `ui_builder_apply` (quote the current
+   `baseRevision`), one layer or a few at a time so collaborators see progress,
+   then compare again — a layer that lines up reports `alreadyAligned` — and
+   look with `ui_builder_view` (`include: ["reference"]`). Treat
+   `confident: false` as a hint to check, not an edit to make; when the words or
+   content differ from the mock, ask the person to draw a box round the target
+   in the editor (a box mark is the strongest evidence) and compare again.
+
+Report what you changed in dp and sp ("title moved right 12 dp, font size 22 →
+28 sp") and what still differs. Do not chase the last pixels of anti-aliasing,
+a different font rendering, or a status bar the mock includes.
+
+The CLI spellings are `compose-preview-server design reference <designId>
+--attach <picture> [--density <n>] [--source-url <url>]` (or `--clear`) and
+`design compare <designId> [--node <id>] [--fit contain|width|actual]`.
+
+### In the browser
+
+Open the design URL and select **Frame, density and reference** in the right
+inspector rail. **Import…** a file, paste an image, **Snapshot** the design, or
+fetch a link (a Figma frame link works on the desktop app with `FIGMA_TOKEN`;
+on the web, copy the frame as PNG in Figma and paste it). The panel shows the
+picture's size, density and kind, and the fit (**Fit**, **Fit width**, **Actual
+size**) that lines it up. Choose the view that answers the current question:
 
 - **Overlay** for alignment at an adjustable opacity.
-- **Difference** to make matching pixels recede and expose visual mismatches.
+- **Difference** to make matching pixels recede and expose mismatches (offered
+  only when the picture lands dp for dp).
 - **Split** for a movable before/after wipe.
 - **Boxes** for layout guides extracted from a compatible SVG.
 
-Adjust opacity, X/Y offset, scale, or the split position before changing the
-document; a badly aligned reference creates false design work. The same panel
-supports markup, component pieces, erasing, promotion of captured catalog
-components, and **Flatten** when the current annotated stack should become the
-next reference. The feature and its storage boundary are documented in
-[`UI_BUILDER_REFERENCE_OVERLAY.md`](https://github.com/yschimke/compose-preview-server/blob/main/docs/design/UI_BUILDER_REFERENCE_OVERLAY.md).
+**Measure → Differences** outlines where the design differs; select a layer and
+**Match** to get the same move/size/font-size proposal as the MCP tool, with
+**Apply** writing it as one undoable edit. The same panel supports markup,
+component pieces, erasing, promotion of captured catalog components, and
+**Flatten**. The feature and its storage boundary are documented in
+[`UI_BUILDER_REFERENCE_OVERLAY.md`](https://github.com/yschimke/compose-ui-builder/blob/main/docs/design/UI_BUILDER_REFERENCE_OVERLAY.md).
 
-An uploaded reference persists on the remote host beside the design. Before
-uploading a user-supplied screenshot, say that plainly and obtain explicit
-authorization for that image and destination. A request to inspect an
-attachment is not upload permission. Never print its base64 or put a bearer
-token in a URL, repository, comment, or progress update.
-
-At present the browser exposes reference import and diff controls, while the
-catalog MCP may expose no `ui_builder_*reference*` tool. Confirm with
-`tools/list`; do not pretend `put_asset` attaches a reference. When the MCP
-lacks parity, guide the person through the browser controls. Use the reference
-REST routes only when the person explicitly asked you to upload the image and
-the available execution environment can keep the token and pixel payload out
-of logs. Treat missing MCP parity as product feedback, not as evidence that the
-browser feature does not exist.
-
-After attaching a reference, inspect **Difference** or **Split** in the browser
-in addition to exporting the design on its own. For a UI-builder-shell
-reference, explicitly account for the top command bar (undo/redo,
-Design/Preview, code, share, renderer, new and overflow), both action rails,
-the surface/properties bar, zoom/fit controls, and the bottom
+For a UI-builder-shell reference, explicitly account for the top command bar
+(undo/redo, Design/Preview, code, share, renderer, new and overflow), both
+action rails, the surface/properties bar, zoom/fit controls, and the bottom
 revision/node/live status. Do not call the reference complete while those
 controls are absent merely because the central canvas resembles the target.
 
