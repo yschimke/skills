@@ -23,7 +23,10 @@ where it actually is rather than where the code is.)
 1. **Update `README.md`** — keep the skills list in sync. Each entry links
    to the skill's `SKILL.md` and summarises what it covers. If you add a
    skill and don't update the README, the change is incomplete.
-2. **Do not bump the plugin version unless explicitly asked.** When you
+2. **Put it in one bundle and regenerate.** Add the skill to exactly one entry
+   of `BUNDLES` in `scripts/generate-bundles.py`, then run
+   `python3 scripts/generate-bundles.py`. CI fails while `plugins/` is stale.
+3. **Do not bump the plugin version unless explicitly asked.** When you
    are asked for a release, edit `.claude-plugin/plugin.json` using
    semver: patch for wording/docs, minor for a new skill or new triggers,
    major for removals or breaking renames.
@@ -37,12 +40,19 @@ where it actually is rather than where the code is.)
   name** exactly. Use lowercase kebab-case for both.
 - Supporting files (design notes, scripts) sit alongside `SKILL.md` in
   the skill dir.
+- `plugins/<bundle>/` holds **generated copies** of skills, grouped so a
+  harness can install the default pair (`compose-skills`: `compose-preview`
+  and `compose-ui-builder`, matching `install.sh`'s defaults) without the
+  review (`compose-review-skills`) and design (`compose-design-skills`)
+  skills. Never edit them; edit `skills/` and regenerate.
 
 ## Manifests
 
 - `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json` are
   both JSON (not JSONC). Validate with `jq . <file>` before committing.
 - The plugin `name` in both manifests must stay `yschimke-skills`.
+- The bundle entries in `marketplace.json`, and every file under `plugins/`,
+  are written by `scripts/generate-bundles.py`; don't hand-edit them.
 
 ## Cross-repo references
 
@@ -56,6 +66,7 @@ track the upstream CLI, not this plugin.
 ## What not to do
 
 - Don't add CI, build tooling, or Gradle config here — this is a content
-  repo. CI, packaging, and the renderer live in `compose-ai-tools`.
+  repo. The one exception is `scripts/generate-bundles.py` (stdlib Python)
+  and its `--check` step in CI. CI, packaging, and the renderer live in `compose-ai-tools`.
 - Don't rename existing skill directories "for consistency" without a
   concrete reason; renames break user references and bundled installs.

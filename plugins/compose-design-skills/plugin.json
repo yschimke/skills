@@ -1,0 +1,5 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "description": "Export Compose renders to design tools: design boards, sticker-sheet catalogs, and Figma import.",
+  "name": "compose-design-skills"
+}

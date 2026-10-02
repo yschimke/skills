@@ -1,0 +1,5 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "description": "Render Compose @Preview functions and author designs over MCP (the default skills).",
+  "name": "compose-skills"
+}

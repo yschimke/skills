@@ -1,0 +1,11 @@
+{
+  "name": "compose-design-skills",
+  "description": "Export Compose renders to design tools: design boards, sticker-sheet catalogs, and Figma import.",
+  "version": "0.1.8",
+  "author": {
+    "name": "Yuri Schimke",
+    "url": "https://github.com/yschimke"
+  },
+  "repository": "https://github.com/yschimke/skills",
+  "license": "Apache-2.0"
+}

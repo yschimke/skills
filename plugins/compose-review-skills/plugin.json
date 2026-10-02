@@ -1,0 +1,5 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "description": "Review Compose UI pull requests, set up preview CI, and check design parity.",
+  "name": "compose-review-skills"
+}
