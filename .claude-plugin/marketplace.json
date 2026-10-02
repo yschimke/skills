@@ -5,6 +5,24 @@
     "url": "https://github.com/yschimke"
   },
   "plugins": [
-    { "name": "yschimke-skills", "source": "./" }
+    {
+      "name": "yschimke-skills",
+      "source": "./"
+    },
+    {
+      "name": "compose-skills",
+      "source": "./plugins/compose-skills",
+      "description": "Render Compose @Preview functions and author designs over MCP (the default skills)."
+    },
+    {
+      "name": "compose-review-skills",
+      "source": "./plugins/compose-review-skills",
+      "description": "Review Compose UI pull requests, set up preview CI, and check design parity."
+    },
+    {
+      "name": "compose-design-skills",
+      "source": "./plugins/compose-design-skills",
+      "description": "Export Compose renders to design tools: design boards, sticker-sheet catalogs, and Figma import."
+    }
   ]
 }

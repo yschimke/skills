@@ -71,19 +71,14 @@ Install the skills from this repo, then whichever of those plugins you need:
 
 ```sh
 # Antigravity (does not load ~/.agents/skills, so use the plugin route).
-# To be verified: yschimke/compose-ag-plugin#6.
-# Run from one parent folder (e.g. ~/workspace) so both clones sit side by side.
-git clone https://github.com/yschimke/skills
-git clone https://github.com/yschimke/compose-ag-plugin
-agy plugin install ./skills
-agy plugin install ./compose-ag-plugin/plugins/compose-preview
+agy plugin install https://github.com/yschimke/skills/tree/main/plugins/compose-skills
+agy plugin install https://github.com/yschimke/compose-ag-plugin/tree/main/plugins/compose-preview
 agy plugin enable compose-preview
-agy plugin install ./compose-ag-plugin/plugins/compose-catalogs   # optional
-python3 compose-ag-plugin/scripts/antigravity-check.py            # verify
+agy plugin install https://github.com/yschimke/compose-ag-plugin/tree/main/plugins/compose-catalogs   # optional
 
 # Claude Code
 /plugin marketplace add yschimke/skills
-/plugin install yschimke-skills@yschimke-skills
+/plugin install compose-skills@yschimke-skills
 /plugin marketplace add yschimke/compose-ag-plugin
 /plugin install compose-catalogs@compose-ag-plugin
 /plugin install compose-preview@compose-ag-plugin
@@ -91,8 +86,22 @@ python3 compose-ag-plugin/scripts/antigravity-check.py            # verify
 # Codex
 codex plugin marketplace add yschimke/skills
 codex plugin marketplace add yschimke/compose-ag-plugin
-# Then enable yschimke-skills, compose-catalogs, and compose-preview from /plugins.
+# Then enable compose-skills, compose-catalogs, and compose-preview from /plugins.
 ```
+
+`compose-skills` is the default pair (`compose-preview` and
+`compose-ui-builder`). Add the others as their own plugins when you need them:
+
+| Plugin | Skills |
+|---|---|
+| `compose-review-skills` | `compose-preview-review`, `compose-preview-ci`, `design-parity-review` |
+| `compose-design-skills` | `compose-preview-design-board`, `compose-design-catalog`, `figma-catalog-import` |
+
+In Antigravity that is `agy plugin install https://github.com/yschimke/skills/tree/main/plugins/<plugin>`;
+in Claude Code, `/plugin install <plugin>@yschimke-skills`. The root
+`yschimke-skills` plugin still carries all eight. Don't install it next to a
+bundle, or each skill appears twice. Antigravity copies plugins at install
+time: to update, `agy plugin uninstall <plugin>`, then install again.
 
 The wiring plugins carry no copies of these skills, so installing both
 doesn't create duplicates. For OpenCode, see

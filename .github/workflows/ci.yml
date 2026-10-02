@@ -26,7 +26,7 @@ jobs:
       - name: Validate JSON manifests
         run: |
           set -euo pipefail
-          for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
+          for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json plugins/*/plugin.json plugins/*/.claude-plugin/plugin.json; do
             jq . "$f" >/dev/null
             echo "ok: $f"
           done
@@ -66,3 +66,8 @@ jobs:
             exit 1
           fi
           echo "ok: plugin/marketplace agree on '$plugin_name'"
+
+      - name: Skill bundles match skills/
+        # plugins/<bundle>/ holds generated copies of skills/ so a harness can
+        # install the default pair alone. Edit skills/, then regenerate.
+        run: python3 scripts/generate-bundles.py --check
