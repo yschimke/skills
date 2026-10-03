@@ -207,7 +207,10 @@ regression test that pins the behaviour you just exercised.
 fontScale` and returns **per-cell hashes** rather than N full PNGs —
 roughly `cellCount × ~40` tokens instead of `cellCount × ~1.5k` PNG reads,
 capped at 24 cells. Use it to confirm a change is stable across the state
-matrix; pull the PNG for only the cells whose hash moved.
+matrix; pull the PNG for only the cells whose hash moved. Pass
+`contactSheet: false` unless the sweep runs in a reviewer subagent: a
+@Preview variant grid (no `axes`) returns a stitched contact sheet by
+default, which puts every cell's pixels in the context at once.
 
 ### 8. Structured render failures (typed `kind` + fix hint)
 
