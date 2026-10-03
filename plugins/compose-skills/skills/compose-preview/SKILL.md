@@ -27,6 +27,12 @@ fails.
    CLI, OpenCode, Antigravity), pass `inline=false`. The result is `pngPath`,
    `sha256`, dimensions and `changed`, with no image tokens. If it lists
    `otherMatches`, render one only if the person asked about it.
+   **If it carries a `variantChoice` whose `message` says to ask** (several
+   previews matched and the host showed no chooser), the person picks, not
+   you: reply with the rendered match and every entry in `choices` as a
+   numbered list, ask which one they meant, and stop. Don't pick one or
+   shorten the list to "other variants are available". A grid result or a
+   declined choice needs no question.
 2. **Look only when you need to.** Read `pngPath` with your file reader
    before you describe or judge the UI; that is what the person sees. Skip the
    read when `changed` or `sha256` already answers the question, such as
@@ -47,14 +53,18 @@ to show a library component unless they ask for one. See
 
 **Sweeps use hashes.** For more than one render (variants, devices, font
 scales, locales, a before/after check), pass `observe=hash` or use
-`render_matrix`, which returns per-cell hashes. Fetch pixels only for the
-final screen or the cells whose hash moved.
+`render_matrix` with `contactSheet: false`, which returns per-cell hashes
+only. Fetch pixels only for the final screen or the cells whose hash moved,
+or that you must judge by eye: one `render_preview` per such cell (its
+`overrides` or `uri`, `inline=false`) and one read of its `pngPath`.
 
 **Hand multi-render reviews to `design-reviewer`.** If a `design-reviewer`
 subagent is available (the compose-ag-plugin plugins ship one), delegate
 accessibility, font-scale, round-device and other matrix checks to it so the
 images stay out of your context, and relay its verdict and paths. Without one,
-run the sweep yourself with hashes.
+run the sweep yourself as above. Never ask for `contactSheet: true` in your
+own context: the sheet puts every cell's pixels there at once, and a variant
+grid sends one unless you pass `false`.
 
 **After a source edit**, call `render_preview` again. `notify_file_changed` is
 optional. **If the result says it is stale**, make exactly one more call with
