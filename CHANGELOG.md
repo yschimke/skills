@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.9](https://github.com/yschimke/skills/compare/v0.1.8...v0.1.9) (2026-10-03)
+
+
+### Features
+
+* generated skill bundles for targeted installs ([3afae94](https://github.com/yschimke/skills/commit/3afae94f2051664c2a36e7636598b58714bd9b9c))
+* generated skill bundles for targeted installs ([e4f1880](https://github.com/yschimke/skills/commit/e4f188034efa6d600222c7ba2272c699a586c8c9))
+
+
+### Bug Fixes
+
+* **compose-preview:** ask on a variantChoice, and keep sweep pixels out of the main context ([7b8b998](https://github.com/yschimke/skills/commit/7b8b998fcb0d97e01fd44601a551ab95e0037528))
+* **compose-preview:** ask on a variantChoice, and keep sweep pixels out of the main context ([06ef4cc](https://github.com/yschimke/skills/commit/06ef4cc2dddbadb5d8eb5d498cace4d08474145a))
+
 ## [0.1.8](https://github.com/yschimke/skills/compare/v0.1.7...v0.1.8) (2026-10-01)
 
 
