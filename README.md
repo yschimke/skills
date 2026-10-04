@@ -8,7 +8,7 @@ tell the agent how to drive it.
 
 These are the generic skills, written to work in any agent host. The
 per-harness integrations (plugin manifests, MCP wiring, hooks and setup) live
-in [yschimke/compose-ag-plugin](https://github.com/yschimke/compose-ag-plugin),
+in [yschimke/compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins),
 whose single marketplace also installs these skill bundles for Claude Code and
 Codex.
 
@@ -70,7 +70,7 @@ CLI download happens on its first invocation.
 These skills cover *how* to drive the tools. Installing them into a particular
 agent host, together with the MCP servers, hooks and setup that host needs, is
 documented in one place:
-[`yschimke/compose-ag-plugin`'s README](https://github.com/yschimke/compose-ag-plugin#readme).
+[`yschimke/compose-agent-plugins`'s README](https://github.com/yschimke/compose-agent-plugins#readme).
 
 The skills are grouped into three bundles under `plugins/`, generated from
 `skills/`, so a host can install the default pair without the rest:
