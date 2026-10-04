@@ -67,50 +67,22 @@ CLI download happens on its first invocation.
 
 ### Per-harness plugins
 
-These skills cover *how* to drive the tools. The MCP servers and harness
-wiring come from separate plugins in
-[`yschimke/compose-ag-plugin`](https://github.com/yschimke/compose-ag-plugin):
-- `compose-catalogs` connects to the hosted catalog and UI Builder;
-- `compose-preview` connects to the local `compose-preview mcp serve`.
+These skills cover *how* to drive the tools. Installing them into a particular
+agent host, together with the MCP servers, hooks and setup that host needs, is
+documented in one place:
+[`yschimke/compose-ag-plugin`'s README](https://github.com/yschimke/compose-ag-plugin#readme).
 
-Install the skills from this repo, then whichever of those plugins you need:
+The skills are grouped into three bundles under `plugins/`, generated from
+`skills/`, so a host can install the default pair without the rest:
 
-```sh
-# Antigravity (does not load ~/.agents/skills, so use the plugin route).
-agy plugin install https://github.com/yschimke/skills/tree/main/plugins/compose-skills
-agy plugin install https://github.com/yschimke/compose-ag-plugin/tree/main/plugins/compose-preview
-agy plugin enable compose-preview
-agy plugin install https://github.com/yschimke/compose-ag-plugin/tree/main/plugins/compose-catalogs   # optional
-
-# Claude Code: one marketplace lists these skill bundles and the wiring plugins
-/plugin marketplace add yschimke/compose-ag-plugin
-/plugin install compose-skills@compose-ag-plugin
-/plugin install compose-catalogs@compose-ag-plugin
-/plugin install compose-preview@compose-ag-plugin
-
-# Codex: the same marketplace
-codex plugin marketplace add yschimke/compose-ag-plugin
-# Then enable compose-skills, compose-catalogs, and compose-preview from /plugins.
-```
-
-`compose-skills` is the default pair (`compose-preview` and
-`compose-ui-builder`). Add the others as their own plugins when you need them:
-
-| Plugin | Skills |
+| Bundle | Skills |
 |---|---|
+| `compose-skills` | `compose-preview`, `compose-ui-builder` (the default pair) |
 | `compose-review-skills` | `compose-preview-review`, `compose-preview-ci`, `design-parity-review` |
 | `compose-design-skills` | `compose-preview-design-board`, `compose-design-catalog`, `figma-catalog-import` |
 
-In Antigravity that is `agy plugin install https://github.com/yschimke/skills/tree/main/plugins/<plugin>`;
-in Claude Code and Codex, `<plugin>@compose-ag-plugin`. The older `yschimke-skills`
-marketplace in this repository still works for existing installs; don't keep both. The root
-`yschimke-skills` plugin still carries all eight. Don't install it next to a
-bundle, or each skill appears twice. Antigravity copies plugins at install
-time: to update, `agy plugin uninstall <plugin>`, then install again.
-
-The wiring plugins carry no copies of these skills, so installing both
-doesn't create duplicates. For OpenCode, see
-[compose-ag-plugin's OpenCode guide](https://github.com/yschimke/compose-ag-plugin/blob/main/docs/opencode.md).
+The root `yschimke-skills` plugin carries all eight. Install either it or the
+bundles, never both, or each skill appears twice.
 
 ## Skills
 
