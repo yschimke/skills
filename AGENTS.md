@@ -14,9 +14,9 @@ to grow beyond the preview toolchain into a wider range of Compose and Android
 UI skills. Anything that names a particular host, or installs into, configures
 or works around one (per-harness manifests, MCP client config, hooks, host
 detection, a host's cloud sandbox, `claude.yml` sessions), belongs in
-[yschimke/compose-ag-plugin](https://github.com/yschimke/compose-ag-plugin).
+[yschimke/compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins).
 The full table, and the references still waiting to move, are in its
-[`docs/repository-consolidation.md`](https://github.com/yschimke/compose-ag-plugin/blob/main/docs/repository-consolidation.md#the-two-agent-repositories).
+[`docs/repository-consolidation.md`](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/repository-consolidation.md#the-two-agent-repositories).
 Don't add new host-specific material here.
 
 **Two upstream repos, not one.** The CLI, the Gradle plugin, the renderers and

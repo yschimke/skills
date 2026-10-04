@@ -71,7 +71,7 @@ compose-preview mcp install --antigravity    # force the Antigravity config writ
 ```
 
 On Antigravity, Claude Code or Codex, the
-[`compose-ag-plugin`](https://github.com/yschimke/compose-ag-plugin#install)
+[`compose-agent-plugins`](https://github.com/yschimke/compose-agent-plugins#install)
 plugins are an alternative to `mcp install`. `compose-preview` wires this MCP
 server, and `compose-catalogs` wires the hosted catalog and UI Builder. The
 install commands for each harness are in this repo's

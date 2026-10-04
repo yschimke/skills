@@ -59,7 +59,7 @@ or that you must judge by eye: one `render_preview` per such cell (its
 `overrides` or `uri`, `inline=false`) and one read of its `pngPath`.
 
 **Hand multi-render reviews to `design-reviewer`.** If a `design-reviewer`
-subagent is available (the compose-ag-plugin plugins ship one), delegate
+subagent is available (the compose-agent-plugins plugins ship one), delegate
 accessibility, font-scale, round-device and other matrix checks to it so the
 images stay out of your context, and relay its verdict and paths. Without one,
 run the sweep yourself as above. Never ask for `contactSheet: true` in your
