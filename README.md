@@ -6,6 +6,12 @@ Multiplatform] UI from agent workflows. They pair with the
 [yschimke/compose-ai-tools] — the CLI does the rendering, these skills
 tell the agent how to drive it.
 
+These are the generic skills, written to work in any agent host. The
+per-harness integrations (plugin manifests, MCP wiring, hooks and setup) live
+in [yschimke/compose-ag-plugin](https://github.com/yschimke/compose-ag-plugin),
+whose single marketplace also installs these skill bundles for Claude Code and
+Codex.
+
 [Jetpack Compose]: https://developer.android.com/jetpack/compose
 [Compose Multiplatform]: https://www.jetbrains.com/compose-multiplatform/
 [yschimke/compose-ai-tools]: https://github.com/yschimke/compose-ai-tools
@@ -76,15 +82,13 @@ agy plugin install https://github.com/yschimke/compose-ag-plugin/tree/main/plugi
 agy plugin enable compose-preview
 agy plugin install https://github.com/yschimke/compose-ag-plugin/tree/main/plugins/compose-catalogs   # optional
 
-# Claude Code
-/plugin marketplace add yschimke/skills
-/plugin install compose-skills@yschimke-skills
+# Claude Code: one marketplace lists these skill bundles and the wiring plugins
 /plugin marketplace add yschimke/compose-ag-plugin
+/plugin install compose-skills@compose-ag-plugin
 /plugin install compose-catalogs@compose-ag-plugin
 /plugin install compose-preview@compose-ag-plugin
 
-# Codex
-codex plugin marketplace add yschimke/skills
+# Codex: the same marketplace
 codex plugin marketplace add yschimke/compose-ag-plugin
 # Then enable compose-skills, compose-catalogs, and compose-preview from /plugins.
 ```
@@ -98,7 +102,8 @@ codex plugin marketplace add yschimke/compose-ag-plugin
 | `compose-design-skills` | `compose-preview-design-board`, `compose-design-catalog`, `figma-catalog-import` |
 
 In Antigravity that is `agy plugin install https://github.com/yschimke/skills/tree/main/plugins/<plugin>`;
-in Claude Code, `/plugin install <plugin>@yschimke-skills`. The root
+in Claude Code and Codex, `<plugin>@compose-ag-plugin`. The older `yschimke-skills`
+marketplace in this repository still works for existing installs; don't keep both. The root
 `yschimke-skills` plugin still carries all eight. Don't install it next to a
 bundle, or each skill appears twice. Antigravity copies plugins at install
 time: to update, `agy plugin uninstall <plugin>`, then install again.
