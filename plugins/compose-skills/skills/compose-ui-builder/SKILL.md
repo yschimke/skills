@@ -192,8 +192,7 @@ where mDNS resolves it. Two things to know before sharing one:
 
 ### The flag that decides whether MCP works at all
 
-A local session is closed by default. Three facts, each of which cost an agent
-an hour:
+A local session is closed by default:
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
