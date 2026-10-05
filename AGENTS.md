@@ -42,8 +42,11 @@ where it actually is rather than where the code is.)
       git cat-file -t <sha>          # a commit you are about to name must actually exist
       git log --format='%h %an <%ae> | %cn <%ce> | %(trailers:key=Co-authored-by,valueonly,separator=%x2C)' <base>..<head>
 
-  Report only an agent name or an `@anthropic.com` / `@openai.com` address that this output
-  actually shows, and quote it. `Yuri Schimke <yuri@schimke.ee>` is the human identity, and
+  `<head>` must be the pull request's head commit as GitHub reports it. A commit you made in your
+  own checkout, for example by reapplying the PR's diff, carries your identity, not the author's;
+  that is how every false report so far arose. Report only an agent name or an
+  `@anthropic.com` / `@openai.com` address that this output shows for the PR's own commits, and
+  quote it. `Yuri Schimke <yuri@schimke.ee>` is the human identity, and
   `github-actions[bot]` / `renovate[bot]` are exempt bot accounts. `GitHub <noreply@github.com>` is
   the committer of every squash merge. None of these is ever a finding.
 
