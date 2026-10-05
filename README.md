@@ -87,16 +87,14 @@ bundles, never both, or each skill appears twice.
 ## Skills
 
 - [`compose-preview`](skills/compose-preview/SKILL.md) — render
-  `@Preview` composables to PNG outside Android Studio. Covers Android
-  (Jetpack Compose via Robolectric) and Compose Multiplatform Desktop
-  (`ImageComposeScene` + Skia), with design notes on capture modes,
-  multi-preview annotations, paused-clock animations, accessibility
-  checks, display filters, Wear UI, resource previews, a Playwright-style
-  token-frugal agent loop (semantic-ref targeting on Desktop + Android,
-  `observe`/`diff_semantics`, `render_preview crop`, record-to-test, typed
-  render-failure kinds), editable **SVG vector** export (`compose/figma-svg` +
-  wireframe), cloud sandbox setup, and how to ask a human for temporary,
-  scoped access to a gated preview server rather than for its own token.
+  `@Preview` composables to PNG outside Android Studio: Android (Jetpack
+  Compose via Robolectric) and Compose Multiplatform Desktop
+  (`ImageComposeScene` + Skia). Covers capture modes, multi-preview
+  annotations, paused-clock animations, accessibility checks, display filters,
+  Wear UI, resource previews, a token-frugal agent loop (semantic refs,
+  `observe`/`diff_semantics`, crop, record-to-test, typed failure kinds),
+  editable **SVG** export, cloud sandboxes, and requesting scoped access to a
+  gated preview server.
 - [`compose-preview-review`](skills/compose-preview-review/SKILL.md) —
   review pull requests that change Compose UI by rendering `@Preview`
   composables on base and head and diffing them. Pairs with
@@ -131,18 +129,13 @@ bundles, never both, or each skill appears twice.
 - [`compose-ui-builder`](skills/compose-ui-builder/SKILL.md) — **author** a
   Compose screen or Wear widget over MCP against a `compose-preview serve`
   deployment, with no checkout: create a design, insert and edit nodes in the
-  catalog's own vocabulary, and export the Kotlin, PNG or SVG. Carries the
-  things a session would otherwise spend its first hour discovering — the
+  catalog's own vocabulary, and export the Kotlin, PNG or SVG. Covers the
   capability grant (`ui-builder-read/write/export`, not a scope), known-good
-  starter documents, the component/slot/enum tables extracted from the 70 KB
-  `list_catalogs` call, which components the *exporter* refuses even though the
-  document accepts them, and which calls are cheap. Running a **local**
-  session with no host at all is its own section (`ui-builder --no-project`, the
-  `--agent-grant-capabilities` ceiling that decides whether MCP works, and the
-  two MCP surfaces' different tool names). Also covers the browser's
-  persistent reference overlay (overlay/difference/split/boxes), progress links
-  and bounded comment waits, sharing a design with a person, and the comment
-  threads that make an agent a participant rather than a batch job.
+  starter documents, the component/slot/enum tables from `list_catalogs`, which
+  components the exporter refuses, running a **local** session with no host
+  (`ui-builder --no-project`, `--agent-grant-capabilities`, the two MCP
+  surfaces), the reference overlay, and working with a person through comment
+  threads and progress links.
 - [`figma-catalog-import`](skills/figma-catalog-import/SKILL.md) — import
   a published `design-artifacts/<system>` catalog (from
   `compose-design-catalog`) into a **Figma** file as authoritative,
@@ -212,14 +205,13 @@ compose-preview ─┬─ compose-preview-review ──────→ a PR base
 - **review vs ci** — `compose-preview-review` is about *reading* a diff (as a
   human or an agent); `compose-preview-ci` is about *standing up the pipeline*
   that produces it. Different task, different trigger, so they're separate.
-- **the two directions** — everything above the dashed leg is **code → design**
+- **the two directions** — everything above the return leg is **code → design**
   (the code is authored, the design artifact is generated). `design-parity-review`
   is **design → code**: the design is the reference and the code is checked
   against it. Which one is canonical is a committed decision (`.design-parity.json`),
   not a per-run choice — and a project running both should read
   [round-trip.md](skills/design-parity-review/references/round-trip.md) before
   wiring the second one.
-
 - **authoring is a different axis** — everything in that diagram starts from
   code you already have. **`compose-ui-builder`** starts from nothing: a design
   is authored in the builder's own catalog vocabulary, on a server, with no
@@ -239,7 +231,7 @@ compose-preview ─┬─ compose-preview-review ──────→ a PR base
 | Get an app's screens in front of a designer, once | `compose-preview` → `compose-preview-design-board` |
 | Publish a component system into Figma, refreshed on every change | `compose-preview` → `compose-design-catalog` → `figma-catalog-import` |
 | Check a PR against its Figma design | `design-parity-review` (wire the reference cache **before** the run) |
-| Build or change a screen with no checkout, and get Kotlin out | `compose-ui-builder` (start at its five-call quickstart) |
+| Build or change a screen with no checkout, and get Kotlin out | `compose-ui-builder` (start at its core creation loop) |
 | Work on a design a designer is editing right now | `compose-ui-builder` → its comment and `await_design` loop |
 | Run both directions on one project | `design-parity-review` → [round-trip.md](skills/design-parity-review/references/round-trip.md) |
 
@@ -253,5 +245,3 @@ contract.
 ## License
 
 [Apache 2.0](LICENSE)
-
-[plugins]: https://docs.claude.com/en/docs/claude-code/plugins

@@ -15,13 +15,13 @@ Usage:
   python3 scripts/generate-bundles.py --check   # exit 1 if they are out of date
 """
 
-import filecmp
 import json
 import re
 import shutil
 import sys
 import tempfile
 from pathlib import Path
+from typing import NoReturn
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
@@ -47,10 +47,11 @@ BUNDLES = {
     },
 }
 DEFAULT_BUNDLE = "compose-skills"
-IGNORED = shutil.ignore_patterns(".DS_Store")
+# Test runs leave __pycache__ next to bundled scripts; never ship it.
+IGNORED = shutil.ignore_patterns(".DS_Store", "__pycache__", "*.pyc")
 
 
-def fail(message: str) -> "NoReturn":  # noqa: F821
+def fail(message: str) -> NoReturn:
     print(f"generate-bundles: {message}", file=sys.stderr)
     sys.exit(1)
 
@@ -114,12 +115,15 @@ def generate(out: Path) -> None:
         write_bundle(out / name, name, bundle)
 
 
-def differs(left: Path, right: Path) -> list[str]:
-    compare = filecmp.dircmp(left, right)
-    found = [f"{left.name}/{n}" for n in compare.left_only + compare.right_only + compare.diff_files]
-    for name in compare.common_dirs:
-        found += [f"{left.name}/{item}" for item in differs(left / name, right / name)]
-    return found
+def tree(root: Path) -> dict[str, bytes]:
+    return {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+
+
+def differs(fresh: Path, current: Path) -> list[str]:
+    # Byte-for-byte: filecmp.dircmp trusts matching stat signatures and
+    # silently skips names such as __pycache__.
+    want, have = tree(fresh), tree(current)
+    return [f"plugins/{name}" for name in sorted(want.keys() | have.keys()) if want.get(name) != have.get(name)]
 
 
 def main(argv: list[str]) -> None:

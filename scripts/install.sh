@@ -2,12 +2,12 @@
 #
 # Bootstrap installer for the compose-preview skill bundles.
 #
-# Installs every skill bundle in github.com/yschimke/skills, plus the
-# compose-preview CLI (sourced from github.com/yschimke/compose-ai-tools
-# releases), into the shared cross-agent skills directory
-# (`~/.agents/skills/` by default). Gemini reads `~/.agents/skills/` directly;
-# Claude Code and Codex only read their own per-host dirs, so we symlink the
-# canonical bundle in for each detected host:
+# Installs the default skills from github.com/yschimke/skills (compose-preview
+# plus DEFAULT_COMPANION_SKILLS; more with --skills / --all-skills) and the
+# compose-preview CLI (github.com/yschimke/compose-ai-tools releases) into the
+# shared cross-agent skills directory (`~/.agents/skills/` by default). Gemini
+# reads `~/.agents/skills/` directly; Claude Code and Codex only read their own
+# per-host dirs, so we symlink the canonical bundle in for each detected host:
 #
 #   <skills-root>/compose-preview/                     (renderer + CLI)
 #   |-- SKILL.md                                       (from skill tarball)
@@ -44,12 +44,10 @@
 #   scripts/install.sh                         # install latest release
 #   scripts/install.sh 0.3.2                   # install a specific version
 #   VERSION=0.3.2 scripts/install.sh           # same, via env
-#   scripts/install.sh --cli-only              # skip skill-bundle install; use
-#                                              # when the skill content is
-#                                              # already on disk via a plugin /
-#                                              # marketplace install. The
-#                                              # bundled bin/compose-preview
-#                                              # stub passes this on first run.
+#   scripts/install.sh --cli-only              # skip skill content (already on
+#                                              # disk via a plugin or npx); the
+#                                              # bundled scripts/compose-preview
+#                                              # stub passes this on first run
 #   scripts/install.sh --skills compose-preview-ci,compose-preview-review
 #                                              # add skills to the default set
 #                                              # (compose-preview, compose-ui-builder)
@@ -162,11 +160,9 @@ CLI_ONLY="${CLI_ONLY:-0}"
 WITH_SKILLS="${WITH_SKILLS:-0}"
 MODIFY_PATH="${MODIFY_PATH:-1}"
 
-# Argument parsing — flags first, then positional VERSION. Flags can appear in
-# any order. Unknown flags are an error so typos don't get silently swallowed.
-# --yes/--upgrade are accepted (and ignored) for backwards compatibility with
-# old README snippets and pipelines; the consent gate they used to drive was
-# removed (it was impractical to thread --yes through every agent invocation).
+# Flags in any order, then an optional positional VERSION. Unknown flags are an
+# error so typos aren't swallowed. --yes/--upgrade are accepted and ignored for
+# old snippets; the consent gate they drove is gone.
 positional=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -217,13 +213,8 @@ if [[ -z "${CLAUDE_CLOUD:-}" ]]; then
   CLAUDE_CLOUD=$([[ -n "$AGENT_CLOUD_HOST" ]] && echo 1 || echo 0)
 fi
 
-# Skill install root — the canonical bundle lives in the shared cross-agent
-# dir `~/.agents/skills/`. Gemini CLI scans `~/.agents/skills/` directly, so
-# nothing extra is needed for Gemini. Claude Code and Codex (which only scan
-# their own per-host dirs) get a symlink each from `link_skills_for_hosts_*`
-# below — that way one physical install serves every agent without any of
-# them seeing the bundle in two scan paths at once (issue #1005). Override
-# with `SKILL_DIR=...` (full path) or `AGENTS_SKILLS_ROOT=...` (parent dir).
+# One physical install under `~/.agents/skills/` serves every agent; see the
+# header and link_skills_for_detected_hosts (issue #1005).
 AGENTS_SKILLS_ROOT="${AGENTS_SKILLS_ROOT:-$HOME/.agents/skills}"
 if [[ -z "$SKILL_DIR" ]]; then
   SKILL_DIR="$AGENTS_SKILLS_ROOT/compose-preview"
@@ -321,19 +312,11 @@ update_skills_via_npx() {
 
 # ---- Per-host symlinks + legacy gemini-mirror cleanup ---------------------
 #
-# Claude Code and Codex only scan their own per-host skills dir, so we
-# symlink the canonical bundle into each one when detected. Gemini reads
-# `~/.agents/skills/` directly, so it gets NO symlink — adding one would
-# put the same skill into both `~/.agents/skills/` and `~/.gemini/skills/`
-# and Gemini would emit "Skill conflict detected" (issue #1005). Older
-# versions of this script created exactly that gemini mirror; on upgrade
-# we sweep it (and the legacy antigravity subdir) for any compose-preview /
-# compose-preview-review symlinks we recognise as ours. Non-symlinks are
-# left alone so any user-managed content is preserved.
-#
-# Skill dirs (override via env):
-#   - Codex: ${CODEX_HOME:-$HOME/.codex}/skills
-#            https://developers.openai.com/codex/skills
+# Claude Code and Codex (${CODEX_HOME:-$HOME/.codex}/skills) get a symlink each.
+# Gemini gets none: it already reads `~/.agents/skills/`, and a second copy
+# under `~/.gemini/skills/` is a "Skill conflict detected" (issue #1005). Older
+# versions wrote exactly that mirror, so on upgrade we remove symlinks we
+# recognise as ours there; non-symlinks are left alone.
 
 have_claude() {
   [[ -d "$HOME/.claude" ]] || command -v claude >/dev/null 2>&1
@@ -365,9 +348,6 @@ link_skill_into_dir() {
 }
 
 cleanup_legacy_gemini_skill_links() {
-  # Sweep gemini-side mirrors written by older versions of this script.
-  # Gemini scans both ~/.gemini/skills/ and ~/.agents/skills/, so any
-  # symlink we add under ~/.gemini/ now would duplicate the entry.
   local roots=(
     "$HOME/.gemini/skills"
     "$HOME/.gemini/antigravity/skills"
@@ -526,7 +506,6 @@ install_openjdk_major() {
     printf '%s\n' "$existing"
     return 0
   fi
-  local jdk_home="/usr/lib/jvm/java-${major}-openjdk-amd64"
   if ! command -v apt-get >/dev/null 2>&1; then
     log "warning: no JDK $major found on disk and apt-get unavailable; skipping"
     return 1
@@ -550,7 +529,7 @@ install_openjdk_major() {
     printf '%s\n' "$existing"
     return 0
   fi
-  log "warning: openjdk-${major}-jdk-headless installed but $jdk_home/bin/java missing"
+  log "warning: openjdk-${major}-jdk-headless installed but no JDK $major found on disk"
   return 1
 }
 
@@ -560,9 +539,10 @@ if [[ "$CLAUDE_CLOUD" == 1 || -n "$JDKS_REQUESTED" ]]; then
   # already ship the right JDK), otherwise install it.
   detected_major=""
   if command -v java >/dev/null 2>&1; then
-    # `java -version` prints `openjdk version "21.0.10" ...` to stderr.
-    # Legacy JDK 8 reports `1.8.x`, which parses to major=1.
-    detected_major="$(java -version 2>&1 | head -1 | awk -F'"' '{print $2}' | awk -F. '{print $1}')"
+    # Match the `version "…"` line, not line 1: JAVA_TOOL_OPTIONS (which this
+    # script writes on cloud hosts) prints a "Picked up …" line first. 1.8 → 8.
+    detected_major="$(java -version 2>&1 \
+      | awk -F'"' '/version "/{split($2, v, "."); print (v[1] == "1" ? v[2] : v[1]); exit}' || true)"
   fi
   if [[ -n "$detected_major" && "$detected_major" =~ ^[0-9]+$ && "$detected_major" -eq "$REQUIRED_JAVA_MAJOR" ]]; then
     log "using existing JDK $detected_major on PATH as the active toolchain"
@@ -597,16 +577,10 @@ fi
 
 # ---- Optional: install Android SDK ---------------------------------------
 #
-# Mirrors the manual procedure in docs/AGENTS.md ("Bringing up a fresh
-# sandbox"). Idempotent — every requested package maps 1:1 onto a directory
-# under $ANDROID_HOME, so a re-run (and the warm-cache path on Claude Cloud)
-# installs only what is actually missing and skips out entirely when nothing
-# is.
-#
-# Network note: sdkmanager pulls from dl.google.com, which is not on the
-# Claude Cloud Trusted allowlist by default (developer.android.com is, but
-# that's the docs domain). The reachability probe below fails fast with a
-# clear remediation hint when the host is blocked.
+# Mirrors "Bringing up a fresh sandbox" in compose-ai-tools' docs/AGENT_GUIDE.md.
+# Idempotent: each package maps 1:1 onto a directory under $ANDROID_HOME, so a
+# re-run installs only what is missing. sdkmanager pulls from dl.google.com,
+# which the default cloud allowlist lacks; the probe below fails fast on that.
 
 # Packages every install needs. Overridable so a consumer on a different
 # compileSdk isn't stuck with ours.
@@ -892,38 +866,11 @@ release_is_ready() {
 
 if [[ -z "$VERSION" ]]; then
   log "resolving latest release of $REPO"
-  # Resolve the newest CLI release from the public releases.atom feed.
-  #
-  # NOT /releases/latest: this is a release-please monorepo where the CLI ships
-  # on v<X.Y.Z> tags and the mobile/wear apps ship on clients-v<X.Y.Z> tags.
-  # Whichever publishes last owns GitHub's single "latest" pointer, so
-  # /releases/latest can resolve to a clients-v* tag -- which has no "/v" to
-  # strip and produced "could not parse version from .../tag/clients-v0.2.0".
-  #
-  # The atom feed lists every release newest-first and, like the HTML redirect,
-  # isn't the rate-limited api.github.com. GitHub includes *draft* releases in
-  # this public feed, though, before their assets are publicly downloadable.
-  # Selecting the first matching tag therefore creates a long 404 window while
-  # the release workflow builds and uploads the CLI (issue #3287).
-  #
-  # Walk CLI-shaped tags newest-first and select the first usable release. New
-  # releases carry a readiness asset produced only after a clean Gradle resolution
-  # from public Maven Central; draft/incomplete/not-yet-propagated candidates lack
-  # that marker and fall back to the previous usable version. Bound the scan so a
-  # GitHub or Central outage fails promptly instead of probing
-  # every historical feed entry.
-  # A "releases/tag/clients-v..." href does not match "releases/tag/v...", so
-  # component releases are skipped for free.
-  #
-  # ...and when the feed is unreachable, fall back to the repo-scoped API rather
-  # than dying. The comment above avoids api.github.com because it is
-  # rate-limited on shared sandbox IPs — but in an *agent* sandbox the polarity
-  # flips: the Claude Code proxy allows repository-scoped GitHub API paths and
-  # refuses everything else, so `releases.atom` comes back 403 with
-  #   "This GitHub API path is not available: sessions are bound to their
-  #    configured repositories. Use repository-scoped endpoints"
-  # while /repos/<owner>/<repo>/releases answers 200. Neither source is reliable
-  # everywhere; between them one usually works.
+  # Not /releases/latest: the CLI ships on v<X.Y.Z> tags and the apps on
+  # clients-v<X.Y.Z>, and whichever publishes last owns "latest". Walk CLI tags
+  # newest-first (candidate_versions skips clients-v*) and take the first that
+  # release_is_ready() accepts, which filters out drafts still uploading
+  # (issue #3287). Bounded so an outage fails fast.
   candidates_checked=0
   while IFS= read -r candidate; do
     [[ -n "$candidate" ]] || continue
@@ -953,19 +900,13 @@ CLI_DEST="$CLI_HOME/cli"
 LAUNCHER="$CLI_DEST/compose-preview-${VERSION}/bin/compose-preview"
 SKILL_LAUNCHER="$CLI_HOME/bin/compose-preview"
 
-# Companion skills install as siblings of $SKILL_DIR (see COMPANION_SKILLS).
-# They ship separately from compose-preview so an agent loading one of them
-# doesn't pull in the others' content.
-
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
+# Translate the shell proxy env into JVM -D flags; the Gradle wrapper's
+# HttpURLConnection ignores https_proxy (anthropics/claude-code#16222). Prints
+# nothing when no proxy is set or it has no explicit port.
 proxy_java_tool_options() {
-  # Translate $https_proxy / $http_proxy into JVM -D flags. The JVM's
-  # HttpURLConnection (used by the Gradle wrapper) ignores the shell proxy
-  # env vars, so without this the wrapper fails on
-  # `services.gradle.org` (anthropics/claude-code#16222). Prints an empty
-  # string when no proxy URL is set or it lacks an explicit port.
   local url="${https_proxy:-${HTTPS_PROXY:-${http_proxy:-${HTTP_PROXY:-}}}}"
   [[ -n "$url" ]] || return 0
   local hostport="${url#*://}"      # strip scheme
@@ -1012,23 +953,14 @@ maybe_write_env_file() {
   fi
 }
 
-# Resolve the upstream skills repo commit SHA via `git ls-remote`. Works
-# unauthenticated, isn't rate-limited the way api.github.com is on shared
-# sandbox IPs, and lets us short-circuit re-runs when the upstream tip is
-# unchanged. Returns empty on failure; callers treat that as "unknown" and
-# fall through to a full extract.
+# Upstream skills SHA via `git ls-remote` (unauthenticated, not rate-limited
+# like api.github.com). Empty on failure, which forces a full extract.
 resolve_skills_sha() {
   command -v git >/dev/null 2>&1 || return 1
   git ls-remote "https://github.com/$SKILLS_REPO" "refs/heads/$SKILLS_REF" 2>/dev/null \
     | awk 'NR==1{print $1}'
 }
 
-# Install both skill bundles from a single tarball of yschimke/skills.
-# Skill content lives in a separate repo from the CLI, so we fetch once and
-# extract each `skills/<name>/` subtree into its target dir. Marker files
-# record the upstream SHA; re-runs at the same SHA are no-ops. Stale files
-# from previous installs are removed only for top-level entries the new
-# bundle carries, so `cli/` and `bin/` (added later) are left alone.
 # Companion skills to install or refresh, one per line: the defaults (or
 # every companion with --all-skills), plus any asked for with --skills, plus
 # any this script installed before. Plain loops, no associative arrays or
@@ -1053,6 +985,10 @@ skill_in_list() {
   return 1
 }
 
+# Fetch one tarball of yschimke/skills and extract each wanted `skills/<name>/`
+# into its target dir. `.skill-version` records the upstream SHA so a re-run at
+# the same SHA is a no-op. Only top-level entries the new bundle carries are
+# replaced, so `cli/` and `bin/` survive.
 install_skills_bundle() {
   local sha=""
   sha="$(resolve_skills_sha || true)"
@@ -1286,12 +1222,8 @@ if [[ "$INSTALLED_VERSION" == "$VERSION" && -x "$LAUNCHER" ]]; then
 fi
 
 # ---- Skill bundles --------------------------------------------------------
-# Skill markdown lives in yschimke/skills (separate from the CLI). One fetch
-# covers both compose-preview and compose-preview-review. Skipped under
-# --cli-only — when the caller is the in-skill bootstrap stub, the bundles
-# are already on disk via the plugin / marketplace install path, and a
-# second copy at $SKILL_DIR would duplicate the entry into Claude / Codex
-# scan paths (issue #1005).
+# Skipped under --cli-only: the content is already on disk via a plugin or
+# npx, and a second copy would duplicate it in host scan paths (issue #1005).
 
 if [[ "$CLI_ONLY" != 1 ]]; then
   install_skills_bundle || true
@@ -1375,13 +1307,13 @@ printf '%s\n' "$VERSION" > "$CLI_VERSION_FILE"
 # ---- Wire up the in-bundle launcher --------------------------------------
 
 mkdir -p "$CLI_HOME/bin"
-ln -sf "../cli/compose-preview-${VERSION}/bin/compose-preview" "$SKILL_LAUNCHER"
+ln -sfn "../cli/compose-preview-${VERSION}/bin/compose-preview" "$SKILL_LAUNCHER"
 log "skill bundle launcher: $SKILL_LAUNCHER"
 
 # ---- Optional global symlink ---------------------------------------------
 
 mkdir -p "$BIN_DIR"
-ln -sf "$LAUNCHER" "$BIN_DIR/compose-preview"
+ln -sfn "$LAUNCHER" "$BIN_DIR/compose-preview"
 log "symlinked $BIN_DIR/compose-preview -> $LAUNCHER"
 
 # ---- Smoke test -----------------------------------------------------------

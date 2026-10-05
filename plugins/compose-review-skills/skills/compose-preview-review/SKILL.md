@@ -77,7 +77,7 @@ Pick the workflow that matches the task:
 
 5. **Post a text-only review comment** summarising deltas. Image upload
    only with explicit consent — see
-   [references/agent-pr.md § Uploading images](./references/agent-pr.md#3-uploading-images-only-with-explicit-consent).
+   [references/agent-pr.md § Uploading images](./references/agent-pr.md#3-uploading-images--only-with-explicit-consent).
 
 ## Reference docs
 
