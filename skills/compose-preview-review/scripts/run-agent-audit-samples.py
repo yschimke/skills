@@ -10,11 +10,8 @@ script should fail before the skill bundle ships.
 
 from __future__ import annotations
 
-import base64
-import hashlib
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -32,7 +29,6 @@ FIXTURE_KT = SAMPLE / "src/main/kotlin/com/example/sampleandroid/AgentAuditSampl
 FAILURE_KT = SAMPLE / "src/main/kotlin/com/example/sampleandroid/AgentAuditFailureSample.kt"
 VALUES = SAMPLE / "src/main/res/values/agent_audit.xml"
 VALUES_DE = SAMPLE / "src/main/res/values-de/agent_audit.xml"
-BUILD_GRADLE = SAMPLE / "build.gradle.kts"
 MODULE = "samples:android"
 
 
@@ -238,11 +234,15 @@ class McpClient:
         self.next_id = 1
         self.responses: dict[int, dict[str, Any]] = {}
         self.cv = threading.Condition()
+        self.reader_error: str | None = None
         threading.Thread(target=self._reader, daemon=True).start()
         threading.Thread(target=self._stderr, daemon=True).start()
 
     def _reader(self) -> None:
+        # Failures are handed to request(): an exception raised on this thread would only
+        # kill the thread and leave the caller waiting for its timeout.
         assert self.proc.stdout is not None
+        error = "MCP server closed stdout"
         for line in self.proc.stdout:
             stripped = line.strip()
             if not stripped:
@@ -250,12 +250,15 @@ class McpClient:
             try:
                 obj = json.loads(stripped.decode("utf-8"))
             except json.JSONDecodeError as exc:
-                raise AssertionError(f"bad MCP JSON line: {stripped[:160]!r}: {exc}") from exc
-            else:
-                with self.cv:
-                    if "id" in obj:
-                        self.responses[obj["id"]] = obj
-                        self.cv.notify_all()
+                error = f"bad MCP JSON line: {stripped[:160]!r}: {exc}"
+                break
+            with self.cv:
+                if "id" in obj:
+                    self.responses[obj["id"]] = obj
+                    self.cv.notify_all()
+        with self.cv:
+            self.reader_error = error
+            self.cv.notify_all()
 
     def _stderr(self) -> None:
         assert self.proc.stderr is not None
@@ -277,6 +280,8 @@ class McpClient:
         deadline = time.time() + timeout
         with self.cv:
             while req_id not in self.responses:
+                if self.reader_error:
+                    raise AssertionError(f"{method}: {self.reader_error}")
                 remaining = deadline - time.time()
                 if remaining <= 0:
                     raise TimeoutError(f"{method} timed out")
@@ -371,12 +376,8 @@ def setup_mcp() -> tuple[McpClient, str]:
         },
         timeout=300,
     )
-    # PROTOCOL.md § 3a — daemons start with every extension inactive; clients opt in via the
-    # daemon's `extensions/enable` JSON-RPC, which the MCP server proxies through this tool. The
-    # script exercises the data-product surface end-to-end (text/strings, resources/used,
-    # render/deviceClip, test/failure) plus the recording-script dispatch path, so we enable each
-    # of those producers up front. `unknown` ids in the response are tolerated (older daemons may
-    # not register every id), but the four below are mandatory for the assertions that follow.
+    # Daemons start with every extension inactive (PROTOCOL.md § 3a). Enable the producers the
+    # assertions below read; older daemons may report some ids as `unknown`.
     client.call_tool(
         "enable_extensions",
         {
@@ -552,12 +553,8 @@ def test_mcp_data_products() -> None:
             "resources/used did not record the warning color resource",
         )
 
-        # State-restoration audit: today only `recording.probe` is wired as a script event
-        # (the other extension events are advertised with `supported = false` and rejected by
-        # record_preview up front — see compose-ai-tools#714). Drive the click that should
-        # change state and a same-tick probe to ground the verification; once state/lifecycle
-        # extensions ship as `supported = true`, extend the script with the matching markers in
-        # the same `tMs` group.
+        # Only `recording.probe` is a supported script event today (compose-ai-tools#714); add
+        # state/lifecycle markers to the same `tMs` group once they ship as `supported = true`.
         recording = client.call_tool(
             "record_preview",
             {
@@ -627,10 +624,7 @@ def main() -> int:
         raise AssertionError("java must be on PATH")
     keep = os.environ.get("KEEP_AGENT_AUDIT_FIXTURES") == "1"
     try:
-        # `compose-preview a11y` opts the build into the a11y data extension on every
-        # invocation, so the renders this script triggers via the CLI write ATF findings +
-        # an annotated overlay alongside the PNG even though a11y is otherwise off by
-        # default. No build.gradle.kts edit required.
+        # `compose-preview a11y` enables the a11y extension per invocation; no build edit needed.
         write_fixture_files(include_failure=False)
         run(["./gradlew", ":cli:installDist"], timeout=600)
         test_accessibility_cli()
