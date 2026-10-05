@@ -101,7 +101,7 @@ bundles, never both, or each skill appears twice.
   review pull requests that change Compose UI by rendering `@Preview`
   composables on base and head and diffing them. Pairs with
   `compose-preview`; covers agent-authored PRs, local review
-  workflows, mention-triggered CI agent sessions (`claude.yml`), and
+  workflows, mention-triggered CI agent sessions, and
   triaging flaky/unstable previews.
 - [`compose-preview-ci`](skills/compose-preview-ci/SKILL.md) — stand up
   the GitHub Actions that render previews and post before/after diff

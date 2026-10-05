@@ -1,9 +1,10 @@
-# Reviewing and authoring from a CI agent session (`claude.yml`)
+# Reviewing and authoring from a CI agent session
 
-Some repos wire up mention-triggered agent sessions: commenting
-`@claude <request>` on an issue or PR (or applying a `claude` label)
-starts a Claude Code session on a GitHub Actions runner via
-`anthropics/claude-code-action`, with the whole thread as context. The
+Some repos wire up mention-triggered agent sessions: mentioning the agent
+on an issue or PR (or applying a label) starts an agent session on a
+GitHub Actions runner, with the whole thread as context. How each host
+wires this up is in compose-agent-plugins'
+[host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#ci-agent-sessions). The
 canonical design doc is
 [compose-ai-tools `docs/AGENT_INVOCATION.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/AGENT_INVOCATION.md).
 
@@ -77,7 +78,7 @@ worth doing every time:
 
 ## "Resuming" across mentions
 
-Each `@claude` mention is a fresh run that re-reads the whole thread and
+Each mention is a fresh run that re-reads the whole thread and
 your previously pushed branch. Structure comments so your future self
 can pick up: state what was rendered, which commit the images are
 pinned to, and what remains. On an open PR, repeated mentions stack

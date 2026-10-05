@@ -148,7 +148,7 @@ Read only what the task needs.
 | Remote catalog MCP (`serve`, no checkout) | [catalog-mcp.md](./references/catalog-mcp.md) |
 | Gated server access (`compose-preview auth request`) | [server-access.md](./references/server-access.md) |
 | Agent allowlists, staging PNGs | [permissions.md](./references/permissions.md) |
-| Cloud sandboxes (Claude Code, Codex) | [agent-cloud.md](./references/agent-cloud.md), [claude-cloud.md](./references/claude-cloud.md) |
+| Cloud sandboxes | [agent-cloud.md](./references/agent-cloud.md) |
 | VS Code extension (humans) | [vscode.md](./references/vscode.md) |
 
 **CI and PR review** live in opt-in sibling skills:

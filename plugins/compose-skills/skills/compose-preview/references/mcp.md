@@ -78,37 +78,23 @@ behind it. Reach for MCP when the loop is long-lived.
 ## Setup
 
 The `compose-preview` CLI bundles the MCP server. There is no second
-download, no manual classpath, no `claude mcp add` argument to compose by
+download, no manual classpath, and no per-host MCP command to compose by
 hand.
 
 ```bash
 # Run from the project root. Bootstraps descriptors + previews.json for every
-# plugin-applied module, then registers the MCP server with every locally
-# installed agent host it detects (Claude Code, Codex, Antigravity).
+# plugin-applied module, then registers the MCP server with each locally
+# installed agent host it detects.
 compose-preview mcp install
-
-# Force a specific host even if it's not auto-detected, or opt out.
-compose-preview mcp install --antigravity        # force Antigravity write
-compose-preview mcp install --no-claude          # skip claude mcp add
-compose-preview mcp install --codex              # force Codex write
-compose-preview mcp install --codex-config /path/to/config.toml
 
 # Verify per-module state (descriptor present, enabled=true).
 compose-preview mcp doctor
 ```
 
 `compose-preview mcp serve` defaults `--project` to the current Gradle root
-when run from a project checkout. Detection per host:
-
-- **Claude Code**: `claude` on PATH, or `~/.claude/` exists. Registered via
-  `claude mcp add --scope user` when missing; a broken entry is repaired in
-  place and a healthy one is left alone.
-- **Codex**: `codex` on PATH, or `~/.codex/` exists. The
-  `[mcp_servers.compose-preview-mcp]` table is replaced in place (or appended)
-  in `~/.codex/config.toml`.
-- **Antigravity**: `__CFBundleIdentifier=com.google.antigravity`,
-  `ANTIGRAVITY_CLI_ALIAS`, or `~/.gemini/antigravity/` exists. The MCP server
-  entry is merged into `~/.gemini/antigravity/mcp_config.json`.
+when run from a project checkout. Which hosts `mcp install` detects, the flags
+that force or skip one, and where each host's entry is written are in
+compose-agent-plugins' [host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#registering-the-local-mcp-server).
 
 Every host entry is global: `<stable launcher> mcp serve`, with no
 `--project` (the server finds the project from the client's roots or working
