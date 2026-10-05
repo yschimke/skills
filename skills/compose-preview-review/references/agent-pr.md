@@ -55,7 +55,7 @@ rendering (see
 [ci-agent-sessions.md § Discover the repo's preview CI](./ci-agent-sessions.md#discover-the-repos-preview-ci-before-rendering-anything));
 when none exists, assume you're rendering locally and that the human who
 invoked you is the primary audience. If you're running *inside* a
-mention-triggered CI session (`claude.yml` on an Actions runner), several
+mention-triggered CI session (an agent on an Actions runner), several
 defaults below change — read
 [ci-agent-sessions.md](./ci-agent-sessions.md) first.
 

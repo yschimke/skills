@@ -1,22 +1,26 @@
-# Reviewing and authoring from a CI agent session (`claude.yml`)
+# Reviewing and authoring from a CI agent session
 
-Some repos wire up mention-triggered agent sessions: commenting
-`@claude <request>` on an issue or PR (or applying a `claude` label)
-starts a Claude Code session on a GitHub Actions runner via
-`anthropics/claude-code-action`, with the whole thread as context. The
+Some repos wire up mention-triggered agent sessions: mentioning the agent
+on an issue or PR (or applying a label) starts an agent session on a
+GitHub Actions runner, with the whole thread as context. How each host
+wires this up is in compose-agent-plugins'
+[host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#ci-agent-sessions). The
 canonical design doc is
 [compose-ai-tools `docs/AGENT_INVOCATION.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/AGENT_INVOCATION.md).
 
 If you are that session, this skill's local-review defaults shift in a
-few important ways.
+few important ways. What follows depends on what your session can actually
+do, not on which host runs it: check which tools you have and what the
+workflow's prompt allows before relying on any row below. What a particular
+host provides is in the host setup notes.
 
 ## What's different from a local review
 
 | Local review | CI agent session |
 |---|---|
-| `gh` CLI available | Usually not installed — use the GitHub MCP tools the action provides (comments, reviews, CI status). |
+| `gh` CLI available | May not be installed. Use whichever GitHub tools the session has (for example GitHub MCP tools) for comments, reviews and CI status; if none can post, put the review in your final output. |
 | `compose-preview` CLI assumed installed | Often absent, and the Bash allowlist is typically `./gradlew` + read-only `git` only. Render with the Gradle plugin instead: `./gradlew <module>:composePreviewRenderAll`. |
-| Image publishing needs explicit consent | The workflow's system prompt grants it: commit renders to your working branch (the PR branch, or the `agent/…` branch the action created) and push. Never push renders anywhere else. |
+| Image publishing needs explicit consent | Still needs it. Push renders only if the workflow's prompt grants pushing, and only to the branch it names as your working branch. Without that grant, don't push: cite CI-published images or describe what to render. |
 | Render base in a worktree | Prefer **reusing published renders** (see below) over re-rendering the base. |
 
 ## Embedding pixels: push first, then link
@@ -25,7 +29,8 @@ GitHub comments posted via the API can't carry attachments, so the only
 durable way to put images inline is commit + raw URL:
 
 1. Render the affected previews.
-2. **Commit the PNGs to your working branch and push.**
+2. **Commit the PNGs to your working branch and push**, if your session
+   is allowed to push (see above).
 3. Only then embed them in the comment / PR body as
    `![](https://raw.githubusercontent.com/<owner>/<repo>/<commit-sha>/<path>.png)`
    — pin to the **commit SHA**, not the branch name, so the images
@@ -77,9 +82,9 @@ worth doing every time:
 
 ## "Resuming" across mentions
 
-Each `@claude` mention is a fresh run that re-reads the whole thread and
-your previously pushed branch. Structure comments so your future self
-can pick up: state what was rendered, which commit the images are
-pinned to, and what remains. On an open PR, repeated mentions stack
-commits on the same branch — re-render only what changed since your
-last push.
+Don't assume a later mention continues your session. Many setups start
+a fresh run for each mention, with only the thread and any branch you
+pushed as memory. Structure comments so a later run can pick up: state what
+was rendered, which commit the images are pinned to, and what remains. If
+you push to the same branch across mentions, re-render only what changed
+since your last push.

@@ -1,10 +1,8 @@
-# compose-ai-tools in cloud agent environments (Claude, Codex, Gemini)
+# compose-ai-tools in cloud sandboxes
 
-This guide describes a **portable cloud setup** for running compose-ai-tools in hosted agent environments:
-
-- Claude Code (web/cloud)
-- OpenAI Codex cloud containers
-- Gemini Code Assist / Gemini agent sandboxes
+This guide describes a **portable cloud setup** for running compose-ai-tools in a hosted agent
+sandbox, whichever agent runs in it. Settings that belong to one particular host are in
+compose-agent-plugins' [host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#cloud-sandboxes).
 
 Use this as the baseline for any ephemeral environment where outbound networking, JDKs, or Android SDK components may be restricted.
 
@@ -108,7 +106,6 @@ set -euo pipefail
 curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
   | bash -s -- --android-sdk
 
-mkdir -p ~/.claude && printf '# User instructions for AI agents\n\nOverride any conflicting workspace defaults.\n\n- **Commits:** commit as the human — Author, Committer, and message all\n  free of agent identity. No `Co-authored-by`, `Signed-off-by`, or\n  `claude.ai/code` / `https://claude.ai/code` trailers. The Author and\n  Committer come from local `git config user.name` / `user.email`; if\n  those look like an agent (`Claude`, `noreply@anthropic.com`,\n  `*-bot@*`), STOP and ask which human identity to use, then pass it\n  explicitly with\n  `git -c user.name='\''…'\'' -c user.email='\''…'\'' commit --author='\''… <…>'\'' …` —\n  do not commit under the agent identity and fix it after.\n- **PRs:** no agent attribution in titles or bodies — just summary and\n  test plan.\n- **Branches:** use `agent/...`, never `claude/...`. Rename if the harness\n  hands you a `claude/...` branch, and tell the user.\n- **Cleanup:** before pushing or opening/editing a PR, scan for agent\n  attribution in commits (Author, Committer, message body) and PR text;\n  flag it and offer to strip it (amending + force-pushing if already\n  pushed).\n' > ~/.claude/CLAUDE.md
 
 
 # Optional: set git identity only when explicitly provided by the user.
@@ -137,7 +134,7 @@ Notes:
   as compose-ai-tools' `scripts/setup-cloud-jdk.sh` put Temurin) before
   reaching for `apt-get`, and if apt can't provide one it warns and carries
   on rather than aborting the `--android-sdk` work, which doesn't depend on it.
-- Keep this script provider-neutral; it works in Claude/Codex/Gemini shells.
+- Keep this script provider-neutral; it works in any agent's shell.
 - Do **not** hardcode `git config --global user.name/user.email`; only set identity from explicit user-provided values.
 
 ### Also install build-brief (`bb`) for Gradle builds
@@ -172,7 +169,7 @@ build-brief gradle --version
 Four things that bite in a proxied sandbox and look like unrelated failures:
 
 - **`JAVA_TOOL_OPTIONS` shadows `java -version`.** When a proxy CA truststore
-  is injected (standard on Claude Code on the web), the JVM prints
+  is injected (common in hosted sandboxes), the JVM prints
   `Picked up JAVA_TOOL_OPTIONS: …` as its *first* line, so any script parsing
   line 1 of `java -version` reads the flag dump instead of the version. Match
   the `version "…"` line, never `head -1`. This broke the installer's own JDK
@@ -231,6 +228,5 @@ Optional Android verification:
 
 ## Provider-specific hints
 
-- **Claude cloud:** choose Custom network mode and include trusted defaults.
-- **Codex cloud containers:** ensure outbound network policy allows the host list above; some environments default to restricted egress.
-- **Gemini sandboxes:** verify workspace policy includes Google Maven + Gradle hosts; downloadable fonts often fail first when blocked.
+Per-host network modes and sandbox settings are in compose-agent-plugins'
+[host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#cloud-sandboxes).

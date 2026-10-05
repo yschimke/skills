@@ -33,8 +33,8 @@ If `compose-preview` isn't on `$PATH`, install it in this order:
    ```
 
    (`$SKILL_DIR` is the absolute path to this skill bundle, e.g.
-   `~/.agents/skills/compose-preview/` or
-   `~/.claude/plugins/yschimke-skills/skills/compose-preview/`.)
+   `~/.agents/skills/compose-preview/`. Where each agent host keeps installed
+   skills is in the [host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#skill-install-locations).)
 2. **No bundle on disk?** Install the skills with the
    [skills CLI](https://skills.sh), then run the stub:
 
@@ -66,16 +66,15 @@ script prints the exact command to add it.
 From a Compose project root, install the MCP server descriptors:
 
 ```sh
-compose-preview mcp install                  # auto-detects Antigravity
-compose-preview mcp install --antigravity    # force the Antigravity config write
+compose-preview mcp install                  # registers with each detected agent host
 ```
 
-On Antigravity, Claude Code or Codex, the
-[`compose-agent-plugins`](https://github.com/yschimke/compose-agent-plugins#install)
+Per-host flags are in the [host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#registering-the-local-mcp-server).
+The [`compose-agent-plugins`](https://github.com/yschimke/compose-agent-plugins#install)
 plugins are an alternative to `mcp install`. `compose-preview` wires this MCP
 server, and `compose-catalogs` wires the hosted catalog and UI Builder. The
-install commands for each harness are in this repo's
-[README](https://github.com/yschimke/skills#per-harness-plugins). Use one route
+install commands for each harness are in
+[its README](https://github.com/yschimke/compose-agent-plugins#install). Use one route
 or the other, not both: two registrations of the same server give you two copies
 of every tool.
 
