@@ -29,6 +29,24 @@ design doc, it belongs to that repo. (Its operator-facing manual,
 `docs/public-preview-server.md`, still lives in `compose-ai-tools` — cite it
 where it actually is rather than where the code is.)
 
+## Git history
+
+- Git history attributes work only to the human committer. Never add an AI
+  `Co-authored-by:` trailer or use an agent identity as author or committer, in a commit or
+  in a PR title or body. Session links and "Generated with" footers are fine.
+- **Reviewers, human or bot: verify before reporting an attribution finding.** Across these
+  repositories it is the most-reported and least-real review finding, and reports have named
+  commits that do not exist. Never infer the identity from the fact that an agent wrote the code: it
+  is whatever `git config user.email` held, and here that is the human. Check the real range first:
+
+      git cat-file -t <sha>          # a commit you are about to name must actually exist
+      git log --format='%h %an <%ae> | %cn <%ce> | %(trailers:key=Co-authored-by,valueonly,separator=%x2C)' <base>..<head>
+
+  Report only an agent name or an `@anthropic.com` / `@openai.com` address that this output
+  actually shows, and quote it. `Yuri Schimke <yuri@schimke.ee>` is the human identity, and
+  `github-actions[bot]` / `renovate[bot]` are exempt bot accounts. `GitHub <noreply@github.com>` is
+  the committer of every squash merge. None of these is ever a finding.
+
 ## When adding, renaming, or removing a skill
 
 1. **Update `README.md`** — keep the skills list in sync. Each entry links
