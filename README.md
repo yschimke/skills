@@ -249,6 +249,11 @@ contract.
 
 [Apache 2.0](LICENSE)
 
+Audit results follow the same chat summary and evidence-link convention in every
+host. App-capable viewers can show measured render details; UI Builder can show
+saved guideline reviews in its Issues panel. See the
+[presentation checklist](skills/compose-preview/references/design-guidelines.md#show-the-review-and-offer-another-run).
+
 ## Repository merge policy
 
 Repository settings and required checks are managed by

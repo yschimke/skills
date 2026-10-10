@@ -10,6 +10,18 @@ The examples below are exercised by
 the script writes temporary Kotlin/resource fixtures, runs the documented
 CLI/MCP commands, and asserts the expected data-product output shapes.
 
+## Presenting audit results
+
+Use the [catalog guidelines checklist](https://github.com/yschimke/skills/blob/main/skills/compose-preview/references/design-guidelines.md#show-the-review-and-offer-another-run)
+for result presentation across hosts, even for a focused measured audit.
+Return the subject, checks run, findings, unchecked coverage and real evidence
+links in chat. A measured audit has no judging model unless a model review also
+ran. In app-capable hosts, request the supported render details for the checks
+being audited; in UI Builder, distinguish saved shared guideline results from
+accessibility measurements. If another run is useful, give a prompt naming the
+subject and missing checks, or a tool-supported editor/viewer link. Do not
+invent an audit-launch URL.
+
 ### Accessibility audit
 
 Use this when a PR changes tappable controls, icon-only actions, semantics,
