@@ -25,16 +25,12 @@ Gradle bootstrap, cloud environment or workspace proxy is needed for this lane.
 Fetch source only when the requested review requires evidence the hosted tools
 cannot supply, or the person explicitly requests a source change.
 
-If the host reports an expired/disconnected app connection before a tool runs,
-stop hosted calls and show its reconnect action. The server's `request_access`
-flow cannot repair host OAuth credentials. If the authorization page reports
-an unknown `client_id`, explain that removing/disconnecting the app and adding
-it again forces fresh registration; retrying the old authorization link does not.
-Never fabricate a registration, redirect URI or approval token. Use server
-access tools only after reaching the server and receiving its structured
-`authorization_required` response. A network/proxy error alone does not identify
-an expired grant. Report unavailable evidence and resume after reconnection;
-do not silently switch to local builds or claim an audit ran.
+If a connection fails before a server tool response, stop retries, report
+blocked evidence and follow the integration's setup/recovery guidance. Do not
+infer an expired server grant from a network/proxy error or silently switch to
+local builds. Use advertised server access tools for a reachable server's
+structured `authorization_required` response. Resume when tools are available;
+never claim an audit ran without evidence.
 
 | Subject | First read | Review with |
 | --- | --- | --- |

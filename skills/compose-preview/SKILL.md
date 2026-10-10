@@ -17,8 +17,8 @@ requested guidelines review, use
 [the review checklist](./references/design-guidelines.md) to choose the local,
 hosted or UI Builder lane before invoking tools. Published catalogs and
 server-homed designs use hosted tools first; a missing local checkout does not
-require cloning, Gradle or a cloud environment. An expired app connection needs
-host reconnection before the server access-grant flow can run.
+require cloning, Gradle or a cloud environment. If tools are unavailable,
+report blocked evidence and follow the integration's setup guidance.
 
 With the local MCP server attached (compose-preview-server 3.78.0+), its
 `initialize` instructions say how to call it: `render_preview

@@ -37,14 +37,11 @@ than guessing the flow.
 
 ## Getting in without leaving MCP
 
-First distinguish host connection failure from server access. An expired app
-connection blocks tool delivery: use the host's reconnect action, and if the
-browser reports an unknown `client_id`, remove/disconnect and add the app again
-to force fresh registration. Neither `request_access` nor retrying the old link
-repairs a missing OAuth registration. Do not clone a catalog or start a local
-build to recover this connection. A network error alone is not an expired grant.
 The device flow below applies when the server is reachable and returns
-`authorization_required`, with the access tools advertised.
+`authorization_required`, with the access tools advertised. If the connection
+fails before a server response, report the block and follow the integration's
+setup guidance. Do not clone a catalog or start a local build to recover tool
+availability. A network error alone does not establish an expired server grant.
 
 [`references/server-access.md`](./server-access.md) covers the grant model —
 the scopes, what to ask for, what an approver can and cannot do, and why you
@@ -76,8 +73,8 @@ and discover the way in.
 
 **Grants live in memory.** A server restart or redeploy drops every grant
 regardless of its remaining TTL. A structured `authorization_required` response can be recovered with a new
-grant. A host connection-expired notice instead needs host reconnection first;
-a bare `401` alone does not establish which layer failed.
+grant when the tool connection is available; a bare `401` alone does not
+establish which layer failed. Connection setup/recovery belongs to the integration.
 
 ## The tool surface
 
