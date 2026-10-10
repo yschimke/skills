@@ -248,3 +248,10 @@ contract.
 ## License
 
 [Apache 2.0](LICENSE)
+
+## Repository merge policy
+
+Repository settings and required checks are managed by
+[yschimke/renovate-config](https://github.com/yschimke/renovate-config/tree/main/repo-policy).
+Pull requests use Conventional Commit titles and squash merges. Run
+`scripts/install-git-hooks.sh` to enable the same attribution checks locally.
