@@ -37,6 +37,12 @@ than guessing the flow.
 
 ## Getting in without leaving MCP
 
+The device flow below applies when the server is reachable and returns
+`authorization_required`, with the access tools advertised. If the connection
+fails before a server response, report the block and follow the integration's
+setup guidance. Do not clone a catalog or start a local build to recover tool
+availability. A network error alone does not establish an expired server grant.
+
 [`references/server-access.md`](./server-access.md) covers the grant model —
 the scopes, what to ask for, what an approver can and cannot do, and why you
 never ask for the server's own `--token`. **Read it first; all of it applies
@@ -66,8 +72,9 @@ not per endpoint, so an unauthenticated client can still complete the handshake
 and discover the way in.
 
 **Grants live in memory.** A server restart or redeploy drops every grant
-regardless of its remaining TTL. A sudden `401` mid-task is that, not a bug —
-ask for a new grant the same way you asked for the first.
+regardless of its remaining TTL. A structured `authorization_required` response can be recovered with a new
+grant when the tool connection is available; a bare `401` alone does not
+establish which layer failed. Connection setup/recovery belongs to the integration.
 
 ## The tool surface
 

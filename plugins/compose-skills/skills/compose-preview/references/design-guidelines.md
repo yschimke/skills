@@ -17,6 +17,21 @@ Use the exact names the active client advertises.
 
 ## Choose the review lane
 
+For a published catalog or server-homed design, use the advertised hosted tools
+first. Resolve the named catalog through `catalog_list_projects` and
+`catalog_list_previews`, or the supplied design ID through `ui_builder_get_design`.
+A catalog name is not a request to clone its repository. No checkout, local
+Gradle bootstrap, cloud environment or workspace proxy is needed for this lane.
+Fetch source only when the requested review requires evidence the hosted tools
+cannot supply, or the person explicitly requests a source change.
+
+If a connection fails before a server tool response, stop retries, report
+blocked evidence and follow the integration's setup/recovery guidance. Do not
+infer an expired server grant from a network/proxy error or silently switch to
+local builds. Use advertised server access tools for a reachable server's
+structured `authorization_required` response. Resume when tools are available;
+never claim an audit ran without evidence.
+
 | Subject | First read | Review with |
 | --- | --- | --- |
 | UI Builder design | `ui_builder_get_design`, its home and revision, then `ui_builder_get_guidelines` when advertised | `ui_builder_guidelines_prompt`, judged with your own model; record through `ui_builder_record_guidelines` where allowed |
