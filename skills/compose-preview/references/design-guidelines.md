@@ -167,7 +167,12 @@ Do not manufacture an audit tab, query parameter or node deep link.
 The Compose Preview MCP App may offer **Review design guidelines** for its
 current subject. Clicking it requests the current chat agent's review; it
 does not run an OpenRouter check directly. Treat its subject and overrides as
-review inputs, discover the actual tools, and follow this checklist. When
+review inputs, discover the actual tools, and follow this checklist. Preserve
+the selected overrides: a prompt or published report for the base render does
+not review a locale, font-scale or device variant. If the guidelines prompt
+cannot accept that variant, inspect its actual render and relevant data with
+the catalog rules, and report any missing source or checks as partial coverage.
+When
 message delivery is unavailable, the viewer offers a request to copy into
 chat. Never promise that this action exists on an older deployment or that
 its presence means an audit result has been displayed in the app.
