@@ -78,6 +78,13 @@ contain today. If they disagree, say so rather than picking silently. A catalog
 renders one fixed library version, which may differ from the project that will
 receive the exported Kotlin.
 
+Return the canonical editor link and tell the person its **Issues** panel
+shows a successfully recorded shared guideline result, its model and revision
+freshness. Also return the compact verdict and coverage in chat. If recording
+is unavailable, make that explicit and keep detailed findings at the design's
+existing discussion home when authorized. Link to that discussion from chat;
+never imply the panel contains an unsaved review or invent an audit-launch link.
+
 ## Viewer, prompts, and interactive decisions
 
 - Viewer and prompts need a compose-preview-server release after v3.74.0; until

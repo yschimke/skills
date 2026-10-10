@@ -141,6 +141,70 @@ measured touch-target, contrast and large-font clipping results over a model's
 picture estimates, while preserving their measurement limitations. When
 source or measurements cannot establish a structure rule, report it unchecked.
 
+## Show the review and offer another run
+
+Always return a compact review in chat, including when an MCP App or shared
+editor shows the same result. Name the reviewed subject and revision/render,
+verdict, answered/asked and unchecked counts, model, freshness and where the
+result is saved. For subjects without a recorded home, show important findings with their
+rule IDs and evidence links. For a design with a home, keep detailed findings
+and discussion at that home when publishing is authorized: server comments
+for a server home, its linked PR or issue for a repo home. In chat, return
+the compact verdict, coverage and home/thread links instead of repeating the
+findings. If access prevents publishing, report that limitation and the
+intended destination; do not move the design discussion to chat. A viewer being open, an audit request being sent, or empty findings
+without coverage does not mean the review passed.
+
+For a requested accessibility or layout audit, prefer one `render_preview`
+call with `details: ["a11y", "layout"]` when its advertised schema supports
+those values and both are relevant. The MCP viewer can show the measured
+findings, accessibility overlay and layout bounds. A model guideline review
+is separate: do not label those measurements as its verdict, and fetch the
+full advertised data products when the render returns only a summary.
+
+For UI Builder, reuse or save the requested guidelines record as described
+above, then return the canonical editor URL supplied by the design identity.
+Tell the person its **Issues** panel shows the shared result, model and stale
+revision status. If the review could not be saved, say so and keep detailed
+findings at the design's existing discussion home when authorized; a link to
+the editor does not prove they were recorded.
+Do not manufacture an audit tab, query parameter or node deep link.
+
+The Compose Preview MCP App may offer **Review design guidelines** for its
+current subject. Clicking it requests the current chat agent's review; it
+does not run an OpenRouter check directly. Treat its subject and overrides as
+review inputs, discover the actual tools, and follow this checklist. Preserve
+the selected overrides: a prompt or published report for the base render does
+not review a locale, font-scale or device variant. If the guidelines prompt
+cannot accept that variant, inspect its actual render and relevant data with
+the catalog rules, and report any missing source or checks as partial coverage.
+When message delivery is unavailable, the viewer offers a request to copy into
+chat. Never promise that this action exists on an older deployment or that
+its presence means an audit result has been displayed in the app.
+
+For a UI Builder subject, an updated viewer may also offer **Show saved
+review** when `ui_builder_get_guidelines` is advertised. It reads the shared
+result on demand and shows findings, model, rules version, reviewed/current
+revisions and answered/unchecked coverage. This is a saved result, not a new
+audit; stale, missing and denied results must remain explicit. Local preview
+verdicts are not UI Builder records and do not use this action.
+
+Without an interactive app (non-interactive clients, static cards or chat-only
+clients), return the same compact review with real image/artifact links or file
+paths. Subjects without a recorded home can include findings directly; designs
+with a home return verdict, coverage and home/thread links, preserving the
+discussion at its existing destination. If a follow-up audit would be useful, give a runnable prompt naming
+the subject and missing checks, for example:
+
+> Review ListScreenPreview against the Wear catalog guidelines using your
+> own model. Inspect the watch and unrolled views and measured accessibility.
+> Report failures, unchecked rules and evidence links without editing the UI.
+
+Offer commands only for tools available to this project. Do not present a
+browser link as an audit launch unless the server actually supplies that
+capability. Offer provider-backed commands only when a key and budget are
+explicitly configured; ordinary agent review uses the keyless path.
+
 ## Return a compact review
 
 - Verdict: `pass`, `pass with notes`, `fail`, or `partial review` when required
