@@ -59,6 +59,18 @@ Before finishing, validate when possible, obtain the final editor view, and
 check for unread or unacknowledged comments at the design's home. Report any
 capability that prevented one of those checks.
 
+## Review design guidelines
+
+When asked to review a design, follow the shared
+[catalog guidelines checklist](../compose-preview/references/design-guidelines.md).
+It ships beside this skill in the default bundle and works without a reviewer
+agent or an OpenRouter key. Use advertised `ui_builder_guidelines_prompt`,
+`ui_builder_get_guidelines` and `ui_builder_record_guidelines` tools; preserve
+the prompt's revision and rules version, inspect its required pictures and
+report unanswered rules. Recording a requested review is metadata at the home,
+not an edit to nodes or a human approval. Keep model warnings advisory and
+measured schema/accessibility checks separate.
+
 **Working with platform skills.** When an official platform skill is loaded
 (for example Android's Wear Compose Material 3 skill), it decides which
 components and APIs are right. The builder's catalog decides what a design can
