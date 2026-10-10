@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.11](https://github.com/yschimke/skills/compare/v0.1.10...v0.1.11) (2026-10-10)
+
+
+### Features
+
+* guide audit presentation and review actions across hosts ([#136](https://github.com/yschimke/skills/issues/136)) ([7c5914e](https://github.com/yschimke/skills/commit/7c5914ee7ea464f009122fd07df2686be1c912a7))
+
+
+### Bug Fixes
+
+* route hosted reviews without local bootstrap ([#137](https://github.com/yschimke/skills/issues/137)) ([1ba5744](https://github.com/yschimke/skills/commit/1ba5744ab5c00e193f17ba24598c6685db94f448))
+
 ## [0.1.10](https://github.com/yschimke/skills/compare/v0.1.9...v0.1.10) (2026-10-05)
 
 
