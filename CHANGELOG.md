@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.10](https://github.com/yschimke/skills/compare/v0.1.9...v0.1.10) (2026-10-05)
+
+
+### Bug Fixes
+
+* code quality sweep of scripts and docs ([a03713c](https://github.com/yschimke/skills/commit/a03713c6a9709ff2be81e13788d313a39289330e))
+* **install:** parse the JDK major past JAVA_TOOL_OPTIONS noise ([7d29db6](https://github.com/yschimke/skills/commit/7d29db6127d55f30eccc8bf3cf702c40873ec2b2))
+* **review:** fail fast when the audit sample MCP reader dies ([fda414e](https://github.com/yschimke/skills/commit/fda414ea354878c58a5660b073a8796847747607))
+* **scripts:** compare generated bundles byte-for-byte ([d54594b](https://github.com/yschimke/skills/commit/d54594b40e1692af63e21f54c1c85eeb6807de5a))
+
 ## [0.1.9](https://github.com/yschimke/skills/compare/v0.1.8...v0.1.9) (2026-10-05)
 
 
