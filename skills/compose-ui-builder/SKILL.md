@@ -1,6 +1,6 @@
 ---
 name: compose-ui-builder
-description: Author and edit a Compose UI design over MCP against a compose-preview serve deployment — create a screen or a Wear widget, insert and edit nodes, and export the Kotlin, PNG or SVG. Also use when no host exists and the builder must be run locally (ui-builder --no-project). Use when asked to build, change, or review a UI Builder design (a URL like /ui-builder/catalog/design-id), to turn a design into Compose code, or to collaborate with a designer on one.
+description: Open and edit checked-in .uid designs, compare real renders against references, and implement them in application code. Author and edit a Compose UI design over MCP against a compose-preview serve deployment — create a screen or a Wear widget, insert and edit nodes, and export the Kotlin, PNG or SVG. Also use when no host exists and the builder must be run locally (ui-builder --no-project). Use when asked to build, change, or review a UI Builder design (a URL like /ui-builder/catalog/design-id), to turn a design into Compose code, or to collaborate with a designer on one.
 ---
 
 # Compose UI Builder
@@ -12,10 +12,11 @@ exported as Compose Kotlin (or PNG/SVG). A person edits it in the browser at
 server's MCP endpoint. Both land in one revision log, so you and a designer can
 work on the same design at the same time.
 
-This is **not** the `compose-preview` renderer. That renders `@Preview`
-functions from a checkout you can build. This authors a design that has no
-checkout at all, on someone else's server, and hands you Kotlin at the end. If
-you have the repo and the composable already exists, you want **compose-preview**.
+A design can also live in a checked-in `.uid` file. For a repository design,
+inspect its schema and follow [the local design-to-code workflow](references/local-design-to-code.md):
+edit the canonical file, compare real design renders with references, adapt
+exported Kotlin into the application, then render the affected `@Preview`s.
+Use `compose-preview` alongside this skill when a composable already exists.
 
 Maintained at [github.com/yschimke/skills](https://github.com/yschimke/skills)
 under `skills/compose-ui-builder/`. The server ships from
@@ -27,8 +28,9 @@ its human-facing guide is
 
 These rules apply before the creation and editing recipes below:
 
-1. **Work at the recorded home.** For an existing design, start with
-   `ui_builder_get_design` and read its `home`. A server-homed design is edited
+1. **Work at the recorded home.** For an existing server design, start with
+   `ui_builder_get_design` and read its `home`. For a checked-in `.uid`, read
+   the file and its recorded home first; a server lookup is not required. A server-homed design is edited
    on that server; a repo-homed design is edited at its recorded `.uid` path.
    Do not export a server design, edit the copy locally, and re-import it. If
    the response does not yet contain `home`, say that the canonical home cannot
