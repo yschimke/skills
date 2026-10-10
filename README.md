@@ -35,7 +35,10 @@ terminal afterwards. To update: `compose-preview update` updates the CLI (and
 PATH), and `npx skills update` updates the skills.
 
 The default is two skills: `compose-preview` (render, inspect, CLI and MCP)
-and `compose-ui-builder` (author designs over MCP). Every installed skill's
+and `compose-ui-builder` (author designs over MCP). Both route requested design
+reviews to the [catalog guidelines checklist](skills/compose-preview/references/design-guidelines.md),
+including keyless agent review and coverage reporting; no optional review bundle
+or provider key is needed for that workflow. Every installed skill's
 description loads into each agent session, so the rest are opt-in. Add them
 by name with another `--skill` (for example `--skill compose-preview-review
 --skill compose-preview-ci`), or drop the `--skill` flags to pick from the

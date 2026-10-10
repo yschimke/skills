@@ -1,6 +1,6 @@
 ---
 name: compose-preview
-description: Render a Jetpack Compose or Compose Multiplatform @Preview to PNG in one call (MCP render_preview, or the compose-preview CLI) and look at it. Use whenever someone asks to render, show, or see what a composable, @Preview or Compose component looks like (including library components such as Material 3 or Wear M3 EdgeButton, which come from the hosted catalog), after editing Compose UI to verify it, and to compare before/after.
+description: Render a Jetpack Compose or Compose Multiplatform @Preview to PNG in one call (MCP render_preview, or the compose-preview CLI) and look at it. Use whenever someone asks to render, show, or see what a composable, @Preview or Compose component looks like (including library components such as Material 3 or Wear M3 EdgeButton, which come from the hosted catalog), after editing Compose UI to verify it, to compare before/after, or to review previews against catalog design guidelines.
 ---
 
 # Compose Preview
@@ -11,6 +11,11 @@ Robolectric, CMP Desktop via Skia). CLI, Gradle plugin and renderers ship from
 from [compose-preview-server](https://github.com/yschimke/compose-preview-server).
 
 ## Render first
+
+For a request to render or show a preview, follow the short loop below. For a
+requested guidelines review, use
+[the review checklist](./references/design-guidelines.md) to choose the local,
+hosted or UI Builder lane before invoking tools.
 
 With the local MCP server attached (compose-preview-server 3.78.0+), its
 `initialize` instructions say how to call it: `render_preview
@@ -58,13 +63,24 @@ only. Fetch pixels only for the final screen or the cells whose hash moved,
 or that you must judge by eye: one `render_preview` per such cell (its
 `overrides` or `uri`, `inline=false`) and one read of its `pngPath`.
 
+**Design guidelines review.** When asked to review a preview or catalog design
+against Android design guidance, read
+[design-guidelines.md](./references/design-guidelines.md). It covers keyless
+agent review, published results and CLI fallback, including explicit surface
+selection, required pictures and incomplete coverage. It is in the default
+skill bundle; the optional PR-review bundle is not required.
+
 **Hand multi-render reviews to `design-reviewer`.** If a `design-reviewer`
 subagent is available (the compose-agent-plugins plugins ship one), delegate
 accessibility, font-scale, round-device and other matrix checks to it so the
-images stay out of your context, and relay its verdict and paths. Without one,
-run the sweep yourself as above. Never ask for `contactSheet: true` in your
-own context: the sheet puts every cell's pixels there at once, and a variant
-grid sends one unless you pass `false`.
+images stay out of your context, and relay its verdict and paths. Give it the
+subject, home/revision, catalog rules and requested coverage. Without one, run
+the same checklist yourself and report that delegation was unavailable.
+For a routine hash sweep, keep `contactSheet: false`. A requested visual
+guidelines comparison needs pixels: inspect its required frames even in your
+own context when no reviewer exists. Prefer only the relevant individual
+images or a bounded comparison sheet, and never claim visual coverage from
+hashes alone.
 
 **After a source edit**, call `render_preview` again. `notify_file_changed` is
 optional. **If the result says it is stale**, make exactly one more call with
