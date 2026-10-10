@@ -51,6 +51,17 @@ where it actually is rather than where the code is.)
   `github-actions[bot]` / `renovate[bot]` are exempt bot accounts. `GitHub <noreply@github.com>` is
   the committer of every squash merge. None of these is ever a finding.
 
+## PR notifications
+
+- **Subscribe to PR notifications by default.** After opening or updating a PR,
+  check the signed-in GitHub account's thread subscription. If it is already
+  `SUBSCRIBED`, keep it; otherwise subscribe when the connection supports it,
+  then verify the state. If subscription reads or writes are unavailable, state
+  that limitation in the PR instead of claiming success. Before pushing and
+  before finishing, check every PR you opened or actively drive for unresolved
+  human and automated review comments. A GitHub subscription does not keep an
+  agent session running or provide background monitoring by itself.
+
 ## Review guidelines
 
 - **Do not report commit author, committer or `Co-authored-by:` findings.** Your review sandbox
