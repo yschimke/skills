@@ -13,7 +13,7 @@ server's MCP endpoint. Both land in one revision log, so you and a designer can
 work on the same design at the same time.
 
 A design can also live in a checked-in `.uid` file. For a repository design,
-follow [the local design-to-code workflow](references/local-design-to-code.md):
+inspect its schema and follow [the local design-to-code workflow](references/local-design-to-code.md):
 edit the canonical file, compare real design renders with references, adapt
 exported Kotlin into the application, then render the affected `@Preview`s.
 Use `compose-preview` alongside this skill when a composable already exists.

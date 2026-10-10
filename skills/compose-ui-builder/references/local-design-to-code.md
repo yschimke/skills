@@ -1,7 +1,15 @@
 # From a checked-in design to application code
 
-Use this workflow for a repository `.uid` file, including an existing screen
-that already has a composable. The design remains canonical at its recorded
+Use this render/export workflow for a repository `.uid` containing an editor
+DesignDocumentV1, including an existing screen with a composable. Inspect the
+schema first: `.uid` is also used for production contracts
+(`compose-ui-builder-production/v1-candidate`). The editor can open production
+layouts while preserving their declarations, but the CLI's `--document` lane
+accepts DesignDocumentV1, not a production envelope. Use the project's
+registered build-generation lane for a production contract; do not strip its
+API, model, state or action declarations to make this recipe work. Model-only
+production files have no visual layout. See
+[the production contract](https://github.com/yschimke/compose-ui-builder/blob/main/docs/design/UI_BUILDER_BUILD_GENERATION.md). The design remains canonical at its recorded
 repository path; source code and preview artifacts are linked implementation
 and evidence.
 
@@ -44,7 +52,7 @@ and evidence.
 
    ```sh
    compose-preview design export --local --document ui-builder/designs/home.uid \
-     --format kotlin -o generated/HomeScreen.kt
+     -o generated/HomeScreen.kt
    ```
 
    Include required component records here too. Review generator diagnostics;
