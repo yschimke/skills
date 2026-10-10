@@ -172,6 +172,13 @@ message delivery is unavailable, the viewer offers a request to copy into
 chat. Never promise that this action exists on an older deployment or that
 its presence means an audit result has been displayed in the app.
 
+For a UI Builder subject, an updated viewer may also offer **Show saved
+review** when `ui_builder_get_guidelines` is advertised. It reads the shared
+result on demand and shows findings, model, rules version, reviewed/current
+revisions and answered/unchecked coverage. This is a saved result, not a new
+audit; stale, missing and denied results must remain explicit. Local preview
+verdicts are not UI Builder records and do not use this action.
+
 Without an interactive app (CLI, OpenCode, Claude Code, static cards or chat
 integrations), return the same review with real image/artifact links or file
 paths. If a follow-up audit would be useful, give a runnable prompt naming
