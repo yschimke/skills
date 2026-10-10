@@ -14,8 +14,10 @@ CLI/MCP commands, and asserts the expected data-product output shapes.
 
 Use the [catalog guidelines checklist](https://github.com/yschimke/skills/blob/main/skills/compose-preview/references/design-guidelines.md#show-the-review-and-offer-another-run)
 for result presentation across hosts, even for a focused measured audit.
-Return the subject, checks run, findings, unchecked coverage and real evidence
-links in chat. A measured audit has no judging model unless a model review also
+Return the subject, checks run, unchecked coverage and real evidence links in
+chat. For subjects without a recorded home, include findings directly. For
+designs with a home, keep detailed findings and discussion there when authorized
+and return verdict, coverage and home/thread links instead of duplicating them. A measured audit has no judging model unless a model review also
 ran. In app-capable hosts, request the supported render details for the checks
 being audited; in UI Builder, distinguish saved shared guideline results from
 accessibility measurements. If another run is useful, give a prompt naming the
