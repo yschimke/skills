@@ -2,5 +2,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>yschimke/renovate-config"
-  ]
+  ],
+  "description": "`platformAutomerge` hands the minor/patch/digest/pin bumps the shared preset automerges to GitHub's native auto-merge, which lands them the moment the checks the `Protect Main` ruleset requires report green (yschimke/renovate-config `repo-policy/`), instead of on Renovate's next run. The preset leaves it false because some repositories that extend it have no required checks.",
+  "platformAutomerge": true
 }
