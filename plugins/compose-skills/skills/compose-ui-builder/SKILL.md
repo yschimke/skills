@@ -174,8 +174,10 @@ Before creating or editing anything, orient yourself:
 
 **Read [references/m3-catalog.md](./references/m3-catalog.md) rather than
 calling `ui_builder_list_catalogs` to find out what to insert.** It carries the
-component ids, slot names, required properties and enum values for the two
-published catalogs, which is what an insert needs. `list_catalogs` is the
+component ids, slot names, required properties and enum values for
+`m3-catalog`, and the pins for every catalog, which is what an insert needs. A
+Wear app screen uses [wear-m3-catalog.md](./references/wear-m3-catalog.md) and
+a Wear widget [remote-m3-catalog.md](./references/remote-m3-catalog.md). `list_catalogs` is the
 authority and answers with far more — every component's parameters, adapter and
 parity statuses — so reach for it when something is missing from the reference
 file, and reduce it with the recipe at the bottom of that file.
@@ -455,7 +457,7 @@ that, not a bug — ask again the same way.
 `create_design` takes either `fromDesignId` (copy an existing design) or a whole
 `document`. Copying is safer *if you can see a design to copy* — but a fresh
 grant usually sees none (`list_designs` shows only what your actor owns or was
-shared), so you will be writing a document. These two are verified against the
+shared), so you will be writing a document. These three are verified against the
 live server; the only fields you should change are the ids, the title and the
 environment.
 
@@ -494,11 +496,35 @@ environment.
 }
 ```
 
+**A Wear OS app screen** (`wear-m3`) — a round frame, a `screen-scaffold`
+root whose `content` takes one child (usually a
+`wear-m3/transforming-lazy-column`), and **no fixed pin**: `wear-m3` has no
+`candidate` alias, so copy the whole `catalogPin` object from the `wear-m3`
+entry of `ui_builder_list_catalogs`. The values below are what preview.coo.ee
+served on 2026-10-11 and change with each catalog release:
+
+```json
+{
+  "schema": "compose-ui-builder-document/v1-candidate",
+  "id": "<designId>", "title": "<title>", "revision": 0,
+  "catalogPin": {"systemId": "wear-m3",
+                 "catalogRevision": "sha256:b37fb7ace974e9cd4b5a068d623487fe",
+                 "capabilityDigest": "candidate",
+                 "nativeRuntimeId": "wear-m3-p2-a70b6f2e1a9e"},
+  "environment": {"widthDp": 227, "heightDp": 227, "density": 2, "theme": "dark",
+                  "locale": "en-US", "fontScale": 1, "layoutDirection": "ltr"},
+  "roots": ["root"],
+  "nodes": {"root": {"id": "root", "componentId": "wear-m3/screen-scaffold",
+                     "properties": {}, "slots": {"content": []}}}
+}
+```
+
 The `catalogPin` is checked against what the server actually serves, and a pin
-you invent is refused — which is why there is no "blank template" argument on
-the tool. If a pin above stops working, read the current one out of
-`list_catalogs`'s `benchmark` (`catalogSystemId`, `catalogRevision`,
-`nativeRuntimeId`) and use `"candidate"` for `capabilityDigest`.
+you invent is refused (`catalogUnavailable`) — which is why there is no "blank
+template" argument on the tool. If a pin above stops working, copy the
+catalog's `catalogPin` from `ui_builder_list_catalogs` unchanged. Run
+`ui_builder_check_design` with the `document` before `create_design`: it
+reports a refused pin without creating anything.
 
 ## The vocabulary
 
@@ -546,6 +572,33 @@ that column describes the JSON shape rather than the meaning:
   choice when you want the design to follow the theme.
 - **A dimension is a `float`**, in dp, and the property name says so
   (`sizeDp`, `verticalSpacingDp`, `shapeDp`).
+
+**Edits name the node by id.** Besides `insertNode`, the operations an edit
+loop uses are these (all verified against 3.121.0):
+
+```json
+{"type": "setProperty", "nodeId": "signin", "property": "style",
+ "value": {"type": "enum", "value": "filledTonal"}}
+{"type": "setProperty", "nodeId": "title", "property": "style", "value": {"type": "null"}}
+{"type": "removeNodeProperty", "nodeId": "title", "property": "style"}
+{"type": "deleteNode", "nodeId": "email"}
+{"type": "moveNode", "nodeId": "title",
+ "location": {"parent": {"nodeId": "col", "slot": "children"}, "afterNodeId": "signin"}}
+```
+
+- `setProperty` sets one property and leaves the others alone. Its `value` is
+  wrapped like an inserted one.
+- A `{"type": "null"}` value, or `removeNodeProperty`, unsets a property: the
+  way back after trying one. Unsetting a required property (`m3/button`'s
+  `style`) is refused, naming the node and the field.
+- `deleteNode` removes the node and everything in its slots.
+- `moveNode` takes the same `location` as an insert.
+
+To swap a component for another (a filled field for an outlined one), delete
+the node and insert the new one at the same `location` in the same `apply`
+call. To try a batch first, pass the same `operations` to
+`ui_builder_check_design` with `designId` and `baseRevision`: it applies them to
+a scratch copy and saves nothing.
 
 **Modifiers are a typed list**, replaced wholesale by `setModifiers`:
 
@@ -712,7 +765,14 @@ use the browser route below and say that the MCP lacks them.
    layer it falls in. Add `nodeIds` for the layers you want to line up: each
    comes back with where it sits in the reference, the `alignment` (move, size,
    font size) and the exact `operations` for `ui_builder_apply`. Matching layers
-   needs the native render, which needs the `ui-builder-export` grant.
+   needs the native render, which needs the `ui-builder-export` grant **and** a
+   host that compiles the pinned catalog. `renderer` defaults to `native`
+   whenever `nodeIds` is given, so on a host without one (`NO_NATIVE_CATALOG`;
+   preview.coo.ee has none for `m3-catalog` as of 3.121.0) the call fails, and
+   with `renderer: "export"` each layer comes back with no operations. There,
+   measure with `differences` alone (it uses the PNG export), read the regions
+   and their layers, write the alignment yourself, and say that layer matching
+   was not available.
 6. **Apply what you agree with** through `ui_builder_apply` (quote the current
    `baseRevision`), one layer or a few at a time so collaborators see progress,
    then compare again — a layer that lines up reports `alreadyAligned` — and
