@@ -108,7 +108,9 @@ track the upstream CLI, not this plugin.
 ## What not to do
 
 - Don't add CI, build tooling, or Gradle config here — this is a content
-  repo. The one exception is `scripts/generate-bundles.py` (stdlib Python)
-  and its `--check` step in CI. CI, packaging, and the renderer live in `compose-ai-tools`.
+  repo. The exceptions are `scripts/generate-bundles.py` (stdlib Python)
+  and its `--check` step in CI, and the merge-policy checks shared with the
+  sibling repositories (the PR-title and agent-attribution workflows, their
+  scanner and tests, and the `.githooks`). CI, packaging, and the renderer live in `compose-ai-tools`.
 - Don't rename existing skill directories "for consistency" without a
   concrete reason; renames break user references and bundled installs.
