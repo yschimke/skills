@@ -56,9 +56,14 @@ Recommended rationale:
 | `ziglang.org` | Zig toolchain used by some native cross-compilation paths |
 | `*.java.net` | OpenJDK and related Java ecosystem downloads |
 | `central.sonatype.com` | Maven Central (Sonatype) artifacts |
-| `bb.staticvar.dev` | build-brief install script (`install.sh`) |
-| `github.com` | build-brief release download URLs (redirect to asset host) |
-| `objects.githubusercontent.com` | GitHub release asset binaries (build-brief tarball) |
+| `bb.staticvar.dev` | build-brief install script (fallback when the GitHub release download is blocked) |
+| `github.com` | Skill and CLI release downloads (redirect to the asset host) |
+| `objects.githubusercontent.com` | GitHub release asset binaries |
+
+The coo.ee bootstrap below also needs `env.coo.ee` and its Nix hosts
+(`install.determinate.systems`, `cache.nixos.org`, `channels.nixos.org`). You
+don't have to work the list out in advance: it checks every host it needs and
+prints any that are blocked.
 
 ### 2) Toolchain prerequisites
 
@@ -97,72 +102,47 @@ If anything is missing, agents should stop and provide exact remediation steps.
 
 ## Generic setup script (cloud bootstrap)
 
-Use this in environment setup hooks / startup scripts:
+Use one line in the environment's setup script or startup hook:
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
+curl -fsSL https://env.coo.ee/compose | bash
+```
 
+[coo.ee/env](https://github.com/yschimke/coo-ee-env) provisions what a
+Compose preview workflow needs in any agent's shell:
+
+- **The JDK the project pins** for Gradle (`toolchainVersion` in
+  `gradle/gradle-daemon-jvm.properties`), else 17 + 21, with the sandbox
+  proxy's CA trusted by the JVM and by Chromium.
+- **A complete Android SDK.** Request specific platforms with
+  `android[36,37.0]`; the package for `compileSdk = 37` is `37.0`.
+- **The native libraries Compose Desktop previews load**, such as `libGL`.
+- **The `compose-preview` skill**, linked into each agent's skills directory.
+- **[`build-brief`](https://github.com/static-var/build-brief)** for Gradle
+  builds, plus a usage guide written to each agent's global rules file.
+
+Before installing, it probes every host it needs. If any is blocked, it
+prints the exact hosts to allow and stops, so the environment is never left
+half-installed. Re-running it is a no-op, so a session-start hook can call it
+every time.
+
+Without Nix, or to install only the CLI and skills, use the canonical
+installer instead:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
-  | bash -s -- --android-sdk
-
-
-
-# Optional: set git identity only when explicitly provided by the user.
-# : "${GIT_USER_NAME:?Set GIT_USER_NAME to your human git author name}"
-# : "${GIT_USER_EMAIL:?Set GIT_USER_EMAIL to your human git author email}"
-# git config --global user.name "$GIT_USER_NAME"
-# git config --global user.email "$GIT_USER_EMAIL"
+  | bash -s -- --android-sdk          # add --jdk 17,21 for several JDK majors
 ```
 
-Notes:
+Its `--android-sdk` installs `cmdline-tools`, `platforms;android-36`,
+`platform-tools` and `build-tools;36.0.0`, plus `platforms;android-37.0` on a
+best-effort second pass (override with `ANDROID_SDK_PACKAGES` /
+`ANDROID_SDK_EXTRA_PACKAGES`). It never reinstalls a JDK found under
+`/usr/lib/jvm/` or `/opt/jdk<major>`. It does not install `build-brief`; add
+`curl -fsSL https://bb.staticvar.dev/install.sh | bash` for that.
 
-- `--android-sdk` ensures Android preview dependencies are present:
-  `cmdline-tools`, `platforms;android-36`, `platform-tools` and
-  `build-tools;36.0.0`, plus `platforms;android-37.0` on a best-effort
-  second pass (the alpha Compose/Wear artifacts build at `compileSdk = 37`;
-  note the package is `android-37.0` — `android-37` does not exist and fails
-  the `sdkmanager` invocation it appears in). Override the list with
-  `ANDROID_SDK_PACKAGES` / `ANDROID_SDK_EXTRA_PACKAGES`. Only missing
-  packages are fetched, so re-running on a warm container is cheap, and the
-  resolved path is recorded as `sdk.dir` in the project's (gitignored)
-  `local.properties`.
-- Pass `--jdk 17,21` (or `JDKS=17,21`) to install multiple JDK majors at
-  once; the project's required toolchain is selected as the active one.
-- The JDK step never re-installs a JDK the container already has: it looks
-  under `/usr/lib/jvm/` and `/opt/jdk<major>` (where tarball installers such
-  as compose-ai-tools' `scripts/setup-cloud-jdk.sh` put Temurin) before
-  reaching for `apt-get`, and if apt can't provide one it warns and carries
-  on rather than aborting the `--android-sdk` work, which doesn't depend on it.
-- Keep this script provider-neutral; it works in any agent's shell.
-- Do **not** hardcode `git config --global user.name/user.email`; only set identity from explicit user-provided values.
-
-### Also install build-brief (`bb`) for Gradle builds
-
-[build-brief](https://github.com/static-var/build-brief) is a small Go CLI
-that wraps `gradle`/`./gradlew`, keeps the full raw log on disk, and trims
-terminal output to the parts that matter (failed tasks/tests, warnings,
-build-scan URLs, final status) while preserving Gradle's exit code. It cuts
-the token cost of running Gradle builds in an agent loop dramatically, so
-install it alongside compose-preview whenever the environment runs Gradle.
-
-```bash
-# Linux/macOS — downloads the matching release tarball from GitHub.
-curl -fsSL https://bb.staticvar.dev/install.sh | bash
-```
-
-The installer reads release metadata from `api.github.com`, resolves the
-`browser_download_url` on `github.com`, and pulls the verified tarball from
-`objects.githubusercontent.com` — all on the allowlist above. It is a
-self-contained Go binary, so it needs **no** JDK of its own; the JDK and
-Gradle hosts already listed cover the builds it wraps.
-
-Verify with:
-
-```bash
-build-brief --help
-build-brief gradle --version
-```
+Whichever you use, never hardcode `git config --global user.name/user.email`
+in a setup script. Set an identity only from values the user provided.
 
 ## Known cloud-sandbox gotchas
 
