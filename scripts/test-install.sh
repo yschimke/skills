@@ -433,6 +433,35 @@ write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS= JAVA_HOME=/jdk17
 write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS= JAVA_HOME=/jdk17
 check "a full install pins JAVA_HOME once, quoted" "JAVA_HOME='/jdk17'" "$(grep '^JAVA_HOME=' "$EF")"
 
+# Under the installer's own `set -e`: a file holding only the key being
+# replaced (grep -v keeps nothing and exits 1) must not abort the install.
+printf '%s\n' "JAVA_HOME=/old" > "$EF"
+check "replacing the only line in the file survives set -e" "0" \
+  "$(env -u https_proxy -u http_proxy -u HTTP_PROXY AGENT_CLOUD_HOST=claude CLAUDE_ENV_FILE="$EF" \
+      BIN_DIR=/opt/cp/bin INSTALL_ANDROID_SDK=0 CLI_ONLY=0 JAVA_HOME=/jdk17 JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=x \
+      bash -c 'set -euo pipefail; source "$1"; log() { :; }; maybe_write_env_file; echo $?' _ "$WORK/functions.sh")"
+printf '%s\n' "JAVA_TOOL_OPTIONS=-Da -Db" > "$EF"
+check "dropping the only (bare) line survives set -e" "0" \
+  "$(env -u https_proxy -u http_proxy -u HTTP_PROXY AGENT_CLOUD_HOST=claude CLAUDE_ENV_FILE="$EF" \
+      BIN_DIR=/opt/cp/bin INSTALL_ANDROID_SDK=0 CLI_ONLY=1 JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=x \
+      bash -c 'set -euo pipefail; source "$1"; log() { :; }; maybe_write_env_file; echo $?' _ "$WORK/functions.sh")"
+check "...and the bare line is gone" "" "$(grep '^JAVA_TOOL_OPTIONS=' "$EF")"
+rm -f "$EF"
+write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=x "JAVA_HOME=/tmp/user's/jdk"
+check "a JAVA_HOME with an apostrophe sources back intact" "/tmp/user's/jdk" \
+  "$(bash -c 'source "$1" 2>/dev/null; printf %s "$JAVA_HOME"' _ "$EF")"
+
+# An unreadable env file is left alone, not replaced by a copy holding only
+# the new line. (Root reads mode 000 files, so only meaningful as non-root.)
+if [[ $EUID -ne 0 ]]; then
+  printf '%s\n' "KEEP=me" "JAVA_HOME=/old" > "$EF"; chmod 000 "$EF"
+  write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=x JAVA_HOME=/jdk17 >/dev/null 2>&1
+  chmod 600 "$EF"
+  check "an unreadable env file keeps its other entries" "KEEP=me" "$(grep '^KEEP=' "$EF")"
+fi
+check "grep_v_into treats an unreadable file as a failure" "1" \
+  "$(bash -c 'source "$1"; grep_v_into x /nonexistent/file "$2" 2>/dev/null; echo $?' _ "$WORK/functions.sh" "$WORK/tmpout")"
+
 # ---- the script itself parses ---------------------------------------------
 
 bash -n "$INSTALL_SH" 2>"$WORK/syntax.err"
