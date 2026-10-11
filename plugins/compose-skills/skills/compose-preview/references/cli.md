@@ -26,6 +26,12 @@ Commands:
   list     List discovered previews
   render   Render previews; with --output copies a single match to disk
   a11y     Render previews and print ATF accessibility findings
+  review   Review previews against the catalog's design guidelines with your
+           own model: writes each request to build/compose-previews/review/
+           <id>/request.md, reads <id>/reply.json on the next run. Exits 3
+           while replies are missing (2.46.0+; see design-guidelines.md)
+  guidelines  The same check through OpenRouter, with a key from
+           COMPOSE_PREVIEW_OPENROUTER_KEY or `guidelines key set`
   extensions run a11y-annotated-preview.render
            One-shot a11y hierarchy + ATF + annotated overlay render
   doctor   Verify Java 17+ + project compatibility (run before Setup)
@@ -57,6 +63,7 @@ in a TTY and auto-disables when stdout is piped. Textual progress lines are
 opt-in via `--progress`.
 
 Exit codes: `0` success, `1` build failure, `2` render failure, `3` no previews.
+`review` differs: `3` there means requests are waiting for replies.
 
 `--json` output per entry includes the full `PreviewParams` (device, widthDp,
 heightDp, fontScale, uiMode, …), the absolute `pngPath`, the `sha256` of

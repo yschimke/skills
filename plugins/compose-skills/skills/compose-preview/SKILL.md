@@ -69,8 +69,9 @@ or that you must judge by eye: one `render_preview` per such cell (its
 **Design guidelines review.** When asked to review a preview or catalog design
 against Android design guidance, read
 [design-guidelines.md](./references/design-guidelines.md). It covers keyless
-agent review, published results and CLI fallback, including explicit surface
-selection, required pictures and incomplete coverage. It is in the default
+agent review, published results and the CLI's `compose-preview review` loop,
+including explicit surface selection, required pictures and incomplete
+coverage. It is in the default
 skill bundle; the optional PR-review bundle is not required.
 
 **Hand multi-render reviews to `design-reviewer`.** If a `design-reviewer`
