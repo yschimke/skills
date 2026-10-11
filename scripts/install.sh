@@ -976,24 +976,33 @@ maybe_write_env_file() {
     path_line="PATH=$BIN_DIR:\$PATH"
   else
     path_line="PATH=$BIN_DIR:${JAVA_HOME:+$JAVA_HOME/bin:}${sdk_path}\$PATH"
-    [[ -n "${JAVA_HOME:-}" ]] && env_file_upsert "$env_file" JAVA_HOME "JAVA_HOME='$JAVA_HOME'"
-    [[ "$INSTALL_ANDROID_SDK" == 1 ]] && env_file_upsert "$env_file" ANDROID_HOME "ANDROID_HOME='$ANDROID_HOME'"
+    [[ -n "${JAVA_HOME:-}" ]] && env_file_upsert "$env_file" JAVA_HOME "JAVA_HOME=$(sh_squote "$JAVA_HOME")"
+    [[ "$INSTALL_ANDROID_SDK" == 1 ]] && env_file_upsert "$env_file" ANDROID_HOME "ANDROID_HOME=$(sh_squote "$ANDROID_HOME")"
   fi
   # PATH is double-quoted so `$PATH` still expands when the file is sourced.
   # Other hooks add their own PATH lines, so only an identical line is replaced.
   env_file_add_once "$env_file" "PATH=\"${path_line#PATH=}\""
-  [[ -n "$jto" ]] && env_file_upsert "$env_file" JAVA_TOOL_OPTIONS "JAVA_TOOL_OPTIONS='$jto'"
+  [[ -n "$jto" ]] && env_file_upsert "$env_file" JAVA_TOOL_OPTIONS "JAVA_TOOL_OPTIONS=$(sh_squote "$jto")"
   # Bare JAVA_TOOL_OPTIONS lines an earlier version of this script appended.
   env_file_drop_unquoted "$env_file" JAVA_TOOL_OPTIONS
   log "wrote env vars to $env_file"
   return 0
 }
 
+# VALUE single-quoted for a file that is sourced as shell: each embedded `'`
+# becomes `'\''`, so a path containing an apostrophe still parses.
+sh_squote() {  # sh_squote VALUE
+  local q="'\\''"
+  printf "'%s'" "${1//\'/$q}"
+}
+
 # Replace every `KEY=` line in FILE with LINE (appended), keeping all others.
+# grep -v exits 1 when it keeps no line (a file holding only KEY), which
+# `set -e` would turn into an aborted install, hence the `|| true`s here.
 env_file_upsert() {  # env_file_upsert FILE KEY LINE
   local file="$1" key="$2" line="$3" tmp
   tmp="$(mktemp "${file}.XXXXXX")" || { printf '%s\n' "$line" >> "$file"; return 0; }
-  [[ -f "$file" ]] && grep -v -- "^${key}=" "$file" > "$tmp"
+  if [[ -f "$file" ]]; then grep -v -- "^${key}=" "$file" > "$tmp" || true; fi
   printf '%s\n' "$line" >> "$tmp"
   mv -f "$tmp" "$file"
 }
@@ -1011,7 +1020,7 @@ env_file_drop_unquoted() {  # env_file_drop_unquoted FILE KEY
   local file="$1" key="$2" tmp
   [[ -f "$file" ]] && grep -q -- "^${key}=[^'\"][^ ]* " "$file" || return 0
   tmp="$(mktemp "${file}.XXXXXX")" || return 0
-  grep -v -- "^${key}=[^'\"][^ ]* " "$file" > "$tmp"
+  grep -v -- "^${key}=[^'\"][^ ]* " "$file" > "$tmp" || true
   mv -f "$tmp" "$file"
 }
 
