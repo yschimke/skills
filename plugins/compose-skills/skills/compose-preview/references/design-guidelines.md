@@ -37,7 +37,7 @@ never claim an audit ran without evidence.
 | UI Builder design | `ui_builder_get_design`, its home and revision, then `ui_builder_get_guidelines` when advertised | `ui_builder_guidelines_prompt`, judged with your own model; record through `ui_builder_record_guidelines` where allowed |
 | Local `@Preview`s | Existing `build/compose-previews/guidelines.json` and applicable catalog rules, if present | `preview_guidelines_prompt` on the local server, with explicit `surface` and a batch of `previews` |
 | Hosted catalog preview | `catalog_list_data_products`, then `catalog_get_preview_data` with `kind: "guidelines/result"` when listed | Inspect the published result and its render; use only review/render tools that this host advertises |
-| CLI without preview MCP | `compose-preview --help`, the module's rules and existing report | `compose-preview guidelines` when a model key is configured; otherwise read the rules, source, accessibility data and real renders yourself |
+| CLI without preview MCP | `compose-preview --help`, the module's rules and existing report | [`compose-preview review`](#cli-the-review-loop), judged with your own model; `compose-preview guidelines` only for a requested provider run with a key |
 
 Keep detailed discussion at the recorded home: server comments for a
 server-homed design, its linked PR or issue for a repo-homed design. Publishing
@@ -103,6 +103,59 @@ render/data tools and cite it; keep undecidable rules unchecked rather than
 passing them. Do not send preview verdicts to `ui_builder_record_guidelines`:
 that tool records UI Builder design verdicts, not preview results.
 
+### CLI: the review loop
+
+`compose-preview review` (compose-preview 2.46.0 and later; check
+`compose-preview help --all`) is the CLI's keyless lane. It renders the
+selection, batches it and writes each request a model would be sent to a file,
+so you judge it with your own model. It takes the same selection as `render`
+and `show` (`--module`, `--filter`, `--id`, `--changed-only`, `--id-file`) and
+the same `--surface` and `--guidelines` as `guidelines`:
+
+```sh
+compose-preview review --filter ListScreenPreview --surface screen \
+  --guidelines path/to/ui-builder.guidelines.json --annotate
+```
+
+Run it, then repeat until it exits `0`:
+
+1. **Exit `3`: requests are waiting.** It lists each
+   `build/compose-previews/review/<id>/request.md`. Exit `3` here means waiting
+   for replies, not "no previews" as it does for `render` and `show`.
+2. **Answer each request.** Read its instructions, request and rules, look at
+   every picture it lists (`picture-N.png` beside it), and write only the JSON
+   reply its schema asks for to `reply.json` in the same directory. Keep its
+   subject ids (`s1`), picture numbers and the node ids it supplies. List only
+   rules that do not pass, then the `others` entry per subject (and one with
+   `subjectId: null` for set rules) that the request asks for. A rule with
+   neither is reported unchecked.
+3. **Ask for evidence, don't fetch it.** When a rule needs accessibility
+   data, source or another render and the request lists that kind as
+   available, answer `needs_evidence` with it in `needs`. The next run fetches
+   it and writes a follow-up request carrying it, for that preview and rule
+   only. Judging touch targets or contrast by eye when `a11y` is offered is the
+   mistake this avoids.
+4. **Run the same command again.** Each `request.md` names it. The run reads
+   the replies through the same checks as a model's, writes any follow-ups,
+   and exits `3` again until every rule is decided or left unchecked.
+
+With several requests, hand each to a subagent with only its `request.md`
+path; it reads the pictures and writes `reply.json`, so the renders stay out
+of your context. Keep the selection and flags identical between runs: requests
+are named by a hash of what they ask, so a different selection makes new ones
+and the old replies are not read. Do not edit `request.md`, the pictures, the
+cache under `build/compose-previews/guidelines/` or `guidelines.json` by hand.
+An unreadable reply is reported as a failed request (exit `2`) with the
+reason; rewrite that `reply.json` and run again.
+
+When it exits `0` the result is in `build/compose-previews/guidelines.json`
+(and `*.guidelines.png` with `--annotate`), recorded with the model `agent`
+(`--model` names yours). Report it as below. Exit `1` means findings at
+`--fail-on`; exit `2` a failed request or build. A module without catalog rules
+reports that and asks nothing.
+
+### Provider runs and the key
+
 For a requested provider run, `check_preview_guidelines` reads
 `COMPOSE_PREVIEW_OPENROUTER_KEY` from the server environment and accepts
 `max_cost` (USD). The CLI equivalent, with an existing key and an agreed budget:
@@ -113,9 +166,17 @@ compose-preview guidelines --filter ListScreenPreview --surface screen \
 ```
 
 The CLI writes `build/compose-previews/guidelines.json` and optional
-`*.guidelines.png` overlays. Keep the key out of arguments, chat and files.
+`*.guidelines.png` overlays. The CLI reads the key from
+`COMPOSE_PREVIEW_OPENROUTER_KEY`, else from the person's credentials file,
+which they fill with `compose-preview guidelines key set` in their own
+terminal. A stored key is used only for a project they trusted, at the
+terminal prompt or with `compose-preview guidelines key trust <dir>`. Without
+a terminal the CLI refuses and names that command: relay it to the person, and
+never run `key set` or `key trust` for them, read the credentials file, or
+pass, print or write the key yourself. `compose-preview guidelines key status`
+shows where the key comes from without revealing it.
 Do not invoke a second provider just to review when the agent can judge the
-keyless prompt. Without a key or guidelines tools, inspect source, measured
+keyless prompt or `review`. Without a key or guidelines tools, inspect source, measured
 accessibility results and real PNGs with the published rules and report the
 manual coverage. Missing rules or an unreadable report mean unavailable, not
 passed. Do not hand-edit a cached report to simulate a provider run.
