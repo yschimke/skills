@@ -451,6 +451,17 @@ write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=x "JAVA_HOME=/tmp/user'
 check "a JAVA_HOME with an apostrophe sources back intact" "/tmp/user's/jdk" \
   "$(bash -c 'source "$1" 2>/dev/null; printf %s "$JAVA_HOME"' _ "$EF")"
 
+# An unreadable env file is left alone, not replaced by a copy holding only
+# the new line. (Root reads mode 000 files, so only meaningful as non-root.)
+if [[ $EUID -ne 0 ]]; then
+  printf '%s\n' "KEEP=me" "JAVA_HOME=/old" > "$EF"; chmod 000 "$EF"
+  write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=x JAVA_HOME=/jdk17 >/dev/null 2>&1
+  chmod 600 "$EF"
+  check "an unreadable env file keeps its other entries" "KEEP=me" "$(grep '^KEEP=' "$EF")"
+fi
+check "grep_v_into treats an unreadable file as a failure" "1" \
+  "$(bash -c 'source "$1"; grep_v_into x /nonexistent/file "$2" 2>/dev/null; echo $?' _ "$WORK/functions.sh" "$WORK/tmpout")"
+
 # ---- the script itself parses ---------------------------------------------
 
 bash -n "$INSTALL_SH" 2>"$WORK/syntax.err"

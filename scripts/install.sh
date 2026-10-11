@@ -996,13 +996,25 @@ sh_squote() {  # sh_squote VALUE
   printf "'%s'" "${1//\'/$q}"
 }
 
+# `grep -v PATTERN FILE > TMP`, where keeping no line (exit 1, a file holding
+# only that key) is success; `set -e` would otherwise abort the install. Any
+# other failure (an unreadable FILE, exit 2) returns non-zero, so the caller
+# leaves FILE alone instead of replacing it with a copy missing everything.
+grep_v_into() {  # grep_v_into PATTERN FILE TMP
+  local rc=0
+  grep -v -- "$1" "$2" > "$3" || rc=$?
+  (( rc <= 1 ))
+}
+
 # Replace every `KEY=` line in FILE with LINE (appended), keeping all others.
-# grep -v exits 1 when it keeps no line (a file holding only KEY), which
-# `set -e` would turn into an aborted install, hence the `|| true`s here.
 env_file_upsert() {  # env_file_upsert FILE KEY LINE
   local file="$1" key="$2" line="$3" tmp
   tmp="$(mktemp "${file}.XXXXXX")" || { printf '%s\n' "$line" >> "$file"; return 0; }
-  if [[ -f "$file" ]]; then grep -v -- "^${key}=" "$file" > "$tmp" || true; fi
+  if [[ -f "$file" ]] && ! grep_v_into "^${key}=" "$file" "$tmp"; then
+    rm -f "$tmp"
+    log "warning: couldn't read $file; leaving it unchanged"
+    return 0
+  fi
   printf '%s\n' "$line" >> "$tmp"
   mv -f "$tmp" "$file"
 }
@@ -1020,7 +1032,7 @@ env_file_drop_unquoted() {  # env_file_drop_unquoted FILE KEY
   local file="$1" key="$2" tmp
   [[ -f "$file" ]] && grep -q -- "^${key}=[^'\"][^ ]* " "$file" || return 0
   tmp="$(mktemp "${file}.XXXXXX")" || return 0
-  grep -v -- "^${key}=[^'\"][^ ]* " "$file" > "$tmp" || true
+  grep_v_into "^${key}=[^'\"][^ ]* " "$file" "$tmp" || { rm -f "$tmp"; return 0; }
   mv -f "$tmp" "$file"
 }
 
