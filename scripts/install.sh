@@ -96,7 +96,7 @@
 #   - Claude: $CLAUDE_ENV_FILE or $CLAUDE_CODE_SESSION_ID
 #   - Codex:  $CODEX_SANDBOX or $CODEX_SESSION_ID
 #
-# Claude-specific env-file behavior:
+# Cloud-sandbox behavior:
 #   - JDK selection, in order: the JDK already on PATH when its major matches
 #     the project's daemon toolchain; else one already on disk under
 #     /usr/lib/jvm/ or /opt/jdk<major> (tarball installs such as
@@ -109,13 +109,6 @@
 #   - Skips api.github.com lookups (they 403 on shared sandbox IPs due to
 #     unauthenticated rate limiting) and resolves versions via the public
 #     github.com HTML redirect instead. Sha256 verification is best-effort.
-#   - Appends JAVA_HOME, ANDROID_HOME, and PATH to $CLAUDE_ENV_FILE so
-#     subsequent tool invocations see them.
-#   - If $https_proxy / $http_proxy is set, translates it into
-#     JAVA_TOOL_OPTIONS (-Dhttps.proxyHost / -Dhttp.proxyHost) and writes
-#     that to $CLAUDE_ENV_FILE too. The JVM's HttpURLConnection ignores the
-#     shell proxy env vars, so the Gradle wrapper download otherwise fails
-#     with UnknownHostException (anthropics/claude-code#16222).
 #   - --android-sdk plays well with the cloud's filesystem snapshot cache: the
 #     SDK is written to disk once during the cloud environment's Setup script
 #     and reused for every later session. Note that sdkmanager downloads from
@@ -917,124 +910,11 @@ SKILL_LAUNCHER="$CLI_HOME/bin/compose-preview"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-# Translate the shell proxy env into JVM -D flags; the Gradle wrapper's
-# HttpURLConnection ignores https_proxy (anthropics/claude-code#16222). Prints
-# nothing when no proxy is set or it has no explicit port.
-proxy_java_tool_options() {
-  local url="${https_proxy:-${HTTPS_PROXY:-${http_proxy:-${HTTP_PROXY:-}}}}"
-  [[ -n "$url" ]] || return 0
-  local hostport="${url#*://}"      # strip scheme
-  hostport="${hostport%%/*}"        # strip path
-  hostport="${hostport##*@}"        # strip optional user:pass@
-  local host="${hostport%:*}"
-  local port="${hostport##*:}"
-  [[ "$host" != "$hostport" ]] || return 0  # no ':' -> no port, skip
-  printf -- '-Dhttps.proxyHost=%s -Dhttps.proxyPort=%s -Dhttp.proxyHost=%s -Dhttp.proxyPort=%s' \
-    "$host" "$port" "$host" "$port"
-}
-
-# Write the toolchain env for the agent's next commands. Claude Code sources
-# $CLAUDE_ENV_FILE as shell before every Bash call, so each value is quoted (a
-# bare `JAVA_TOOL_OPTIONS=-Da -Db` runs `-Db` as a command and prints "command
-# not found" on every call), and each key replaces its earlier line instead of
-# appending another copy per run (PATH lines, which other hooks add too, are
-# only deduplicated).
-#
-# JAVA_TOOL_OPTIONS is left alone when the environment already routes the JVM
-# through a proxy: a hosted sandbox sets it with the proxy CA's truststore too,
-# and this proxy-only value would replace that and break TLS. --cli-only
-# installs no JDK or SDK, so it writes only the PATH entry for the launcher
-# rather than pinning whichever JDK it happened to find.
-maybe_write_env_file() {
-  local env_file=""
-  if [[ -z "${AGENT_CLOUD_HOST:-}" ]]; then
-    return 0
-  fi
-
-  case "${AGENT_CLOUD_HOST:-}" in
-    claude)
-      env_file="${CLAUDE_ENV_FILE:-}"
-      ;;
-    codex)
-      env_file="${CODEX_ENV_FILE:-${CODEX_HOME:-$HOME/.codex}/.env}"
-      ;;
-    *)
-      return 0
-      ;;
-  esac
-
-  [[ -n "$env_file" && -w "$(dirname "$env_file")" ]] || return 0
-
-  local jto="" sdk_path="" path_line
-  if [[ "${JAVA_TOOL_OPTIONS:-}" != *proxyHost* ]]; then
-    jto="$(proxy_java_tool_options)"
-  fi
-  if [[ "$INSTALL_ANDROID_SDK" == 1 ]]; then
-    sdk_path="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:"
-  fi
-  if [[ "$CLI_ONLY" == 1 ]]; then
-    path_line="PATH=$BIN_DIR:\$PATH"
-  else
-    path_line="PATH=$BIN_DIR:${JAVA_HOME:+$JAVA_HOME/bin:}${sdk_path}\$PATH"
-    [[ -n "${JAVA_HOME:-}" ]] && env_file_upsert "$env_file" JAVA_HOME "JAVA_HOME=$(sh_squote "$JAVA_HOME")"
-    [[ "$INSTALL_ANDROID_SDK" == 1 ]] && env_file_upsert "$env_file" ANDROID_HOME "ANDROID_HOME=$(sh_squote "$ANDROID_HOME")"
-  fi
-  # PATH is double-quoted so `$PATH` still expands when the file is sourced.
-  # Other hooks add their own PATH lines, so only an identical line is replaced.
-  env_file_add_once "$env_file" "PATH=\"${path_line#PATH=}\""
-  [[ -n "$jto" ]] && env_file_upsert "$env_file" JAVA_TOOL_OPTIONS "JAVA_TOOL_OPTIONS=$(sh_squote "$jto")"
-  # Bare JAVA_TOOL_OPTIONS lines an earlier version of this script appended.
-  env_file_drop_unquoted "$env_file" JAVA_TOOL_OPTIONS
-  log "wrote env vars to $env_file"
-  return 0
-}
-
-# VALUE single-quoted for a file that is sourced as shell: each embedded `'`
-# becomes `'\''`, so a path containing an apostrophe still parses.
-sh_squote() {  # sh_squote VALUE
-  local q="'\\''"
-  printf "'%s'" "${1//\'/$q}"
-}
-
-# `grep -v PATTERN FILE > TMP`, where keeping no line (exit 1, a file holding
-# only that key) is success; `set -e` would otherwise abort the install. Any
-# other failure (an unreadable FILE, exit 2) returns non-zero, so the caller
-# leaves FILE alone instead of replacing it with a copy missing everything.
-grep_v_into() {  # grep_v_into PATTERN FILE TMP
-  local rc=0
-  grep -v -- "$1" "$2" > "$3" || rc=$?
-  (( rc <= 1 ))
-}
-
-# Replace every `KEY=` line in FILE with LINE (appended), keeping all others.
-env_file_upsert() {  # env_file_upsert FILE KEY LINE
-  local file="$1" key="$2" line="$3" tmp
-  tmp="$(mktemp "${file}.XXXXXX")" || { printf '%s\n' "$line" >> "$file"; return 0; }
-  if [[ -f "$file" ]] && ! grep_v_into "^${key}=" "$file" "$tmp"; then
-    rm -f "$tmp"
-    log "warning: couldn't read $file; leaving it unchanged"
-    return 0
-  fi
-  printf '%s\n' "$line" >> "$tmp"
-  mv -f "$tmp" "$file"
-}
-
-# Append LINE to FILE unless that exact line is already there.
-env_file_add_once() {  # env_file_add_once FILE LINE
-  local file="$1" line="$2"
-  [[ -f "$file" ]] && grep -qxF -- "$line" "$file" && return 0
-  printf '%s\n' "$line" >> "$file"
-}
-
-# Drop `KEY=value` lines whose value is unquoted and contains a space: sourced
-# as shell, every one of them runs its second word as a command.
-env_file_drop_unquoted() {  # env_file_drop_unquoted FILE KEY
-  local file="$1" key="$2" tmp
-  [[ -f "$file" ]] && grep -q -- "^${key}=[^'\"][^ ]* " "$file" || return 0
-  tmp="$(mktemp "${file}.XXXXXX")" || return 0
-  grep_v_into "^${key}=[^'\"][^ ]* " "$file" "$tmp" || { rm -f "$tmp"; return 0; }
-  mv -f "$tmp" "$file"
-}
+# This installer writes no agent configuration: no $CLAUDE_ENV_FILE, no Codex
+# env file, no JAVA_TOOL_OPTIONS. Putting the CLI on a harness's PATH is the
+# harness integration's job (yschimke/compose-agent-plugins' SessionStart hook);
+# a hosted sandbox already routes the JVM through its proxy. Here the launcher
+# lands in $BIN_DIR and ensure_bin_on_path adds that to the shell startup files.
 
 # Upstream skills SHA via `git ls-remote` (unauthenticated, not rate-limited
 # like api.github.com). Empty on failure, which forces a full extract.
@@ -1159,8 +1039,8 @@ install_skills_bundle() {
 # same-version short-circuit (what `compose-preview update` hits when already
 # current) never printed it at all. So add $BIN_DIR to the startup files of the
 # shells this user has, once, inside a marked block that is easy to find and
-# remove. Skipped in cloud sandboxes (they get $CLAUDE_ENV_FILE instead), with
-# --no-modify-path / MODIFY_PATH=0, and whenever $BIN_DIR is already on PATH:
+# remove. Skipped with --no-modify-path / MODIFY_PATH=0, and whenever $BIN_DIR
+# is already on PATH:
 # the user's own dotfiles handle it, and touching them would dirty a
 # version-controlled home directory on every `compose-preview update`.
 
@@ -1224,7 +1104,7 @@ has_shell() { # has_shell <name> <config-path-that-implies-it>
 }
 
 ensure_bin_on_path() {
-  [[ "$MODIFY_PATH" == 1 && "$CLAUDE_CLOUD" != 1 ]] || return 0
+  [[ "$MODIFY_PATH" == 1 ]] || return 0
   # Already reachable: leave every startup file alone.
   case ":$PATH:" in
     *":$BIN_DIR:"* | *":$BIN_DIR/:"*) return 0 ;;
@@ -1296,7 +1176,6 @@ if [[ "$INSTALLED_VERSION" == "$VERSION" && -x "$LAUNCHER" ]]; then
   ln -sfn "$LAUNCHER" "$BIN_DIR/compose-preview"
   "$LAUNCHER" --help >/dev/null 2>&1 || die "installed launcher is broken: $LAUNCHER"
   [[ "$CLI_ONLY" == 1 ]] || link_skills_for_detected_hosts
-  maybe_write_env_file
   prune_old_cli_versions
   repair_mcp_host_entries
   ensure_bin_on_path
@@ -1404,10 +1283,6 @@ log "symlinked $BIN_DIR/compose-preview -> $LAUNCHER"
 if ! "$LAUNCHER" --help >/dev/null 2>&1; then
   die "launcher failed smoke test (needs Java 17+ on PATH or JAVA_HOME)"
 fi
-
-# ---- Cloud: write env vars ------------------------------------------------
-
-maybe_write_env_file
 
 # ---- PATH setup and cleanup ----------------------------------------------
 

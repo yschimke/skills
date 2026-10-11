@@ -296,8 +296,9 @@ HOME="$OPT_OUT_HOME" BIN_DIR="$OPT_OUT_HOME/.local/bin" MODIFY_PATH=0 CLAUDE_CLO
   ensure_bin_on_path 2>/dev/null
 check "--no-modify-path leaves startup files alone" "0" "$(wc -c <"$OPT_OUT_HOME/.bashrc" | tr -d ' ')"
 HOME="$OPT_OUT_HOME" BIN_DIR="$OPT_OUT_HOME/.local/bin" MODIFY_PATH=1 CLAUDE_CLOUD=1 \
-  ensure_bin_on_path 2>/dev/null
-check "cloud sandboxes leave startup files alone" "0" "$(wc -c <"$OPT_OUT_HOME/.bashrc" | tr -d ' ')"
+  PATH=/usr/bin:/bin ensure_bin_on_path 2>/dev/null
+check "cloud sandboxes get the PATH block too (no agent env file any more)" \
+  "1" "$(grep -c 'compose-preview: put the CLI on PATH' "$OPT_OUT_HOME/.bashrc")"
 
 CLI_DEST="$WORK/cli"
 mkdir -p "$CLI_DEST/compose-preview-2.7.0/bin" "$CLI_DEST/compose-preview-2.28.0/bin" "$CLI_DEST/other"
@@ -400,67 +401,10 @@ check "in-place refresh adds no other skills and writes no marker" \
   "compose-preview compose-preview-ci|" \
   "$(ls "$IP_ROOT" | paste -sd' ' -)|$(ls "$IP_ROOT"/*/.skill-version 2>/dev/null)"
 
-# ---- maybe_write_env_file ------------------------------------------------
-# Claude Code sources $CLAUDE_ENV_FILE as shell before every Bash call, so every
-# line must survive that, and repeated runs must not stack copies.
-EF="$WORK/claude-env"
-printf '%s\n' \
-  'PATH=/other/hook:$PATH' \
-  'JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=1' > "$EF"
-write_env() { # write_env [VAR=value ...] — one installer run against $EF
-  env -u https_proxy -u http_proxy -u HTTP_PROXY "$@" AGENT_CLOUD_HOST=claude CLAUDE_ENV_FILE="$EF" BIN_DIR=/opt/cp/bin \
-    INSTALL_ANDROID_SDK=0 HTTPS_PROXY=http://127.0.0.1:4242 \
-    bash -c 'source "$1"; log() { :; }; maybe_write_env_file' _ "$WORK/functions.sh"
-}
-write_env CLI_ONLY=1 JAVA_TOOL_OPTIONS= JAVA_HOME=/jdk21
-write_env CLI_ONLY=1 JAVA_TOOL_OPTIONS= JAVA_HOME=/jdk21
-check "a stale unquoted JAVA_TOOL_OPTIONS line is dropped, and the new one is quoted once" \
-  "JAVA_TOOL_OPTIONS='-Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=4242 -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=4242'" \
-  "$(grep '^JAVA_TOOL_OPTIONS=' "$EF")"
-check "--cli-only adds one PATH entry for the launcher and keeps other hooks' PATH" \
-  "PATH=/other/hook:\$PATH|PATH=\"/opt/cp/bin:\$PATH\"" \
-  "$(grep '^PATH=' "$EF" | paste -sd'|' -)"
-check "--cli-only pins no JAVA_HOME" "" "$(grep '^JAVA_HOME=' "$EF")"
-check "the env file sources cleanly" "" "$(PATH=/usr/bin:/bin bash -c 'source "$1" 2>&1' _ "$EF")"
-write_env CLI_ONLY=1 "JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStore=/ts -Dhttps.proxyHost=10.0.0.1"
-check "JAVA_TOOL_OPTIONS already carrying a proxy is not replaced" \
-  "JAVA_TOOL_OPTIONS='-Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=4242 -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=4242'" \
-  "$(grep '^JAVA_TOOL_OPTIONS=' "$EF")"
-rm -f "$EF"
-write_env CLI_ONLY=1 "JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStore=/ts -Dhttps.proxyHost=10.0.0.1"
-check "...and none is written then" "" "$(grep '^JAVA_TOOL_OPTIONS=' "$EF")"
-write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS= JAVA_HOME=/jdk17
-write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS= JAVA_HOME=/jdk17
-check "a full install pins JAVA_HOME once, quoted" "JAVA_HOME='/jdk17'" "$(grep '^JAVA_HOME=' "$EF")"
-
-# Under the installer's own `set -e`: a file holding only the key being
-# replaced (grep -v keeps nothing and exits 1) must not abort the install.
-printf '%s\n' "JAVA_HOME=/old" > "$EF"
-check "replacing the only line in the file survives set -e" "0" \
-  "$(env -u https_proxy -u http_proxy -u HTTP_PROXY AGENT_CLOUD_HOST=claude CLAUDE_ENV_FILE="$EF" \
-      BIN_DIR=/opt/cp/bin INSTALL_ANDROID_SDK=0 CLI_ONLY=0 JAVA_HOME=/jdk17 JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=x \
-      bash -c 'set -euo pipefail; source "$1"; log() { :; }; maybe_write_env_file; echo $?' _ "$WORK/functions.sh")"
-printf '%s\n' "JAVA_TOOL_OPTIONS=-Da -Db" > "$EF"
-check "dropping the only (bare) line survives set -e" "0" \
-  "$(env -u https_proxy -u http_proxy -u HTTP_PROXY AGENT_CLOUD_HOST=claude CLAUDE_ENV_FILE="$EF" \
-      BIN_DIR=/opt/cp/bin INSTALL_ANDROID_SDK=0 CLI_ONLY=1 JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=x \
-      bash -c 'set -euo pipefail; source "$1"; log() { :; }; maybe_write_env_file; echo $?' _ "$WORK/functions.sh")"
-check "...and the bare line is gone" "" "$(grep '^JAVA_TOOL_OPTIONS=' "$EF")"
-rm -f "$EF"
-write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=x "JAVA_HOME=/tmp/user's/jdk"
-check "a JAVA_HOME with an apostrophe sources back intact" "/tmp/user's/jdk" \
-  "$(bash -c 'source "$1" 2>/dev/null; printf %s "$JAVA_HOME"' _ "$EF")"
-
-# An unreadable env file is left alone, not replaced by a copy holding only
-# the new line. (Root reads mode 000 files, so only meaningful as non-root.)
-if [[ $EUID -ne 0 ]]; then
-  printf '%s\n' "KEEP=me" "JAVA_HOME=/old" > "$EF"; chmod 000 "$EF"
-  write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=x JAVA_HOME=/jdk17 >/dev/null 2>&1
-  chmod 600 "$EF"
-  check "an unreadable env file keeps its other entries" "KEEP=me" "$(grep '^KEEP=' "$EF")"
-fi
-check "grep_v_into treats an unreadable file as a failure" "1" \
-  "$(bash -c 'source "$1"; grep_v_into x /nonexistent/file "$2" 2>/dev/null; echo $?' _ "$WORK/functions.sh" "$WORK/tmpout")"
+# ---- no agent configuration ----------------------------------------------
+# The installer stays host-neutral: it never writes an agent env file.
+check "install.sh writes no agent env file" "" \
+  "$(grep -nE '>>[^#]*(CLAUDE|CODEX)_ENV_FILE|maybe_write_env_file|proxy_java_tool_options' "$INSTALL_SH" | grep -v '^[0-9]*:#')"
 
 # ---- the script itself parses ---------------------------------------------
 
