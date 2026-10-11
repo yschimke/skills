@@ -55,6 +55,9 @@
 #   scripts/install.sh --with-skills           # refresh skill content even when
 #                                              # another tool (npx skills, a
 #                                              # plugin) installed it
+#   scripts/install.sh --cli-home DIR          # unpack the CLI under DIR, wherever
+#                                              # the skills live (also
+#                                              # COMPOSE_PREVIEW_HOME=DIR)
 #   scripts/install.sh --no-modify-path        # don't add ~/.local/bin to shell
 #                                              # startup files (also MODIFY_PATH=0)
 #   scripts/install.sh --android-sdk           # also install the Android SDK
@@ -168,6 +171,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --android-sdk) INSTALL_ANDROID_SDK=1; shift ;;
     --cli-only) CLI_ONLY=1; shift ;;
+    --cli-home)
+      [[ $# -ge 2 ]] || { echo "error: $1 requires a value" >&2; exit 1; }
+      COMPOSE_PREVIEW_HOME="$2"; shift 2 ;;
+    --cli-home=*) COMPOSE_PREVIEW_HOME="${1#*=}"; shift ;;
     --with-skills) WITH_SKILLS=1; shift ;;
     --no-modify-path) MODIFY_PATH=0; shift ;;
     --all-skills) ALL_SKILLS=1; shift ;;
@@ -764,8 +771,15 @@ fi
 # that folder (npx skills, a plugin) it replaces the whole folder on update,
 # which deleted `cli/` and left ~/.local/bin/compose-preview dangling. Then the
 # CLI goes to its own data dir instead.
+#
+# An explicit COMPOSE_PREVIEW_HOME (or --cli-home) always wins. A provisioner
+# that links the skill folders itself (coo.ee/env, one symlink per agent) sets
+# it so the CLI never lands inside a skills root it manages, and so
+# `compose-preview update` keeps finding the same place.
 resolve_cli_home() {
-  if skills_managed_elsewhere; then
+  if [[ -n "${COMPOSE_PREVIEW_HOME:-}" ]]; then
+    printf '%s\n' "$COMPOSE_PREVIEW_HOME"
+  elif skills_managed_elsewhere; then
     printf '%s\n' "${COMPOSE_PREVIEW_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/compose-preview}"
   else
     printf '%s\n' "$SKILL_DIR"

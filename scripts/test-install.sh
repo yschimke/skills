@@ -343,9 +343,13 @@ check "XDG_DATA_HOME is honoured" \
   "$CH_HOME/xdg/compose-preview" \
   "$(HOME="$CH_HOME" XDG_DATA_HOME="$CH_HOME/xdg" COMPOSE_PREVIEW_HOME= SKILL_DIR="$NPX_SKILL" resolve_cli_home)"
 check "installer-owned skills keep the CLI in the skill dir" \
-  "$OURS_SKILL" "$(SKILL_DIR="$OURS_SKILL" resolve_cli_home)"
+  "$OURS_SKILL" "$(COMPOSE_PREVIEW_HOME= SKILL_DIR="$OURS_SKILL" resolve_cli_home)"
 check "a fresh machine keeps the CLI in the skill dir" \
-  "$WORK/none/compose-preview" "$(SKILL_DIR="$WORK/none/compose-preview" resolve_cli_home)"
+  "$WORK/none/compose-preview" "$(COMPOSE_PREVIEW_HOME= SKILL_DIR="$WORK/none/compose-preview" resolve_cli_home)"
+check "an explicit COMPOSE_PREVIEW_HOME wins on a fresh machine" \
+  "$CH_HOME/pinned" "$(COMPOSE_PREVIEW_HOME="$CH_HOME/pinned" SKILL_DIR="$WORK/none/compose-preview" resolve_cli_home)"
+check "an explicit COMPOSE_PREVIEW_HOME wins over installer-owned skills" \
+  "$CH_HOME/pinned" "$(COMPOSE_PREVIEW_HOME="$CH_HOME/pinned" SKILL_DIR="$OURS_SKILL" resolve_cli_home)"
 
 # installed_repo_skills names only the repo's skills the user actually has.
 eval "$(sed -n '/^COMPANION_SKILLS=(/,/^)/p' "$INSTALL_SH")"
