@@ -105,8 +105,12 @@ If anything is missing, agents should stop and provide exact remediation steps.
 Use one line in the environment's setup script or startup hook:
 
 ```bash
+set -o pipefail
 curl -fsSL https://env.coo.ee/compose | bash
 ```
+
+`pipefail` matters: without it a blocked or unreachable `env.coo.ee` makes
+`curl` fail, `bash` run an empty script, and the line report success.
 
 [coo.ee/env](https://github.com/yschimke/coo-ee-env) provisions what a
 Compose preview workflow needs in any agent's shell:
@@ -117,9 +121,12 @@ Compose preview workflow needs in any agent's shell:
 - **A complete Android SDK.** Request specific platforms with
   `android[36,37.0]`; the package for `compileSdk = 37` is `37.0`.
 - **The native libraries Compose Desktop previews load**, such as `libGL`.
-- **The `compose-preview` skill**, linked into each agent's skills directory.
+- **The `compose-preview` skill and CLI.**
 - **[`build-brief`](https://github.com/static-var/build-brief)** for Gradle
-  builds, plus a usage guide written to each agent's global rules file.
+  builds, with its usage guide.
+
+Where each agent host picks those up is in compose-agent-plugins'
+[host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#skill-install-locations).
 
 Before installing, it probes every host it needs. If any is blocked, it
 prints the exact hosts to allow and stops, so the environment is never left
@@ -130,6 +137,7 @@ Without Nix, or to install only the CLI and skills, use the canonical
 installer instead:
 
 ```bash
+set -o pipefail
 curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh \
   | bash -s -- --android-sdk          # add --jdk 17,21 for several JDK majors
 ```
