@@ -26,12 +26,16 @@ Commands:
   list     List discovered previews
   render   Render previews; with --output copies a single match to disk
   a11y     Render previews and print ATF accessibility findings
-  review   Review previews against the catalog's design guidelines with your
-           own model: writes each request to build/compose-previews/review/
-           <id>/request.md, reads <id>/reply.json on the next run. Exits 3
-           while replies are missing (2.46.0+; see design-guidelines.md)
+  review   Review previews against the catalog's design guidelines (2.46.0+;
+           see design-guidelines.md). --backend auto, the default, picks
+           prompt inside an agent session: you judge each
+           build/compose-previews/review/<id>/request.md by writing
+           <id>/reply.json, and it exits 3 while replies are missing.
+           Otherwise OpenRouter with a usable key; --backend openai
+           --base-url <url> --model <id> for an OpenAI-compatible endpoint
   guidelines  The same check through OpenRouter, with a key from
-           COMPOSE_PREVIEW_OPENROUTER_KEY or `guidelines key set`
+           COMPOSE_PREVIEW_OPENROUTER_KEY or `guidelines key set`;
+           `guidelines models` lists the --model ids with prices
   extensions run a11y-annotated-preview.render
            One-shot a11y hierarchy + ATF + annotated overlay render
   doctor   Verify Java 17+ + project compatibility (run before Setup)
