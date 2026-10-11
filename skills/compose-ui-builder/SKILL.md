@@ -458,8 +458,9 @@ that, not a bug — ask again the same way.
 `document`. Copying is safer *if you can see a design to copy* — but a fresh
 grant usually sees none (`list_designs` shows only what your actor owns or was
 shared), so you will be writing a document. These three are verified against the
-live server; the only fields you should change are the ids, the title and the
-environment.
+live server; the only fields you should change are the ids, the title, the
+environment and — for `wear-m3` only, which has no stable pin — the whole
+`catalogPin`.
 
 **A phone screen** (`m3-catalog`):
 
@@ -560,8 +561,9 @@ already supplies, so in practice every insert you write names a parent slot.
                "enabled":  {"type": "bool",   "value": true}}
 ```
 
-The three that are not obvious from the reference table's `jsonType`, because
-that column describes the JSON shape rather than the meaning:
+The reference tables give each property's kind. The three that a raw
+`ui_builder_list_catalogs` listing hides, because it describes the JSON shape
+(`string`, `number`) rather than the meaning:
 
 - **A property with `allowedValues` is an `enum`** — `style`, `variant`,
   `contentScale`, the arrangements and alignments. A value outside the list is
@@ -594,11 +596,13 @@ loop uses are these (all verified against 3.121.0):
 - `deleteNode` removes the node and everything in its slots.
 - `moveNode` takes the same `location` as an insert.
 
-To swap a component for another (a filled field for an outlined one), delete
-the node and insert the new one at the same `location` in the same `apply`
-call. To try a batch first, pass the same `operations` to
-`ui_builder_check_design` with `designId` and `baseRevision`: it applies them to
-a scratch copy and saves nothing.
+To swap a component for another (a filled field for an outlined one), do it in
+one `apply` call: insert the new node next to the old one, `moveNode` each child
+you want to keep into the new node's slots, then `deleteNode` the old one.
+Deleting first loses the label, icons and anything else in its slots. To try a
+batch first, pass the same `operations` to `ui_builder_check_design` with
+`designId` and `baseRevision`: it applies them to a scratch copy and saves
+nothing.
 
 **Modifiers are a typed list**, replaced wholesale by `setModifiers`:
 
