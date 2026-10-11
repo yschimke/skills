@@ -118,15 +118,12 @@ compose-preview review --filter ListScreenPreview --surface screen \
 ```
 
 **Check who judges.** `review` defaults to `--backend auto` and prints its
-choice on stderr, for example
-`review: backend prompt (running inside an agent (CLAUDECODE is set): …)`.
-Inside an agent session (`CLAUDECODE`, `CODEX_SANDBOX`, `GEMINI_CLI`,
-`OPENCODE`) it picks `prompt`, the loop below. Another harness sets
-`COMPOSE_PREVIEW_AGENT=1` or passes `--backend prompt`. Outside one it picks
-OpenRouter when a usable key exists, so if that line says `openrouter` or
-`openai`, a provider is judging on the person's key and there are no requests
-for you to answer. Pass `--backend openrouter` or `--backend openai` only for a
-provider run the person asked for ([below](#provider-runs-and-the-key)).
+choice and reason on stderr, as `review: backend <name> (<reason>)`. When it
+recognises an agent session it picks `prompt`, the loop below. If that line
+says `openrouter` or `openai`, a provider is judging on the person's key and
+there are no requests for you to answer. To judge the review yourself, pass
+`--backend prompt`. Pass `--backend openrouter` or `--backend openai` only for
+a provider run the person asked for ([below](#provider-runs-and-the-key)).
 
 In prompt mode, run it, then repeat until it exits `0`:
 
