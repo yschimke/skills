@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.12](https://github.com/yschimke/skills/compare/v0.1.11...v0.1.12) (2026-10-11)
+
+
+### Features
+
+* **install:** add --cli-home; make coo.ee/env the cloud bootstrap ([#146](https://github.com/yschimke/skills/issues/146)) ([a2c70ff](https://github.com/yschimke/skills/commit/a2c70ff64e594341c3c948460a839b870512e4d3))
+* **ui-builder:** document local design-to-code workflow ([#141](https://github.com/yschimke/skills/issues/141)) ([7fd3284](https://github.com/yschimke/skills/commit/7fd3284e7a3bbfa606b8c60379035a0d31f30629))
+* **ui-builder:** use the shipped check, device-grid, branch and approval tools ([#144](https://github.com/yschimke/skills/issues/144)) ([e41c7d4](https://github.com/yschimke/skills/commit/e41c7d487417e0ac1e5e943674267a467dc867dd))
+
+
+### Bug Fixes
+
+* **install:** quote and upsert the agent env file; don't clobber a proxied JAVA_TOOL_OPTIONS ([#148](https://github.com/yschimke/skills/issues/148)) ([c2da24f](https://github.com/yschimke/skills/commit/c2da24f3a74149bfa8f15256c2ec14091433cb31))
+* **install:** survive set -e when an env-file upsert keeps no line; escape quotes in values ([#149](https://github.com/yschimke/skills/issues/149)) ([f422756](https://github.com/yschimke/skills/commit/f4227562ed7aec3caab3cfa7bc81ae22c81b80cb))
+* **ui-builder:** pin branch and approval-wait calls to the presented revision ([#145](https://github.com/yschimke/skills/issues/145)) ([35e4587](https://github.com/yschimke/skills/commit/35e4587b1beb86c586a382edcb1ad8a2d6d4222b))
+* **ui-builder:** refresh the catalog reference, add a Wear app starter, document edit ops ([#151](https://github.com/yschimke/skills/issues/151)) ([fbf4069](https://github.com/yschimke/skills/commit/fbf40692e6caacd516577a2d3ac76c61b4fc1fef))
+
 ## [0.1.11](https://github.com/yschimke/skills/compare/v0.1.10...v0.1.11) (2026-10-10)
 
 
