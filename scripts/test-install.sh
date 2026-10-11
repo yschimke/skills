@@ -400,6 +400,39 @@ check "in-place refresh adds no other skills and writes no marker" \
   "compose-preview compose-preview-ci|" \
   "$(ls "$IP_ROOT" | paste -sd' ' -)|$(ls "$IP_ROOT"/*/.skill-version 2>/dev/null)"
 
+# ---- maybe_write_env_file ------------------------------------------------
+# Claude Code sources $CLAUDE_ENV_FILE as shell before every Bash call, so every
+# line must survive that, and repeated runs must not stack copies.
+EF="$WORK/claude-env"
+printf '%s\n' \
+  'PATH=/other/hook:$PATH' \
+  'JAVA_TOOL_OPTIONS=-Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=1' > "$EF"
+write_env() { # write_env [VAR=value ...] — one installer run against $EF
+  env -u https_proxy -u http_proxy -u HTTP_PROXY "$@" AGENT_CLOUD_HOST=claude CLAUDE_ENV_FILE="$EF" BIN_DIR=/opt/cp/bin \
+    INSTALL_ANDROID_SDK=0 HTTPS_PROXY=http://127.0.0.1:4242 \
+    bash -c 'source "$1"; log() { :; }; maybe_write_env_file' _ "$WORK/functions.sh"
+}
+write_env CLI_ONLY=1 JAVA_TOOL_OPTIONS= JAVA_HOME=/jdk21
+write_env CLI_ONLY=1 JAVA_TOOL_OPTIONS= JAVA_HOME=/jdk21
+check "a stale unquoted JAVA_TOOL_OPTIONS line is dropped, and the new one is quoted once" \
+  "JAVA_TOOL_OPTIONS='-Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=4242 -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=4242'" \
+  "$(grep '^JAVA_TOOL_OPTIONS=' "$EF")"
+check "--cli-only adds one PATH entry for the launcher and keeps other hooks' PATH" \
+  "PATH=/other/hook:\$PATH|PATH=\"/opt/cp/bin:\$PATH\"" \
+  "$(grep '^PATH=' "$EF" | paste -sd'|' -)"
+check "--cli-only pins no JAVA_HOME" "" "$(grep '^JAVA_HOME=' "$EF")"
+check "the env file sources cleanly" "" "$(PATH=/usr/bin:/bin bash -c 'source "$1" 2>&1' _ "$EF")"
+write_env CLI_ONLY=1 "JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStore=/ts -Dhttps.proxyHost=10.0.0.1"
+check "JAVA_TOOL_OPTIONS already carrying a proxy is not replaced" \
+  "JAVA_TOOL_OPTIONS='-Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=4242 -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=4242'" \
+  "$(grep '^JAVA_TOOL_OPTIONS=' "$EF")"
+rm -f "$EF"
+write_env CLI_ONLY=1 "JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStore=/ts -Dhttps.proxyHost=10.0.0.1"
+check "...and none is written then" "" "$(grep '^JAVA_TOOL_OPTIONS=' "$EF")"
+write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS= JAVA_HOME=/jdk17
+write_env CLI_ONLY=0 JAVA_TOOL_OPTIONS= JAVA_HOME=/jdk17
+check "a full install pins JAVA_HOME once, quoted" "JAVA_HOME='/jdk17'" "$(grep '^JAVA_HOME=' "$EF")"
+
 # ---- the script itself parses ---------------------------------------------
 
 bash -n "$INSTALL_SH" 2>"$WORK/syntax.err"

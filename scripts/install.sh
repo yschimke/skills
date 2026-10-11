@@ -933,6 +933,18 @@ proxy_java_tool_options() {
     "$host" "$port" "$host" "$port"
 }
 
+# Write the toolchain env for the agent's next commands. Claude Code sources
+# $CLAUDE_ENV_FILE as shell before every Bash call, so each value is quoted (a
+# bare `JAVA_TOOL_OPTIONS=-Da -Db` runs `-Db` as a command and prints "command
+# not found" on every call), and each key replaces its earlier line instead of
+# appending another copy per run (PATH lines, which other hooks add too, are
+# only deduplicated).
+#
+# JAVA_TOOL_OPTIONS is left alone when the environment already routes the JVM
+# through a proxy: a hosted sandbox sets it with the proxy CA's truststore too,
+# and this proxy-only value would replace that and break TLS. --cli-only
+# installs no JDK or SDK, so it writes only the PATH entry for the launcher
+# rather than pinning whichever JDK it happened to find.
 maybe_write_env_file() {
   local env_file=""
   if [[ -z "${AGENT_CLOUD_HOST:-}" ]]; then
@@ -951,20 +963,56 @@ maybe_write_env_file() {
       ;;
   esac
 
-  if [[ -n "$env_file" && -w "$(dirname "$env_file")" ]]; then
-    local jto sdk_path=""
+  [[ -n "$env_file" && -w "$(dirname "$env_file")" ]] || return 0
+
+  local jto="" sdk_path="" path_line
+  if [[ "${JAVA_TOOL_OPTIONS:-}" != *proxyHost* ]]; then
     jto="$(proxy_java_tool_options)"
-    if [[ "$INSTALL_ANDROID_SDK" == 1 ]]; then
-      sdk_path="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:"
-    fi
-    {
-      [[ -n "${JAVA_HOME:-}" ]] && echo "JAVA_HOME=$JAVA_HOME"
-      [[ "$INSTALL_ANDROID_SDK" == 1 ]] && echo "ANDROID_HOME=$ANDROID_HOME"
-      echo "PATH=$BIN_DIR:${JAVA_HOME:+$JAVA_HOME/bin:}${sdk_path}\$PATH"
-      [[ -n "$jto" ]] && echo "JAVA_TOOL_OPTIONS=$jto"
-    } >> "$env_file"
-    log "wrote env vars to $env_file"
   fi
+  if [[ "$INSTALL_ANDROID_SDK" == 1 ]]; then
+    sdk_path="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:"
+  fi
+  if [[ "$CLI_ONLY" == 1 ]]; then
+    path_line="PATH=$BIN_DIR:\$PATH"
+  else
+    path_line="PATH=$BIN_DIR:${JAVA_HOME:+$JAVA_HOME/bin:}${sdk_path}\$PATH"
+    [[ -n "${JAVA_HOME:-}" ]] && env_file_upsert "$env_file" JAVA_HOME "JAVA_HOME='$JAVA_HOME'"
+    [[ "$INSTALL_ANDROID_SDK" == 1 ]] && env_file_upsert "$env_file" ANDROID_HOME "ANDROID_HOME='$ANDROID_HOME'"
+  fi
+  # PATH is double-quoted so `$PATH` still expands when the file is sourced.
+  # Other hooks add their own PATH lines, so only an identical line is replaced.
+  env_file_add_once "$env_file" "PATH=\"${path_line#PATH=}\""
+  [[ -n "$jto" ]] && env_file_upsert "$env_file" JAVA_TOOL_OPTIONS "JAVA_TOOL_OPTIONS='$jto'"
+  # Bare JAVA_TOOL_OPTIONS lines an earlier version of this script appended.
+  env_file_drop_unquoted "$env_file" JAVA_TOOL_OPTIONS
+  log "wrote env vars to $env_file"
+  return 0
+}
+
+# Replace every `KEY=` line in FILE with LINE (appended), keeping all others.
+env_file_upsert() {  # env_file_upsert FILE KEY LINE
+  local file="$1" key="$2" line="$3" tmp
+  tmp="$(mktemp "${file}.XXXXXX")" || { printf '%s\n' "$line" >> "$file"; return 0; }
+  [[ -f "$file" ]] && grep -v -- "^${key}=" "$file" > "$tmp"
+  printf '%s\n' "$line" >> "$tmp"
+  mv -f "$tmp" "$file"
+}
+
+# Append LINE to FILE unless that exact line is already there.
+env_file_add_once() {  # env_file_add_once FILE LINE
+  local file="$1" line="$2"
+  [[ -f "$file" ]] && grep -qxF -- "$line" "$file" && return 0
+  printf '%s\n' "$line" >> "$file"
+}
+
+# Drop `KEY=value` lines whose value is unquoted and contains a space: sourced
+# as shell, every one of them runs its second word as a command.
+env_file_drop_unquoted() {  # env_file_drop_unquoted FILE KEY
+  local file="$1" key="$2" tmp
+  [[ -f "$file" ]] && grep -q -- "^${key}=[^'\"][^ ]* " "$file" || return 0
+  tmp="$(mktemp "${file}.XXXXXX")" || return 0
+  grep -v -- "^${key}=[^'\"][^ ]* " "$file" > "$tmp"
+  mv -f "$tmp" "$file"
 }
 
 # Upstream skills SHA via `git ls-remote` (unauthenticated, not rate-limited
