@@ -1,6 +1,6 @@
 ---
 name: compose-ui-builder
-description: Open and edit checked-in .uid designs, compare real renders against references, and implement them in application code. Author and edit a Compose UI design over MCP against a compose-preview serve deployment — create a screen or a Wear widget, insert and edit nodes, and export the Kotlin, PNG or SVG. Also use when no host exists and the builder must be run locally (ui-builder --no-project). Use when asked to build, change, or review a UI Builder design (a URL like /ui-builder/catalog/design-id), to turn a design into Compose code, or to collaborate with a designer on one.
+description: Open and edit checked-in .uid designs, compare real renders against references, and implement them in application code. Author and edit a Compose UI design over MCP against a compose-preview serve deployment — create a screen or a Wear widget, insert and edit nodes, and export the Kotlin, PNG or SVG. Also use when no host exists and the builder must be run locally (ui-builder --no-project). Use when asked to build, change, or review a UI Builder design (a URL like /ui-builder/catalog/design-id), to explore alternative versions of one, to turn an approved design into Compose code or find the design a PR implements, or to collaborate with a designer on one.
 ---
 
 # Compose UI Builder
@@ -32,34 +32,39 @@ These rules apply before the creation and editing recipes below:
    `ui_builder_get_design` and read its `home`. For a checked-in `.uid`, read
    the file and its recorded home first; a server lookup is not required. A server-homed design is edited
    on that server; a repo-homed design is edited at its recorded `.uid` path.
-   Do not export a server design, edit the copy locally, and re-import it. If
-   the response does not yet contain `home`, say that the canonical home cannot
-   be verified with the current tooling. Do not infer or rewrite it.
+   Do not export a server design, edit the copy locally, and re-import it.
+   Servers record `home` since compose-preview-server v3.76.0; if the response
+   has none (an older host, or a design created before then), say that the
+   canonical home cannot be verified. Do not infer or rewrite it.
 2. **Keep discussion at the home.** For a server-homed design, call
    `ui_builder_list_comments` before the first edit, reply and resolve there,
    and check again before finishing. For a repo-homed design, use its linked PR
    or issue. Link to that discussion with `ui_builder_set_links`; do not split
    it across chat, an issue, and server comments.
 3. **Use typed operations and validation.** Prefer `ui_builder_apply` and the
-   tool schemas over editing document JSON. Call `ui_builder_validate` before
-   saving or finishing when the host exposes it. If validation or a required
-   schema is not available, say so; an export diagnostic is useful but is not
-   a substitute for document validation. If hand-editing is unavoidable,
+   tool schemas over editing document JSON. Call `ui_builder_check_design`
+   (which runs `ui_builder_validate` plus accessibility checks) before showing
+   or finishing, or `ui_builder_validate` on a host that has only that. If
+   validation or a required schema is not available, say so; an export
+   diagnostic is useful but is not a substitute for document validation. If hand-editing is unavoidable,
    validate before saving and render again afterwards.
-4. **See the editor after each visible step.** `ui_builder_view` is unreleased
-   and gated on [#1114](https://github.com/yschimke/compose-preview-server/issues/1114).
-   Use it only when advertised. Otherwise inspect PNG/SVG or native output,
-   label it as not the editor viewport, give the browser URL, and never infer
-   selection, overlays, or comment pins from JSON or an export.
+4. **See the editor after each visible step.** Call `ui_builder_view`
+   (compose-preview-server v3.89.0 and later): it draws the canvas as a person
+   sees it, with selection, reference overlay and comment pins. On a host that
+   does not advertise it, inspect PNG/SVG or native output, label it as not the
+   editor viewport, give the browser URL, and never infer selection, overlays,
+   or comment pins from JSON or an export.
 5. **Close temporary copies.** A local copy may be used for a compile check or
    offline experiment only. Announce its path and purpose, keep its recorded
    home pointing at the canonical design, and save the result back to that home
    or discard the copy before finishing. Moving a design between server and
    repo homes requires explicit approval.
 
-Before finishing, validate when possible, obtain the final editor view, and
-check for unread or unacknowledged comments at the design's home. Report any
-capability that prevented one of those checks.
+Before finishing, run `ui_builder_check_design`, look at the final editor view
+and the device grid, and check for unread or unacknowledged comments at the
+design's home. Hand back the link, the revision and whether a person has
+approved it ([Approval and handoff to code](#approval-and-handoff-to-code)).
+Report any capability that prevented one of those checks.
 
 ## Review design guidelines
 
@@ -89,9 +94,11 @@ never imply the panel contains an unsaved review or invent an audit-launch link.
 
 ## Viewer, prompts, and interactive decisions
 
-- Viewer and prompts need a compose-preview-server release after v3.74.0; until
-  then treat them as absent. See the
-  [catalog MCP reference](../compose-preview/references/catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks).
+The MCP Apps viewer, prompts and elicitation depend on the host as much as on
+the server. Discover them from `tools/list` and the client's capabilities, and
+use the text fallbacks in the
+[catalog MCP reference](../compose-preview/references/catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks)
+when they are absent.
 
 ## Core creation loop
 
@@ -120,12 +127,27 @@ still apply:
    "location": {"parent": {"nodeId": "col", "slot": "children"}}}]}
 // → {"outcome":{"type":"accepted","committedRevision":1, …}}   ← next baseRevision
 
-// 4. ui_builder_export — the Kotlin, or diagnostics saying why not
+// 4. ui_builder_check_design — schema, catalog/export gate and accessibility in one
+{"designId": "settings-v2"}
+// → {"summary": "…", "ok": false, "findings": [{"nodeId": "title", …}]}  ← fix with apply
+//   pass "operations" (+ "baseRevision") instead to dry-run a batch before applying it
+
+// 5. ui_builder_render_design_matrix — every device the screen claims, one picture
+{"designId": "settings-v2", "themes": ["light", "dark"], "fontScales": [1, 2]}
+
+// 6. ui_builder_export — the Kotlin, or diagnostics saying why not
 {"designId": "settings-v2", "format": "compose"}
 
-// 5. tell your human where it is
+// 7. tell your human where it is
 // https://<host>/ui-builder/<catalogSystemId>/settings-v2
 ```
+
+Read each reply's `summary` first; it is written to be enough on its own. Step 4
+replaces a separate validate and accessibility pass, though not the editor
+view: run it before you show a design to anybody, and fix its findings by `nodeId` through
+`ui_builder_apply`. The device grid in step 5 is where a navigation rail that
+never collapses, or text that clips at 200% font scale, shows up. Look at it
+before calling the screen done.
 
 Send that browser URL as soon as the design exists, then keep sending the
 current revision, what just changed, the comment state, and the next action.
@@ -629,10 +651,15 @@ So decide which you are making, and act on it early:
 
 ## Seeing what you built
 
-- **`ui_builder_view`** — unreleased behind
-  [#1114](https://github.com/yschimke/compose-preview-server/issues/1114).
-  When advertised, it is the editor viewport, selection, overlays, and comment
-  pins. Otherwise say it is absent; an export is not the editor view.
+- **`ui_builder_view`** — the editor canvas as a person sees it: overlays
+  (`include`, for example `["reference"]`), `selection`, a past `revision`, and
+  `renderer: "native"` where the host compiles. It returns a short-lived https
+  link; `inline: true` adds the image to the reply. Where it is not advertised,
+  say so; an export is not the editor view.
+- **`ui_builder_render_design_matrix`** — one contact sheet of the design on
+  several devices × themes × font scales, captioned per cell, from one call.
+  Nothing is saved. Use it before calling a screen done: the compact frame and
+  `fontScales: [1, 2]` are where layouts break.
 - **`ui_builder_export` `format: "compose"`** — the generated Kotlin, plus
   `diagnostics` naming anything the generator refused. Empty diagnostics is the
   gate a designer sees in the browser's code pane, so it is a real check on the
@@ -797,6 +824,55 @@ controls are absent merely because the central canvas resembles the target.
   never implies an invisible permanent service. A delegated task belongs to
   the current agent task unless the runtime explicitly provides durable
   automations; it must not promise notification after that task is closed.
+
+## Explore alternatives on branches
+
+When the person wants options ("try a compact and a roomy header"), or you would
+otherwise edit over somebody working live, branch rather than copy:
+
+1. **Branch once per idea from the same revision.** `ui_builder_branch_design`
+   with `designId`, a `name` that says what the alternative is, and your own
+   `branchId` so a retry is idempotent. A branch is a design with its own id:
+   edit it with `ui_builder_apply` exactly as above. Branches of a branch are
+   refused.
+2. **Show them side by side in one picture.** `ui_builder_compare_branches`
+   renders the parent's head and each open branch into one numbered contact
+   sheet (a short-lived https link) with what each changes. Post the picture
+   and the numbered list; never describe the alternatives from their JSON.
+3. **Let the person choose.** `ui_builder_pick_branch` shows a picker or form
+   where the host has one. If it returns `ask-in-chat`, post its list and
+   picture and wait for their number. Never pick for them, and treat `declined`
+   as an answer.
+4. **Merge the choice.** `ui_builder_merge_branch` with `dryRun: true` first,
+   read the per-command report, then merge. Its open siblings are archived for
+   you; `ui_builder_archive_branch` drops one without merging.
+
+## Approval and handoff to code
+
+A design is done when a person approves a revision, not when you stop editing.
+The record lives beside the design, so the coding agent can pick it up later
+without the chat.
+
+- **Wait for approval instead of asking again.** Tell the person the link and
+  revision, then `ui_builder_await_decision` with `designId` and the
+  `afterSequence` you last saw (0 the first time). It returns when a *person*
+  approves or rejects, or `timedOut` after `waitSeconds`. `waitSeconds: 0` is a
+  cheap poll for a routine that checks back later. Quote the reply's `sequence`
+  next time. Your own `ui_builder_record_decision` is recorded as an agent's
+  and does not answer a person's wait; never record an approval on their
+  behalf.
+- **Link the implementation.** When code lands, `ui_builder_set_implementation`
+  with the PR URL, its `status` and the design `revision` it implements. After
+  you have rendered the PR's `@Preview`s and compared them with the design, add
+  `previewMatch` (`match`, `mismatch` or `unknown`, with an evidence link). It
+  replaces the whole record.
+- **Start the code side from the design.** In a coding session,
+  `ui_builder_implementation_status` returns in one call the revision, its links,
+  the implementation PR and whether its previews matched, the latest verdict, and
+  the Compose export with its diagnostics. From a PR,
+  `ui_builder_find_design_for_pr` finds the designs it implements. Implement the
+  approved revision, not whatever the design holds now: if `summary` says the
+  revision moved on or was never approved, say so before writing code.
 
 ## Keeping a design
 
