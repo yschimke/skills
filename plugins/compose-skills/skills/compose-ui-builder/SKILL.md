@@ -830,9 +830,11 @@ controls are absent merely because the central canvas resembles the target.
 When the person wants options ("try a compact and a roomy header"), or you would
 otherwise edit over somebody working live, branch rather than copy:
 
-1. **Branch once per idea from the same revision.** `ui_builder_branch_design`
-   with `designId`, a `name` that says what the alternative is, and your own
-   `branchId` so a retry is idempotent. A branch is a design with its own id:
+1. **Branch once per idea from the same revision.** Note the parent's current
+   revision once, then call `ui_builder_branch_design` with `designId`, that
+   `revision` (so an edit landing between calls cannot give the alternatives
+   different baselines), a `name` that says what the alternative is, and your
+   own `branchId` so a retry is idempotent. A branch is a design with its own id:
    edit it with `ui_builder_apply` exactly as above. Branches of a branch are
    refused.
 2. **Show them side by side in one picture.** `ui_builder_compare_branches`
@@ -854,9 +856,12 @@ The record lives beside the design, so the coding agent can pick it up later
 without the chat.
 
 - **Wait for approval instead of asking again.** Tell the person the link and
-  revision, then `ui_builder_await_decision` with `designId` and the
-  `afterSequence` you last saw (0 the first time). It returns when a *person*
-  approves or rejects, or `timedOut` after `waitSeconds`. `waitSeconds: 0` is a
+  revision, then `ui_builder_await_decision` with `designId`, that `revision`
+  and the `afterSequence` you last saw (0 the first time). Without `revision`
+  a verdict on an older revision would answer the wait. It returns when a
+  *person* approves or rejects that revision, or `timedOut` after
+  `waitSeconds`. If you edit after asking, the person is looking at a new
+  revision: say so and wait on that one. `waitSeconds: 0` is a
   cheap poll for a routine that checks back later. Quote the reply's `sequence`
   next time. Your own `ui_builder_record_decision` is recorded as an agent's
   and does not answer a person's wait; never record an approval on their
