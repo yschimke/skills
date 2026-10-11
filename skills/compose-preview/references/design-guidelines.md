@@ -117,7 +117,18 @@ compose-preview review --filter ListScreenPreview --surface screen \
   --guidelines path/to/ui-builder.guidelines.json --annotate
 ```
 
-Run it, then repeat until it exits `0`:
+**Check who judges.** `review` defaults to `--backend auto` and prints its
+choice on stderr, for example
+`review: backend prompt (running inside an agent (CLAUDECODE is set): …)`.
+Inside an agent session (`CLAUDECODE`, `CODEX_SANDBOX`, `GEMINI_CLI`,
+`OPENCODE`) it picks `prompt`, the loop below. Another harness sets
+`COMPOSE_PREVIEW_AGENT=1` or passes `--backend prompt`. Outside one it picks
+OpenRouter when a usable key exists, so if that line says `openrouter` or
+`openai`, a provider is judging on the person's key and there are no requests
+for you to answer. Pass `--backend openrouter` or `--backend openai` only for a
+provider run the person asked for ([below](#provider-runs-and-the-key)).
+
+In prompt mode, run it, then repeat until it exits `0`:
 
 1. **Exit `3`: requests are waiting.** It lists each
    `build/compose-previews/review/<id>/request.md`. Exit `3` here means waiting
@@ -158,23 +169,48 @@ reports that and asks nothing.
 
 For a requested provider run, `check_preview_guidelines` reads
 `COMPOSE_PREVIEW_OPENROUTER_KEY` from the server environment and accepts
-`max_cost` (USD). The CLI equivalent, with an existing key and an agreed budget:
+`max_cost` (USD). The CLI equivalent, with an existing key and an agreed budget,
+is `guidelines`, or `review --backend openrouter` (capped at $0.25 unless
+`--max-cost` says otherwise):
 
 ```sh
 compose-preview guidelines --filter ListScreenPreview --surface screen \
   --guidelines path/to/ui-builder.guidelines.json --json --annotate --max-cost 0.10
 ```
 
+`compose-preview guidelines models` lists the OpenRouter `--model` ids that
+read pictures and keep to a reply schema, cheapest first, with prices per
+million tokens. It needs no key.
+
+For an OpenAI-compatible endpoint the person names, such as OpenAI, Gemini's
+OpenAI endpoint, a local Ollama or LM Studio, or a LiteLLM proxy, use
+`--backend openai` with the base URL (version path included) and the
+endpoint's own model id:
+
+```sh
+compose-preview review --backend openai --base-url http://localhost:11434/v1 \
+  --model llava:13b --filter ListScreenPreview --surface screen
+```
+
+Its key comes from `COMPOSE_PREVIEW_MODEL_KEY`, else the one the person stored
+for that endpoint with `compose-preview guidelines key set --for <base-url>`.
+A localhost endpoint needs none. Such an endpoint reports no cost, so
+`--max-cost` cannot stop the run: narrow the selection instead. It has no
+`--checker jev`.
+
 The CLI writes `build/compose-previews/guidelines.json` and optional
-`*.guidelines.png` overlays. The CLI reads the key from
+`*.guidelines.png` overlays. Results are cached per backend, so a verdict from
+one endpoint never answers for another. The OpenRouter key comes from
 `COMPOSE_PREVIEW_OPENROUTER_KEY`, else from the person's credentials file,
 which they fill with `compose-preview guidelines key set` in their own
-terminal. A stored key is used only for a project they trusted, at the
-terminal prompt or with `compose-preview guidelines key trust <dir>`. Without
-a terminal the CLI refuses and names that command: relay it to the person, and
-never run `key set` or `key trust` for them, read the credentials file, or
-pass, print or write the key yourself. `compose-preview guidelines key status`
-shows where the key comes from without revealing it.
+terminal. A stored key, OpenRouter's or an endpoint's, is used only for a
+project they trusted, at the terminal prompt or with
+`compose-preview guidelines key trust <dir>`. Without a terminal the CLI
+refuses and names that command and the variable that would work instead:
+relay them to the person. Never run `key set` or `key trust` for them, read
+the credentials file, or pass, print or write a key yourself.
+`compose-preview guidelines key status` (with `--for <base-url>` for an
+endpoint) shows where a key comes from without revealing it.
 Do not invoke a second provider just to review when the agent can judge the
 keyless prompt or `review`. Without a key or guidelines tools, inspect source, measured
 accessibility results and real PNGs with the published rules and report the
