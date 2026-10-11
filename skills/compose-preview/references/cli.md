@@ -62,8 +62,14 @@ OSC 9;4 terminal progress (native taskbar/tab progress bar) is on by default
 in a TTY and auto-disables when stdout is piped. Textual progress lines are
 opt-in via `--progress`.
 
-Exit codes: `0` success, `1` build failure, `2` render failure, `3` no previews.
-`review` differs: `3` there means requests are waiting for replies.
+Exit codes for the render commands (`show`, `list`, `render`): `0` success,
+`1` build failure, `2` render failure, `3` no previews.
+
+`review` and `guidelines` use their own: `0` every request answered (or no
+catalog rules), `1` findings at `--fail-on`, `2` a failed model request, an
+unreadable reply or a build failure, and for `review` only, `3` requests are
+waiting for replies. A filter that matches nothing exits `0` with nothing
+checked.
 
 `--json` output per entry includes the full `PreviewParams` (device, widthDp,
 heightDp, fontScale, uiMode, …), the absolute `pngPath`, the `sha256` of
