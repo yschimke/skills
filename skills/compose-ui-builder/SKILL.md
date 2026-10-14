@@ -442,12 +442,12 @@ The handshake is the ordinary agent-grant one — see
   header. Every gated tool takes `token` for exactly this reason.
 - **Make the approve link one click.** Put the `approveUrl` on a line of its
   own, as a bare URL (and as a link card where the host can show one), with the
-  `userCode` beside it — never only inside a sentence, where a person has to
+  `userCode` on the line above — never only inside a sentence, where a person has to
   ask for it again:
 
   ```
-  Approve access: https://<host>/agent-access/<request-id>
-  Code: <userCode>
+  Approve access (code <userCode>):
+  https://<host>/agent-access/<request-id>
   ```
 - **Collect approval in the background.** Immediately after `request_access`,
   relay its exact `approveUrl` and `userCode`, then start a bounded background
