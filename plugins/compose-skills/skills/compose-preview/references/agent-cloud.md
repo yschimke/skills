@@ -12,30 +12,6 @@ Use this as the baseline for any ephemeral environment where outbound networking
 
 Allow these hosts (plus each platform's default trusted registries):
 
-- `maven.google.com`
-- `dl.google.com`
-- `fonts.googleapis.com`
-- `fonts.gstatic.com`
-- `repo.gradle.org`
-- `services.gradle.org`
-- `api.adoptium.net`
-- `api.foojay.io`
-- `api.github.com`
-- `jogamp.org`
-- `jitpack.io`
-- `packages.jetbrains.team`
-- `cdn.azul.com`
-- `*.cloudfront.net`
-- `*.jetbrains.com`
-- `ziglang.org`
-- `*.java.net`
-- `central.sonatype.com`
-- `bb.staticvar.dev`
-- `github.com`
-- `objects.githubusercontent.com`
-
-Recommended rationale:
-
 | Host | Purpose |
 | --- | --- |
 | `maven.google.com` | AndroidX + AGP artifacts |
@@ -65,40 +41,22 @@ The coo.ee bootstrap below also needs `env.coo.ee` and its Nix hosts
 don't have to work the list out in advance: it checks every host it needs and
 prints any that are blocked.
 
-### 2) Toolchain prerequisites
+### 2) Session-start preflight
 
-Agents should verify:
+At the start of each session, check and report before deep work starts:
 
-- **JDK installed** (Java 17+ recommended; Java 21 works for many paths but repo builds are typically pinned to 17)
-- **Android SDK installed** when Android previews are needed
-- `ANDROID_HOME` or `sdk.dir` is configured when Android modules are present
-- Gradle wrapper can reach distribution and dependency hosts
+- network mode (trusted/custom/full equivalent) and whether the hosts above
+  are reachable;
+- `java -version`: Java 17+ (21 works for many paths; repo builds are
+  typically pinned to 17);
+- when Android previews are in scope, the Android SDK, with `ANDROID_HOME` or
+  `sdk.dir` set;
+- `compose-preview doctor` and `./gradlew --version` (the wrapper must reach
+  its distribution and dependency hosts).
 
-### 3) Session-start checks agents should run
-
-At the beginning of each session, agents should:
-
-1. Confirm network mode/allowlist includes all required hosts.
-2. Confirm `java -version` succeeds and reports expected major version.
-3. Confirm Android SDK presence when Android builds are in scope.
-4. Run a quick project health check (`compose-preview doctor` and/or a Gradle noop task).
-5. Flag missing prerequisites **immediately** to the user before deep work starts.
-
-## Agent behavior requirements (flag to user at start)
-
-At session start, agents should proactively report:
-
-- Current network mode (trusted/custom/full equivalent)
-- Whether required hosts appear reachable
-- JDK version detected
-- Android SDK status (installed/missing, path)
-- Any blockers likely to cause build/render failures later
-
-Suggested one-liner status format:
-
-- `Cloud preflight: network=Custom (hosts ok), JDK=17, Android SDK=/opt/android-sdk, ready for Android + Desktop previews.`
-
-If anything is missing, agents should stop and provide exact remediation steps.
+Report it in one line, for example
+`Cloud preflight: network=Custom (hosts ok), JDK=17, Android SDK=/opt/android-sdk, ready for Android + Desktop previews.`
+If anything is missing, stop and give the exact remediation steps.
 
 ## Generic setup script (cloud bootstrap)
 
@@ -134,7 +92,7 @@ half-installed. Re-running it is a no-op, so a session-start hook can call it
 every time.
 
 Without Nix, or to install only the CLI and skills, use the canonical
-installer instead:
+installer ([setup.md](./setup.md) has its other options) instead:
 
 ```bash
 set -o pipefail
@@ -185,36 +143,13 @@ Four things that bite in a proxied sandbox and look like unrelated failures:
 
 ## Rendering a project that compiles against a very new SDK
 
-`composePreview.sdkVersion` auto-detects from `android.compileSdk`, but the
-Robolectric render range is narrower than the compile range: **SDK > 35 needs
-JDK 21+**. A project on `compileSdk = 37` running on JDK 17 therefore fails at
-configuration time with `sdkVersion = N is outside the supported range`. Either
-run on JDK 21+, or pin the render SDK explicitly:
+**SDK > 35 needs JDK 21+** for rendering. A project on `compileSdk = 37` on JDK
+17 fails at configuration time with `sdkVersion = N is outside the supported
+range`: run on JDK 21+, or pin `composePreview.sdkVersion` as shown in
+[setup.md § Apply the Gradle plugin](./setup.md#apply-the-gradle-plugin).
 
-```kotlin
-composePreview {
-    variant.set("debug")
-    sdkVersion.set(35)   // pinned: compileSdk 37 is outside the render range on JDK 17
-}
-```
-
-## Recommended quick verification commands
-
-Run after bootstrap:
-
-```bash
-java -version
-compose-preview doctor || true
-./gradlew --version
-```
-
-Optional Android verification:
+## Optional Android verification
 
 ```bash
 ./gradlew :samples:android:composePreviewRenderAll || true
 ```
-
-## Provider-specific hints
-
-Per-host network modes and sandbox settings are in compose-agent-plugins'
-[host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#cloud-sandboxes).

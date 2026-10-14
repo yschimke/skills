@@ -387,9 +387,15 @@ link_skills_for_detected_hosts() {
     link_skill_into_dir "$host" "$dir" "$SKILL_DIR"
     for name in "${COMPANION_SKILLS[@]}"; do
       companion="$owning_root/$name"
-      [[ -d "$companion" ]] && link_skill_into_dir "$host" "$dir" "$companion"
+      if [[ -d "$companion" ]]; then
+        link_skill_into_dir "$host" "$dir" "$companion"
+      fi
     done
   done
+  # Explicit: callers run this under `set -e` as `... || link_skills_...`, so a
+  # stray non-zero status from the loop (e.g. an absent last companion) would
+  # abort `compose-preview update` after a successful install.
+  return 0
 }
 
 # ---- Cloud: ensure required JDK(s) are available --------------------------

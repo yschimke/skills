@@ -401,6 +401,21 @@ check "in-place refresh adds no other skills and writes no marker" \
   "compose-preview compose-preview-ci|" \
   "$(ls "$IP_ROOT" | paste -sd' ' -)|$(ls "$IP_ROOT"/*/.skill-version 2>/dev/null)"
 
+# ---- host links never fail the install ------------------------------------
+# `compose-preview update` exited 1 after a successful install: the companion
+# loop ended on an absent skill, so the function returned 1 and `set -e` aborted
+# on the script's `[[ … ]] || link_skills_for_detected_hosts` line.
+LH="$WORK/link-hosts"
+mkdir -p "$LH/home/.claude" "$LH/home/.codex" "$LH/root/compose-preview" "$LH/root/compose-ui-builder"
+(
+  HOME="$LH/home" CODEX_HOME="$LH/home/.codex" AGENTS_SKILLS_ROOT="$LH/root" \
+    SKILL_DIR="$LH/root/compose-preview" link_skills_for_detected_hosts 2>/dev/null
+)
+check "host linking returns 0 when the last companion is absent" "0" "$?"
+check "host linking links the installed skills for each host" \
+  "compose-preview compose-ui-builder|compose-preview compose-ui-builder" \
+  "$(ls "$LH/home/.claude/skills" | paste -sd' ' -)|$(ls "$LH/home/.codex/skills" | paste -sd' ' -)"
+
 # ---- no agent configuration ----------------------------------------------
 # The installer stays host-neutral: it never writes an agent env file.
 check "install.sh writes no agent env file" "" \

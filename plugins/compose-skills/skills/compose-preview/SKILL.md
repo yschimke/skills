@@ -109,17 +109,11 @@ a stateless inner composable and preview that
 
 ## Install / update (only if missing)
 
-Check with `compose-preview --version`. Install the skills and CLI:
-
-```sh
-npx skills add yschimke/skills --global --yes --skill compose-preview --skill compose-ui-builder
-# No Node:
-curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash
-```
-
-Update with `compose-preview update` (skills: `npx skills update`). Plugin
-setup, MCP registration, and the Gradle init script are in
-[setup.md](./references/setup.md).
+Check with `compose-preview --version`. If it's missing, run this skill's stub,
+`bash <this skill's dir>/scripts/compose-preview --version`: its first run
+installs the CLI and puts it on `PATH`. Every other route, updating, and the
+Gradle plugin are in [setup.md](./references/setup.md); MCP wiring (the local
+server and the one hosted URL) is in [mcp.md](./references/mcp.md).
 
 ## Working with platform skills
 
@@ -151,9 +145,9 @@ Read only what the task needs.
 
 | Topic | Read |
 |---|---|
-| Install, update, apply the Gradle plugin, `mcp install`, zero-code init script | [setup.md](./references/setup.md) |
+| Install, update, which skills, apply the Gradle plugin, zero-code init script | [setup.md](./references/setup.md) |
 | CLI commands, `--filter`/`--id`/`--force`, `counts` buckets, render filenames, SVG output, Gradle tasks, `build-brief` for non-preview builds | [cli.md](./references/cli.md) |
-| Local MCP server: tools, history (`history_list`/`history_diff`), multi-workspace, **troubleshooting** | [mcp.md](./references/mcp.md) |
+| **Which MCP server** (local vs hosted `https://preview.coo.ee/mcp`); local server setup, tools, history, multi-workspace, **troubleshooting** | [mcp.md](./references/mcp.md) |
 | Interaction loop: semantic refs, `observe` modes, `diff_semantics`, crop, `render_matrix` (variants/matrix), record → test, failure `kind`s | [agent-loop.md](./references/agent-loop.md) |
 | Accessibility (ATF, `compose-preview a11y`) | [a11y.md](./references/a11y.md) |
 | Per-render data (a11y, layout, recomposition, SVG) | [data-products.md](./references/data-products.md) |
@@ -165,7 +159,7 @@ Read only what the task needs.
 | Editable override knobs | [override-knobs.md](./references/override-knobs.md) |
 | Display filters | [display-filters.md](./references/display-filters.md) |
 | Remote Compose, `compose-preview rc` | [remote-compose.md](./references/remote-compose.md) |
-| Remote catalog MCP (`serve`, no checkout) | [catalog-mcp.md](./references/catalog-mcp.md) |
+| Hosted catalog MCP tools and grant flow (`serve`, no checkout) | [catalog-mcp.md](./references/catalog-mcp.md) |
 | Gated server access (`compose-preview auth request`) | [server-access.md](./references/server-access.md) |
 | Agent allowlists, staging PNGs | [permissions.md](./references/permissions.md) |
 | Cloud sandboxes | [agent-cloud.md](./references/agent-cloud.md) |
@@ -174,5 +168,5 @@ Read only what the task needs.
 **CI and PR review** live in opt-in sibling skills:
 [compose-preview-ci](../compose-preview-ci/SKILL.md) (baselines, PR-comment
 Actions) and [compose-preview-review](../compose-preview-review/SKILL.md)
-(base vs. head render and diff). Add one with
-`npx skills add yschimke/skills --global --yes --skill <name>`.
+(base vs. head render and diff). To add one, see
+[setup.md § Which skills](./references/setup.md#which-skills).

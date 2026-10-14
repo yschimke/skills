@@ -23,6 +23,8 @@ under `skills/compose-ui-builder/`. The server ships from
 [github.com/yschimke/compose-preview-server](https://github.com/yschimke/compose-preview-server);
 its human-facing guide is
 [`docs/UI_BUILDER_GETTING_STARTED.md`](https://github.com/yschimke/compose-preview-server/blob/main/docs/UI_BUILDER_GETTING_STARTED.md).
+The public host's MCP endpoint is `https://preview.coo.ee/mcp`: configure only
+that URL ([mcp.md § Which MCP server](../compose-preview/references/mcp.md#which-mcp-server)).
 
 ## Firm collaboration contract
 
