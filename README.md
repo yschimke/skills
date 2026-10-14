@@ -1,6 +1,7 @@
 # Skills
 
-**Start here: <https://ui.coo.ee/start>**
+**Start here:** <https://yschimke.github.io/compose-ai-tools/> for the CLI and your project's previews;
+<https://ui.coo.ee/start> for designing screens with an agent in the UI Builder.
 
 Skills for rendering and reviewing [Jetpack Compose] and [Compose
 Multiplatform] UI from agent workflows. They pair with the
