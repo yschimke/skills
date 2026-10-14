@@ -13,6 +13,16 @@ root is `remote-m3/widget-container-small` (216×76 dp),
 (see [Pins](./m3-catalog.md#pins)). The starter document is in the skill under
 [A document that works](../SKILL.md#a-document-that-works).
 
+**Exporting is not the same as running in a widget.** Some components here export
+Kotlin with no diagnostic yet sit outside the Glance Wear widget profile, and
+the generated code only says so in a comment ("outside the Glance Wear widget
+profile… throws"): `layout/collapsible-column` is one. Read the exported source
+for that comment before handing a widget over, and prefer `layout/column`.
+Likewise `remote-m3/remote-icon`'s `imageVector` is a free string: keys that
+resolve to icons only `material-icons-extended` ships (`pauseCircle`,
+`playCircle`, `stopCircle`) export cleanly but fail to compile where that
+artifact is missing. `ui_builder_render_native` is the check for both.
+
 <!-- remote-m3 sha256:876b81abc7033b254c184cef5a2cc783, 60 components -->
 | `componentId` | role | slots | required | other properties |
 | --- | --- | --- | --- | --- |

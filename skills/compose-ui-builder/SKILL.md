@@ -133,6 +133,8 @@ still apply:
 {"designId": "settings-v2"}
 // → {"summary": "…", "ok": false, "findings": [{"nodeId": "title", …}]}  ← fix with apply
 //   pass "operations" (+ "baseRevision") instead to dry-run a batch before applying it
+//   a `skipped` reason of "no native render was available" may hide a failed
+//   compile on older hosts: call ui_builder_render_native to find out
 
 // 5. ui_builder_render_design_matrix — every device the screen claims, one picture
 {"designId": "settings-v2", "themes": ["light", "dark"], "fontScales": [1, 2]}
@@ -438,6 +440,15 @@ The handshake is the ordinary agent-grant one — see
 - **Pass the token as each tool's `token` argument.** An MCP client fixes its
   headers when it connects, so a token approved mid-session cannot become a
   header. Every gated tool takes `token` for exactly this reason.
+- **Make the approve link one click.** Put the `approveUrl` on a line of its
+  own, as a bare URL (and as a link card where the host can show one), with the
+  `userCode` on the line above — never only inside a sentence, where a person has to
+  ask for it again:
+
+  ```
+  Approve access (code <userCode>):
+  https://<host>/agent-access/<request-id>
+  ```
 - **Collect approval in the background.** Immediately after `request_access`,
   relay its exact `approveUrl` and `userCode`, then start a bounded background
   task that calls `poll_access` with the returned request id and device secret.
@@ -698,7 +709,14 @@ So decide which you are making, and act on it early:
 - **Kotlin is the deliverable** → export after the first structural batch, not at
   the end. A diagnostic then costs one component swap; the same diagnostic after
   eighty nodes costs a rebuild. Empty `diagnostics` is a real check on the
-  design, not a formatting step.
+  design, not a formatting step — but it is not a compile. The gate checks that
+  each call has a record, not that the target classpath carries it: an icon key
+  such as `pauseCircle` exports `Icons.Filled.PauseCircle`, which only
+  `material-icons-extended` ships, with no diagnostic at all. Where it is
+  advertised, `ui_builder_render_native` is the compile check: a
+  `compileError` there (`Unresolved reference 'PauseCircle'`) is a real failure
+  of the Kotlin, so fix it before handing the code over, or name the dependency
+  it needs.
 - **The design is the deliverable** — a mockup, a PNG, a screen a designer takes
   over → use whatever the catalog offers and read the diagnostics as a note about
   the generator rather than a problem with your design.
@@ -731,7 +749,40 @@ So decide which you are making, and act on it early:
   host and reports where each node drew (`nodeBounds`, `taggedNodeIds`). It is a
   compile, so it takes minutes and only exists where the host can run one — reach
   for it when you need the ground truth about layout, and `export png` for the
-  ordinary "does this look right" loop.
+  ordinary "does this look right" loop. When Kotlin is the deliverable, run it
+  once before handing over: it is the only tool that proves the export compiles.
+  An empty `nodeBounds` with a `compileError` means the code did not build, and
+  the overlay tools (`ui_builder_view` outlines) have nothing to draw.
+
+**A Wear widget is not a watch screen.** A `remote-m3` design whose root is a
+`remote-m3/widget-container-*` is shown by the launcher inside a widget frame,
+not across a full round display. Do not judge it on the matrix's Wear presets
+(`wear_small_round`, `wear_large_round`): they draw the 216×76 dp widget as a
+band across a watch face, which is not how anyone sees it. Instead:
+
+- Pass widget-sized `devices` to `ui_builder_render_design_matrix` — the
+  container's own size (216×76 dp small, 216×124 dp large) as
+  `{"widthDp": 216, "heightDp": 76, "label": "small widget"}` — with the font
+  scales below.
+- The host shapes the export targets are the Samsung round frame
+  (`RoundSmallWidgetPreviewParams`), the Pixel Watch squircle
+  (`SquircleSmallWidgetPreviewParams`) and the rectangular one
+  (`RectangularSmallWidgetPreviewParams`), plus their large variants. The
+  guidelines pictures (`ui_builder_guidelines_prompt`, `check_design` with
+  `rendered: true`) are drawn in the Samsung and Pixel Watch frames; ask for
+  those when you need to see the clip a frame imposes.
+- A Wear **app** screen (`wear-m3`) is the opposite case: cover the small round
+  device and the largest font scale.
+
+**Render the large font scale yourself.** `ui_builder_check_design`'s
+accessibility pass reasons from declared sizes and, with `rendered: true`,
+measured touch targets; it does not see a line that wraps and pushes its
+siblings out of a fixed 76 dp frame. Draw the design at the large scale (1.24×
+for a Wear widget, 1.5× for a mobile one, 2× only when asked — at 2× a widget
+clips so widely the findings bury everything else) and look at the picture
+before calling it done. A widget whose brand line wraps at 1.5× and pushes the
+title out of the frame passed both the accessibility check and
+`wear.layout.no-clipping`.
 - **The browser URL** — `https://<host>/ui-builder/<catalogSystemId>/<designId>`
   — is what you hand a person. Always give them this rather than describing the
   design.
