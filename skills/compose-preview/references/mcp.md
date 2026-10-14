@@ -43,7 +43,7 @@ The `compose-catalogs` plugin from
 [compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins#install)
 already wires this URL. To add it by hand, per-host commands are in its
 [host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md).
-People setting up for the first time start at <https://ui.coo.ee/start>.
+People new to the UI Builder start at <https://ui.coo.ee/start>.
 
 ## Troubleshooting first — when NOT to act
 

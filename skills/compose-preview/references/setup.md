@@ -1,7 +1,7 @@
 # Setup: install, update, and apply the plugin
 
 The one install reference for the `compose-preview` CLI and these skills.
-People setting up for the first time: **start at <https://ui.coo.ee/start>**.
+People setting up for the first time: **start at <https://yschimke.github.io/compose-ai-tools/>**.
 Agents: only read this when `compose-preview` is actually missing; if a render
 tool is attached, render first.
 
