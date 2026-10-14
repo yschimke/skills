@@ -1,16 +1,49 @@
-# Local daemon MCP (agent integration)
+# MCP servers: local daemon and hosted catalog
 
-Driving compose-preview from an MCP-aware agent host (Claude Code, the Agent
-SDK, custom hosts) instead of from a shell. Companion to the
-[contributor README](https://github.com/yschimke/compose-ai-tools/blob/main/mcp/README.md);
-this file covers what the consumer of the published skill bundle needs.
+The one reference for wiring compose-preview into an MCP-aware agent host. The
+first section says which of the two servers you want; the rest of this file is
+the **local** one. The hosted one's tools and grant flow are in
+[`catalog-mcp.md`](./catalog-mcp.md). Contributor detail is in compose-ai-tools'
+[`mcp/README.md`](https://github.com/yschimke/compose-ai-tools/blob/main/mcp/README.md).
 
-> **This is the *local* MCP surface** — daemons on your machine, over a
-> checkout you can build, launched over stdio by your agent host. A
-> `compose-preview serve` deployment exposes a **second, different** MCP
-> endpoint over HTTP, with its own tools and a mandatory scoped grant. If you
-> have a server URL and no checkout, you want
-> [`references/catalog-mcp.md`](./catalog-mcp.md) instead.
+## Which MCP server
+
+There are **two** compose-preview MCP servers, and they are not the same thing.
+Most confusion is local instructions aimed at the hosted server, or the reverse.
+
+| | **Local daemon MCP** (this file) | **Hosted catalog MCP** ([catalog-mcp.md](./catalog-mcp.md)) |
+| --- | --- | --- |
+| What it renders | *your* project's `@Preview`s, on your machine | published library catalogs (Material 3, Wear M3, …) and UI Builder designs |
+| Launched as | `compose-preview mcp serve`, over stdio, by your agent host | Streamable HTTP, `POST https://preview.coo.ee/mcp` (or another `compose-preview serve` host's `/mcp`) |
+| Tools | `render_preview`, `render_matrix`, `find_previews_for_file`, … | `catalog_*` and `ui_builder_*` |
+| Needs a checkout | yes | no |
+| Credential | none: it is your machine | a scoped grant, always ([server-access.md](./server-access.md)) |
+| Can register projects, watch files, rebuild | yes | no |
+| Ships from | [`compose-ai-tools`](https://github.com/yschimke/compose-ai-tools) CLI | [`compose-preview-server`](https://github.com/yschimke/compose-preview-server) |
+
+Both can be connected at once; their tool names do not collide. If you have the
+repo, the local server is cheaper and more capable. If you have only a server
+URL, or the person named a library component, use the hosted one.
+
+### The hosted URL: `https://preview.coo.ee/mcp`, once
+
+The public hosted server's MCP URL is **`https://preview.coo.ee/mcp`**. Configure
+that one URL and nothing else.
+
+- **`https://ui.coo.ee/mcp` is an alias of the same server process**, with the
+  same tools. It is not a second service. **Never configure both**: the client
+  lists every `catalog_*` and `ui_builder_*` tool twice, and because stored
+  access tokens are keyed by origin, each URL needs its own approval.
+- If a client already has `ui.coo.ee/mcp`, **replace** that entry with
+  `preview.coo.ee/mcp` rather than adding a second one.
+- Browser links on `ui.coo.ee` (the start page, a UI Builder design page) are
+  web pages, not MCP configuration, and are fine to share as they are.
+
+The `compose-catalogs` plugin from
+[compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins#install)
+already wires this URL. To add it by hand, per-host commands are in its
+[host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md).
+People setting up for the first time start at <https://ui.coo.ee/start>.
 
 ## Troubleshooting first — when NOT to act
 
@@ -77,29 +110,28 @@ behind it. Reach for MCP when the loop is long-lived.
 
 ## Setup
 
-The `compose-preview` CLI bundles the MCP server. There is no second
-download, no manual classpath, and no per-host MCP command to compose by
-hand.
+The `compose-preview` CLI bundles the local MCP server: no second download, no
+manual classpath. Install the CLI first ([setup.md](./setup.md)), then, from the
+project root:
 
 ```bash
-# Run from the project root. Bootstraps descriptors + previews.json for every
-# plugin-applied module, then registers the MCP server with each locally
-# installed agent host it detects.
-compose-preview mcp install
-
-# Verify per-module state (descriptor present, enabled=true).
-compose-preview mcp doctor
+compose-preview mcp install   # prepares every plugin-applied module, registers with each detected host
+compose-preview mcp doctor    # verifies per-module state (descriptor present, enabled=true)
 ```
 
-`compose-preview mcp serve` defaults `--project` to the current Gradle root
-when run from a project checkout. Which hosts `mcp install` detects, the flags
-that force or skip one, and where each host's entry is written are in
-compose-agent-plugins' [host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#registering-the-local-mcp-server).
+Use **one** registration route. The `compose-preview` plugin from
+[compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins#install)
+registers this server itself (and its `compose-catalogs` plugin wires the hosted
+one); with it installed, don't also let `mcp install` register hosts. Two
+registrations of the same server give you two copies of every tool. Which hosts
+`mcp install` detects, the flags that force or skip one, and where each entry is
+written are in the
+[host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#registering-the-local-mcp-server).
 
-Every host entry is global: `<stable launcher> mcp serve`, with no
-`--project` (the server finds the project from the client's roots or working
-directory). The launcher is the stable absolute path, such as
-`~/.local/bin/compose-preview`, never a versioned
+Every host entry is global: `<stable launcher> mcp serve`, with no `--project`
+(the server finds the project from the client's roots or working directory, and
+defaults to the current Gradle root). The launcher is the stable absolute path,
+such as `~/.local/bin/compose-preview`, never a versioned
 `compose-preview-<version>/bin/` directory that the next upgrade deletes.
 `compose-preview mcp register` registers hosts without touching Gradle.
 
@@ -107,6 +139,7 @@ If a host fails to start the server with `ENOENT` on a
 `.../compose-preview-<version>/bin/compose-preview` path, or every session is
 pinned to one project, run `compose-preview update` (it runs
 `compose-preview mcp repair`), or `compose-preview mcp repair` directly.
+
 Beyond host registration, `mcp install` does three things behind the scenes:
 
 1. Runs `composePreviewDaemonStart` for every module that applies the plugin,
@@ -120,6 +153,9 @@ Beyond host registration, `mcp install` does three things behind the scenes:
 `mcp doctor` reads the descriptors back without mutating, and exits non-zero
 if any module's descriptor is missing or has `enabled: false`. Use it from a
 SessionStart hook, CI, or a watchdog.
+
+`mcp install` is a one-time bootstrap: see
+[Troubleshooting](#troubleshooting-first--when-not-to-act) before re-running it.
 
 ## What an attached agent sees
 
@@ -231,10 +267,8 @@ see the dedicated [`compose-preview-review/references/mcp-review.md`](../../comp
   `notifications/resources/list_changed`.
 - **Disconnect.** On stdin EOF the server tears down every supervised daemon
   cleanly (`shutdown` + `exit`, drain wait) before exiting itself.
-- **Cloud sandboxes.** The `install.sh` bootstrap covers the CLI; the MCP
-  server runs out of the same launcher with no extra steps. JVM toolchain
-  story is unchanged from the CLI — see
-  [`references/agent-cloud.md`](./agent-cloud.md).
+- **Cloud sandboxes.** The MCP server runs out of the CLI's launcher with no
+  extra steps; see [`references/agent-cloud.md`](./agent-cloud.md).
 
 ## See also
 
@@ -264,12 +298,3 @@ see the dedicated [`compose-preview-review/references/mcp-review.md`](../../comp
   dedicated validation tool when the server exposes one. Do not hand-edit
   design or render-manifest JSON as a substitute for a typed operation; if a
   required typed or validation capability is absent, name that gap plainly.
-
-### Interactive MCP capabilities
-
-- The shared viewer, `resource_link` results, file-path lookup, prompts, and
-  `render_matrix` variant choice require a compose-preview-server release after
-  v3.74.0 (none has shipped them yet). Until then, treat them as absent and use
-  text/image/path results. Use only what the server advertises; details in
-  [mcp.md](./mcp.md#draft-viewer-prompts-and-fallbacks) and
-  [catalog-mcp.md](./catalog-mcp.md#draft-viewer-and-interactive-capability-fallbacks).

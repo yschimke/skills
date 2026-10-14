@@ -12,22 +12,16 @@ is built for import into Claude Design (and similar design tools).
 
 This skill assumes the **compose-preview** skill is installed — it owns the
 renderer, CLI, and Gradle plugin that produce the PNGs this skill arranges.
-Check first with `compose-preview --version`; if it's missing:
-
-1. Run the stub bundled with the compose-preview skill, if it's on disk:
-   `bash ~/.agents/skills/compose-preview/scripts/compose-preview --version`
-   (first run installs the CLI and puts it on `PATH`).
-2. Otherwise `npx skills add yschimke/skills --global --yes --skill compose-preview --skill compose-preview-design-board`, then run that stub.
-   Update later with `compose-preview update` (CLI) and `npx skills update` (skills).
-3. No Node? `curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash`
+Check first with `compose-preview --version`; if it's missing,
+follow its [setup reference](../compose-preview/references/setup.md#install)
+(usually one command: `bash ~/.agents/skills/compose-preview/scripts/compose-preview --version`).
 
 ## Source
 
 This skill is maintained at
 [github.com/yschimke/skills](https://github.com/yschimke/skills) under
-`skills/compose-preview-design-board/`. To check for updates, compare the
-installed copy against `main` (e.g. `git ls-remote
-https://github.com/yschimke/skills HEAD`). The renderer and CLI that produce
+`skills/compose-preview-design-board/`. To update, see
+[setup.md § Update](../compose-preview/references/setup.md#update). The renderer and CLI that produce
 the input PNGs ship from
 [github.com/yschimke/compose-ai-tools](https://github.com/yschimke/compose-ai-tools).
 

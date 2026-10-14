@@ -1,22 +1,9 @@
-# Catalog MCP (a remote preview server, over MCP)
+# Hosted catalog MCP (a remote preview server, over MCP)
 
-There are **two** compose-preview MCP surfaces, and they are not the same
-server. Pick the right one first — most confusion here is an agent aiming
-local instructions at a remote box, or the reverse.
-
-| | [`references/mcp.md`](./mcp.md) — **local daemon MCP** | **catalog MCP** (this file) |
-| --- | --- | --- |
-| What it drives | daemons on *your* machine, over a checkout you can build | a `compose-preview serve` deployment someone else runs |
-| Transport | stdio, launched by your agent host | Streamable HTTP, `POST https://<host>/mcp` |
-| Needs a checkout | yes | no |
-| Credential | none — it is your machine | a scoped grant, always |
-| Can register projects, watch files, rebuild | yes | no — those stay local |
-| Ships from | [`compose-ai-tools`](https://github.com/yschimke/compose-ai-tools) (`mcp/`) | [`compose-preview-server`](https://github.com/yschimke/compose-preview-server) |
-
-Reach for catalog MCP when you have **a server URL and no checkout**: reviewing
-a published catalog, comparing a preview against what it looked like last week,
-or pulling a11y data for a component you cannot build locally. If you have the
-repo, the local daemon MCP is cheaper and more capable — use that.
+The **hosted** compose-preview MCP server: a `compose-preview serve`
+deployment's `/mcp` endpoint, for library catalogs and UI Builder designs with
+no checkout. The public one is `https://preview.coo.ee/mcp`. Which server to
+use, the local-vs-hosted comparison, and which hosted URL to configure are in [mcp.md § Which MCP server](./mcp.md#which-mcp-server).
 
 Upstream design doc, which this file summarises for agents:
 [`docs/design/CATALOG_MCP.md`](https://github.com/yschimke/compose-preview-server/blob/main/docs/design/CATALOG_MCP.md).

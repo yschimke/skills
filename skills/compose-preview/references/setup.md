@@ -1,88 +1,112 @@
 # Setup: install, update, and apply the plugin
 
-Moved from `SKILL.md`. Only read this when `compose-preview` or the MCP server
-is actually missing — if a render tool is attached, render first.
+The one install reference for the `compose-preview` CLI and these skills.
+People setting up for the first time: **start at <https://ui.coo.ee/start>**.
+Agents: only read this when `compose-preview` is actually missing; if a render
+tool is attached, render first.
 
-## Install / update at a glance
+## Check first
 
-- Skills + CLI (default): `npx skills add yschimke/skills --global --yes --skill compose-preview --skill compose-ui-builder`,
-  then `~/.agents/skills/compose-preview/scripts/compose-preview --version`.
-- No Node: `curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash`.
-- Update: `compose-preview update` (CLI + PATH); `npx skills update` (npx-installed skills).
-- Check: `compose-preview --version && compose-preview doctor`.
+```sh
+compose-preview --version && compose-preview doctor
+```
 
-## Setup
+If that works you're done. Don't re-run an installer between previews: it is
+idempotent for same-version runs but still does network probes. `doctor`
+verifies Java 17+ on `PATH` (JDK 21/25 are fine; the renderer is compiled to
+JDK 17 bytecode) and prints the exact command to fix `PATH` if needed.
 
-The plugin is on Maven Central — most projects already have `mavenCentral()`
-in their plugin repositories, so no credentials or extra registry config.
+## Install
 
-**Agents: check first, install only when missing.** Run
-`compose-preview --version && compose-preview doctor` to see whether the CLI
-is already available — if it is, you're done. Don't blindly re-run the
-installer between previews; the script is idempotent for same-version runs
-but still does network probes.
+Take the first route that applies:
 
-If `compose-preview` isn't on `$PATH`, install it in this order:
-
-1. **Run the stub bundled with this skill** (preferred — no Node needed). Its
-   first run downloads the real CLI, links `~/.local/bin/compose-preview`,
-   adds `~/.local/bin` to bash/zsh/fish startup files, and re-execs:
+1. **The skill is on disk, the CLI isn't.** Run the stub bundled with this
+   skill. Its first run downloads the real CLI, links
+   `~/.local/bin/compose-preview`, adds `~/.local/bin` to bash/zsh/fish startup
+   files, and re-execs into the CLI. Open a new shell afterwards.
 
    ```sh
    bash "$SKILL_DIR/scripts/compose-preview" --version
    ```
 
-   (`$SKILL_DIR` is the absolute path to this skill bundle, e.g.
-   `~/.agents/skills/compose-preview/`. Where each agent host keeps installed
-   skills is in the [host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#skill-install-locations).)
-2. **No bundle on disk?** Install the skills with the
-   [skills CLI](https://skills.sh), then run the stub:
+   `$SKILL_DIR` is this skill's directory, e.g. `~/.agents/skills/compose-preview/`.
+   Where each agent host keeps installed skills is in the
+   [host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#skill-install-locations).
+2. **Nothing installed (default).** Install the skill content with the
+   [skills CLI](https://skills.sh), into `~/.agents/skills/` with per-agent
+   links, then run the stub:
 
    ```sh
    npx skills add yschimke/skills --global --yes --skill compose-preview --skill compose-ui-builder
    ~/.agents/skills/compose-preview/scripts/compose-preview --version
    ```
-3. **No Node?** Use the canonical installer (CLI + the default skills in one
-   step; `--all-skills` for every skill;
-   add `-s -- --no-modify-path` to leave shell startup files alone):
+3. **No Node.** The canonical installer puts the CLI and the same two default
+   skills (with per-host links for Claude Code and Codex under
+   `~/.agents/skills/`) in place in one step:
 
    ```sh
    curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash
    ```
 
-Then `compose-preview doctor`. A new shell picks up `~/.local/bin`. To update:
-`compose-preview update` for the CLI (and PATH), `npx skills update` for
-npx-installed skills; re-running the curl installer also upgrades (pin a
-version with `… | bash -s -- 1.79.0`). The installer only touches shell
-startup files when `~/.local/bin` isn't already on `PATH` and no startup file
-mentions it; to opt out entirely, run `compose-preview update --no-modify-path`
-(older CLIs: `MODIFY_PATH=0 compose-preview update`; curl installer:
-`… | bash -s -- --no-modify-path`).
+A **plugin marketplace** (Claude Code, Codex, Gemini, …) is the alternative to
+all three: [compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins#install)
+installs these skills plus the MCP servers and host wiring, and its stub
+downloads the CLI on first use. Pick one route per host; two give you every
+skill twice.
 
-`doctor` verifies Java 17+ on `PATH` (JDK 21/25 are fine — the renderer is
-compiled to JDK 17 bytecode). If the install path isn't on `PATH`, the
-script prints the exact command to add it.
+### Which skills
 
-From a Compose project root, install the MCP server descriptors:
+The default is two skills: `compose-preview` (render, inspect, CLI and MCP) and
+`compose-ui-builder` (author designs over MCP). Every installed skill's
+description loads into each agent session, so the rest are opt-in:
+`compose-preview-review`, `compose-preview-ci`, `compose-preview-design-board`,
+`compose-design-catalog`, `figma-catalog-import`, `design-parity-review`.
 
-```sh
-compose-preview mcp install                  # registers with each detected agent host
-```
+- skills CLI: add another `--skill <name>`, or drop the `--skill` flags to
+  pick from the list.
+- installer: `… | bash -s -- --skills compose-preview-review,compose-preview-ci`,
+  or `--all-skills` for every skill.
 
-Per-host flags are in the [host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md#registering-the-local-mcp-server).
-The [`compose-agent-plugins`](https://github.com/yschimke/compose-agent-plugins#install)
-plugins are an alternative to `mcp install`. `compose-preview` wires this MCP
-server, and `compose-catalogs` wires the hosted catalog and UI Builder. The
-install commands for each harness are in
-[its README](https://github.com/yschimke/compose-agent-plugins#install). Use one route
-or the other, not both: two registrations of the same server give you two copies
-of every tool.
+### Installer options
 
-`mcp install` is a one-time bootstrap. If a render misbehaves, do **not**
-re-run it and do **not** kill the daemon — run `compose-preview mcp doctor`
-first and follow the verdict it prints. The supervisor respawns daemons
-automatically on classpath changes. See
-[references/mcp.md § Troubleshooting](./mcp.md#troubleshooting-first--when-not-to-act).
+Pass these after `bash -s --` (for example `… | bash -s -- --no-modify-path`).
+The full list, including the override environment variables, is in the header
+of [`scripts/install.sh`](https://github.com/yschimke/skills/blob/main/scripts/install.sh).
+
+| Option | Effect |
+| --- | --- |
+| `1.79.0` (a bare version) | Pin a CLI version instead of the latest release. |
+| `--skills a,b` / `--all-skills` | Add skills to the default pair / install every skill. |
+| `--cli-only` | Skip skill content (already on disk via a plugin or npx); the stub passes this. |
+| `--with-skills` | Refresh skill content even when another tool installed it. |
+| `--cli-home DIR` | Unpack the CLI under `DIR` (also `COMPOSE_PREVIEW_HOME`). |
+| `--no-modify-path` | Leave shell startup files alone (also `MODIFY_PATH=0`). |
+| `--android-sdk`, `--jdk 17,21` | Also provision an Android SDK / JDKs; see [agent-cloud.md](./agent-cloud.md#generic-setup-script-cloud-bootstrap). |
+
+The installer adds `~/.local/bin` to shell startup files only when it isn't
+already on `PATH` and no startup file already mentions it.
+
+## Update
+
+- CLI (and `PATH`): `compose-preview update`. `compose-preview update
+  --no-modify-path` leaves startup files alone; older CLIs whose `update`
+  doesn't accept the flag take `MODIFY_PATH=0 compose-preview update`.
+- npx-installed skills: `npx skills update`.
+- Re-running the curl installer also upgrades.
+
+## MCP
+
+The CLI bundles the local MCP server. Registering it with your agent host
+(`compose-preview mcp install`), troubleshooting it (`compose-preview mcp
+doctor` first, never re-install or kill the daemon to "refresh"), and the
+**hosted** catalog server's single URL are all in [mcp.md](./mcp.md).
+
+## Apply the Gradle plugin
+
+The plugin is on Maven Central; most projects already have `mavenCentral()`
+in their plugin repositories, so no credentials or extra registry config.
+The full human-facing configuration reference is the
+[compose-ai-tools site](https://yschimke.github.io/compose-ai-tools/).
 
 Apply the plugin in `<module>/build.gradle.kts` (replace the version with
 the latest from

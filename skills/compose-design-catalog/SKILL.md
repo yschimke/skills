@@ -15,14 +15,9 @@ This skill is the system-wide, sticker-sheet sibling of
 **compose-preview-design-board** (which arranges an arbitrary set of renders
 into one HTML brief). It assumes the **compose-preview** skill is installed —
 that skill owns the renderer, CLI, and Gradle plugin. Check first with
-`compose-preview --version`; if missing:
-
-1. Run the stub bundled with the compose-preview skill, if it's on disk:
-   `bash ~/.agents/skills/compose-preview/scripts/compose-preview --version`
-   (first run installs the CLI and puts it on `PATH`).
-2. Otherwise `npx skills add yschimke/skills --global --yes --skill compose-preview --skill compose-design-catalog`, then run that stub.
-   Update later with `compose-preview update` (CLI) and `npx skills update` (skills).
-3. No Node? `curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash`
+`compose-preview --version`; if missing,
+follow its [setup reference](../compose-preview/references/setup.md#install)
+(usually one command: `bash ~/.agents/skills/compose-preview/scripts/compose-preview --version`).
 
 ## Code is the source of truth
 

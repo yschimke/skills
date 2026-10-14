@@ -1,5 +1,7 @@
 # Skills
 
+**Start here: <https://ui.coo.ee/start>**
+
 Skills for rendering and reviewing [Jetpack Compose] and [Compose
 Multiplatform] UI from agent workflows. They pair with the
 `compose-preview` CLI and Gradle plugin published from
@@ -18,65 +20,23 @@ Codex.
 
 ## Install
 
-**Default: the [skills CLI](https://skills.sh).** Install the skill content,
-then run the bundled `compose-preview` stub once to get the CLI:
-
 ```sh
 npx skills add yschimke/skills --global --yes --skill compose-preview --skill compose-ui-builder
-~/.agents/skills/compose-preview/scripts/compose-preview --version   # first run installs the CLI and puts it on PATH
 ```
 
-`npx skills add` installs the skill content only, into `~/.agents/skills/`
-with per-agent links. The stub at `skills/compose-preview/scripts/compose-preview`
-runs the canonical installer with `--cli-only` on its first run: it downloads
-the CLI, links `~/.local/bin/compose-preview`, adds `~/.local/bin` to your
-bash/zsh/fish startup files, and re-execs into the real CLI. Open a new
-terminal afterwards. To update: `compose-preview update` updates the CLI (and
-PATH), and `npx skills update` updates the skills.
+That installs the two default skills; the `compose-preview` skill's bundled
+stub downloads the CLI on first use. Every other route (the no-Node `curl`
+installer, plugin marketplaces), the optional skills, installer flags and
+updating are in **[setup.md](skills/compose-preview/references/setup.md)**.
+Wiring MCP, including which of the two servers you want and the one hosted URL
+(`https://preview.coo.ee/mcp`), is in
+**[mcp.md](skills/compose-preview/references/mcp.md)**. Per-harness wiring lives in
+[compose-agent-plugins' host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md).
 
-The default is two skills: `compose-preview` (render, inspect, CLI and MCP)
-and `compose-ui-builder` (author designs over MCP). Both route requested design
-reviews to the [catalog guidelines checklist](skills/compose-preview/references/design-guidelines.md),
-including keyless agent review and coverage reporting; no optional review bundle
-or provider key is needed for that workflow. Every installed skill's
-description loads into each agent session, so the rest are opt-in. Add them
-by name with another `--skill` (for example `--skill compose-preview-review
---skill compose-preview-ci`), or drop the `--skill` flags to pick from the
-list. The other skills: `compose-preview-review`, `compose-preview-ci`,
-`compose-preview-design-board`, `compose-design-catalog`,
-`figma-catalog-import`, `design-parity-review`.
+### Bundles
 
-**Fallback: curl the installer** — when there's no Node, or you want the CLI
-and the same two default skills (with per-host links for Claude Code and
-Codex under `~/.agents/skills/`) in one step. Add skills with
-`bash -s -- --skills compose-preview-review,compose-preview-ci`, or take them
-all with `bash -s -- --all-skills`:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash
-```
-
-The installer adds `~/.local/bin` to your shell startup files only when it
-isn't already on `PATH` and no startup file already mentions it. Pass
-`--no-modify-path` (`… | bash -s -- --no-modify-path`, or
-`compose-preview update --no-modify-path`) to leave them alone entirely;
-`MODIFY_PATH=0` in the environment does the same, including for older CLIs
-whose `update` doesn't accept the flag.
-
-**Alternative: a Claude Code or Codex plugin marketplace** — see
-[Per-harness plugins](#per-harness-plugins) below, which also adds the MCP
-servers and harness wiring. The plugin ships the same bootstrap stub, so the
-CLI download happens on its first invocation.
-
-### Per-harness plugins
-
-These skills cover *how* to drive the tools. Installing them into a particular
-agent host, together with the MCP servers, hooks and setup that host needs, is
-documented in one place:
-[`yschimke/compose-agent-plugins`'s README](https://github.com/yschimke/compose-agent-plugins#readme).
-
-The skills are grouped into three bundles under `plugins/`, generated from
-`skills/`, so a host can install the default pair without the rest:
+`plugins/` holds three bundles generated from `skills/`, so a host can install
+the default pair without the rest:
 
 | Bundle | Skills |
 |---|---|
