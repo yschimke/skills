@@ -337,11 +337,24 @@ enough to define the recording duration:
 }
 ```
 
-Scripts can also include audit/control markers. Today only `recording.probe`
-is dispatched; `state.save`, `state.restore`, `lifecycle.event`, and
-`preview.reload` are advertised on the daemon's `dataExtensions` as
-`supported = false` roadmap entries, and `record_preview` rejects them up
-front (compose-ai-tools#714).
+Scripts can also include audit/control markers such as `recording.probe`. On
+the Android daemon (daemon-android 3.18.1+) the control events below are
+dispatched too, but only once the extension that advertises them is enabled —
+extensions other than `compose/semantics` are off by default:
+
+| Events | Extension |
+|---|---|
+| `state.recreate`, `state.save`, `state.restore`, `lifecycle.pause` / `lifecycle.resume` / `lifecycle.stop`, `preview.reload` | `recording/script` |
+| `navigation.deepLink`, `navigation.back`, `navigation.predictiveBack*` | `navigation` |
+| `uia.click`, `uia.inputText`, `uia.scrollForward`, … | `uiautomator` |
+| `a11y.action.click`, `a11y.action.scrollForward`, `a11y.action.next`, … | `a11y` |
+
+Call `enable_extensions` with the ones the script needs before
+`record_preview`; newer compose-preview-mcp releases enable them for you
+from the script's event ids. A few ids stay advertised as `supported = false`
+roadmap entries (e.g. `a11y.action.accessibilityFocus`, `a11y.action.select`,
+the granularity moves) and `record_preview` still rejects those up front.
+CMP Desktop does not dispatch the Android-only events.
 
 ```json
 {
