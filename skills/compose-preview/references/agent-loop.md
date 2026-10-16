@@ -82,7 +82,11 @@ instead of `pixelX`/`pixelY`:
 
 - `ref` — a stable node ref from a prior `observe`/diff;
 - `testTag` — a Compose `Modifier.testTag(...)`;
-- `role` + `text` — e.g. a button labelled "Save".
+- `text` — e.g. a button labelled "Save": use `{ "text": "Save" }` without
+  `role`. Current daemons resolve targets against the unmerged semantics
+  tree, where a `Button`'s role sits on the button and its text on the child
+  `Text`, so `role` + `text` matches nothing. Daemons that include the fix
+  that resolves targets against the merged tree accept `role` + `text` too.
 
 The daemon projects the live semantics tree, resolves the target to the
 node's centre, and dispatches the pointer event there. Explicit
