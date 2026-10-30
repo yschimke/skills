@@ -219,23 +219,28 @@ The local server can also run a whole APK in Robolectric's simulator, over
 `compose-preview launch <apk> --control stdio`. These tools come from
 [compose-preview-mcp](https://github.com/yschimke/compose-preview-mcp/blob/main/docs/LOCAL_MCP.md),
 which `compose-preview mcp serve` resolves; they ship in its next release after
-v4.12.0 and need a CLI with `launch` (after v2.74.1). Use only what `tools/list`
+v4.12.0 and need a CLI with `launch` (v2.75.0 or later; `network`, `dataLayer`
+and the screen commands need the release after it). Use only what `tools/list`
 advertises.
 
-- `simulator_launch {apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?}`
+- `simulator_launch {apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?}`
   starts one and waits for `ready`: a simulator id, package, display size and
   first activity. The window stays up unless `headless`, with the agent's taps
-  drawn over it.
+  drawn over it. `network` starts in a mode (`offline`, `cellular,airplane`, …);
+  `dataLayer: "agent"` makes you the app's Wearable Data Layer peer.
 - `simulator_command {simulator?, cmd, …}` sends one control command (`find`,
   `tap`, `swipe`, `text`, `hierarchy`, `startActivity`, `permissions`, `shell`
-  for an adb line, …) and returns its result plus the app's `events` since the
-  last call.
+  for an adb line, `network` / `wifi` / `bluetooth`, `dataLayer`, `screen` /
+  `ambient` / `tilt` / `palm`, …) and returns its result plus the app's
+  `events` since the last call.
 - `simulator_screenshot {simulator?, path?}` returns the display as an image
   (never the overlay); `simulator_stop` ends one.
 
 Needs Java 21+ (`COMPOSE_PREVIEW_SIMULATOR_JAVA` in the server's environment)
 and an Android SDK. The worked flow, the command table and the limits are in
-[simulator.md](./simulator.md).
+[simulator.md](./simulator.md); network and radios in
+[simulator-network.md](./simulator-network.md), Wear and the Data Layer in
+[simulator-wear.md](./simulator-wear.md).
 
 ### Draft viewer, prompts, and fallbacks
 

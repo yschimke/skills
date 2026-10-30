@@ -14,7 +14,10 @@ not loaded rather than treating this rendering reference as an API authority.
 
 To run the whole Wear app rather than one screen (navigation, the crown via
 `rotary`, a round 454×454 display), launch its APK in the simulator: see
-[simulator.md § Form factors](./simulator.md#form-factors).
+[simulator.md § Form factors](./simulator.md#form-factors). For its tiles and
+notifications on a watch face, its ambient UI, or its Data Layer sync with a
+phone (paired, or with the agent as the phone), see
+[simulator-wear.md](./simulator-wear.md).
 
 ## Verification workflow
 
