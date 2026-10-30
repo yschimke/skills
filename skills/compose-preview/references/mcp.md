@@ -219,28 +219,39 @@ The local server can also run a whole APK in Robolectric's simulator, over
 `compose-preview launch <apk> --control stdio`. These tools come from
 [compose-preview-mcp](https://github.com/yschimke/compose-preview-mcp/blob/main/docs/LOCAL_MCP.md),
 which `compose-preview mcp serve` resolves; they ship in its next release after
-v4.12.0 and need a CLI with `launch` (v2.75.0 or later; `network`, `dataLayer`
-and the screen commands need the release after it). Use only what `tools/list`
+v4.12.0 and need a CLI with `launch` (v2.75.0 or later; `network`, `dataLayer`,
+`playServices`, the screen commands, restart and reload need the release after it). Use only what `tools/list`
 advertises.
 
-- `simulator_launch {apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?}`
+- `simulator_launch {apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?, playServices?, pair?, pairQualifiers?, standby?, project?, module?, variant?, live?, gradleArgs?}`
   starts one and waits for `ready`: a simulator id, package, display size and
   first activity. The window stays up unless `headless`, with the agent's taps
   drawn over it. `network` starts in a mode (`offline`, `cellular,airplane`, …);
-  `dataLayer: "agent"` makes you the app's Wearable Data Layer peer.
-- `simulator_command {simulator?, cmd, …}` sends one control command (`find`,
-  `tap`, `swipe`, `text`, `hierarchy`, `startActivity`, `permissions`, `shell`
-  for an adb line, `network` / `wifi` / `bluetooth`, `dataLayer`, `screen` /
-  `ambient` / `tilt` / `palm`, …) and returns its result plus the app's
-  `events` since the last call.
-- `simulator_screenshot {simulator?, path?}` returns the display as an image
-  (never the overlay); `simulator_stop` ends one.
+  `dataLayer: "agent"` makes you the app's Wearable Data Layer peer; `pair` (a
+  Wear APK) runs a paired phone and watch; `playServices` breaks Play services
+  availability; `project` (the app's Gradle build; `apk` optional) enables
+  `simulator_reload`.
+- `simulator_command {simulator?, device?, cmd, …}` sends one control command
+  (`find`, `tap`, `swipe`, `text`, `hierarchy`, `startActivity`, `permissions`
+  with `policy: ask` and `answer`, `shell` for an adb line, `network` / `wifi` /
+  `bluetooth`, `dataLayer`, `companion`, `playServices`, `screen` / `ambient` /
+  `tilt` / `palm`, …) and returns its result plus the app's `events` since the
+  last call. `device: "watch"` addresses a paired watch.
+- `simulator_screenshot {simulator?, device?, path?}` returns the display as an
+  image (never the overlay); `simulator_logs {simulator?, device?, contains?, lines?}`
+  the latest log lines (paired lines start `[phone]` / `[watch]`).
+- `simulator_restart {simulator?, device?, keepData?}` and
+  `simulator_update {apk, device?, keepData?}` replace the app with a fresh JVM
+  (the same or a rebuilt APK), its data kept; `simulator_reload {full?, keepData?}`
+  compiles an edit in `project` and restarts on the changed classes.
+  `simulator_stop` ends one.
 
 Needs Java 21+ (`COMPOSE_PREVIEW_SIMULATOR_JAVA` in the server's environment)
 and an Android SDK. The worked flow, the command table and the limits are in
 [simulator.md](./simulator.md); network and radios in
 [simulator-network.md](./simulator-network.md), Wear and the Data Layer in
-[simulator-wear.md](./simulator-wear.md).
+[simulator-wear.md](./simulator-wear.md), restart, update and live reload in
+[simulator-iterate.md](./simulator-iterate.md).
 
 ### Draft viewer, prompts, and fallbacks
 

@@ -61,8 +61,9 @@ bundles, never both, or each skill appears twice.
   gated preview server, and running a whole APK without an emulator
   (`compose-preview launch` and the MCP `simulator_*` tools: driving an app,
   adb equivalents, foldables, multiple displays, home-screen widgets, network,
-  Wi-Fi and Bluetooth conditions, Wear tiles and ambient mode, and a paired or
-  agent-played Wearable Data Layer).
+  Wi-Fi and Bluetooth conditions, Wear tiles and ambient mode, a paired or
+  agent-played Wearable Data Layer, and restart and live reload while
+  iterating on an app).
 - [`compose-preview-review`](skills/compose-preview-review/SKILL.md) —
   review pull requests that change Compose UI by rendering `@Preview`
   composables on base and head and diffing them. Pairs with

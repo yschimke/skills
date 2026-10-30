@@ -97,8 +97,14 @@ The adapter is on unless airplane mode or `bluetooth {op:"disable"}` turned it o
 Bytes are hex (`"0a1b"`), `{"text":…}`, `{"base64":…}` or a number array. A `connectGatt` to a
 device not in range fails with status 133, as a device times out.
 
+An app that pairs through `CompanionDeviceManager.associate` (API 33+) is answered by the
+`companion` command's policy: by default the first advertised peripheral that matches the
+request's device filters (address, name pattern, service UUIDs) is associated, and `policy:"ask"`
+holds the chooser for an `answer`
+([simulator-wear.md § Companion devices](./simulator-wear.md#companion-devices)).
+
 Not simulated: classic sockets (RFCOMM), audio profiles, the app advertising or hosting a GATT
-server itself, `CompanionDeviceManager.associate`, Wi-Fi-to-cellular fallback, roaming.
+server itself, Wi-Fi-to-cellular fallback, roaming.
 
 ## adb equivalents
 
