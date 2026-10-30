@@ -60,7 +60,9 @@ bundles, never both, or each skill appears twice.
   editable **SVG** export, cloud sandboxes, requesting scoped access to a
   gated preview server, and running a whole APK without an emulator
   (`compose-preview launch` and the MCP `simulator_*` tools: driving an app,
-  adb equivalents, Wear, foldables, multiple displays).
+  adb equivalents, foldables, multiple displays, home-screen widgets, network,
+  Wi-Fi and Bluetooth conditions, Wear tiles and ambient mode, and a paired or
+  agent-played Wearable Data Layer).
 - [`compose-preview-review`](skills/compose-preview-review/SKILL.md) —
   review pull requests that change Compose UI by rendering `@Preview`
   composables on base and head and diffing them. Pairs with

@@ -41,8 +41,9 @@ Commands:
   doctor   Verify Java 17+ + project compatibility (run before Setup)
   launch   Run an APK in Robolectric's simulator: a window, or with
            --control stdio a JSON-lines channel an agent drives
-           (--headless, --form-factor, --device, --display, --prepare).
-           Next release after v2.74.1; see simulator.md
+           (--headless, --form-factor, --device, --display, --pair,
+           --prepare). Since v2.75.0; --launcher, --network, --data-layer
+           agent, --fingerprint, --max-heap after it. See simulator.md
   rc       Remote Compose JSON codec, offline (compile | dump | header).
            `rc dump <doc.rc>` makes a captured .rc readable and diffable;
            `rc compile <doc.json>` builds one from AndroidX's authoring
