@@ -84,6 +84,11 @@ combine with other evidence, and how much confidence the result supports.
 
 ## Related
 
+- [`references/simulator.md`](./simulator.md) — in a running APK
+  (`compose-preview launch`), the `permissions` command (`policy: deny`,
+  or `grant` / `deny` by name; `pm grant` / `revoke` through `shell`)
+  sets how the app's real runtime permission requests are answered.
+
 - [`references/data-products.md`](./data-products.md) — how data
   products are advertised, subscribed, and fetched; failure-code table
   (`DataProductUnknown` etc.) applies to `compose/permissions` too.

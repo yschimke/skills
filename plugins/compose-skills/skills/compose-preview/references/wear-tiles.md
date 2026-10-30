@@ -7,6 +7,10 @@ and rendered by the system. The preview pipeline treats them as a separate
 kind of preview: different annotation, different entry-point signature,
 different renderer.
 
+Previews are the way to see a tile. The APK simulator
+([simulator.md](./simulator.md)) runs a Wear app's activities but has no tiles
+carousel: a tile service is reachable only through `bindService`.
+
 ## What's different from Compose previews
 
 - **Not a composable.** A tile preview is a top-level function returning
