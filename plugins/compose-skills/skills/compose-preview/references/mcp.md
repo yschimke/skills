@@ -220,17 +220,20 @@ The local server can also run a whole APK in Robolectric's simulator, over
 [compose-preview-mcp](https://github.com/yschimke/compose-preview-mcp/blob/main/docs/LOCAL_MCP.md),
 which `compose-preview mcp serve` resolves; they ship in its next release after
 v4.12.0 and need a CLI with `launch` (v2.75.0 or later; `network`, `dataLayer`,
-`playServices`, the screen commands, restart and reload need the release after it). Use only what `tools/list`
+`playServices`, the screen commands, restart, reload and `adb` need the release after it;
+`simulator_adb` also needs the CLI's `--adb` device event). Use only what `tools/list`
 advertises.
 
-- `simulator_launch {apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?, playServices?, pair?, pairQualifiers?, standby?, project?, module?, variant?, live?, gradleArgs?}`
+- `simulator_launch {apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?, playServices?, pair?, pairQualifiers?, standby?, project?, module?, variant?, live?, gradleArgs?, adb?, formFactor?}`
   starts one and waits for `ready`: a simulator id, package, display size and
   first activity. The window stays up unless `headless`, with the agent's taps
   drawn over it. `network` starts in a mode (`offline`, `cellular,airplane`, …);
   `dataLayer: "agent"` makes you the app's Wearable Data Layer peer; `pair` (a
   Wear APK) runs a paired phone and watch; `playServices` breaks Play services
   availability; `project` (the app's Gradle build; `apk` optional) enables
-  `simulator_reload`.
+  `simulator_reload`; `adb: true` serves it to adb and Android Studio as an
+  emulator (`apk` optional, installed rather than started; the result's
+  `device` holds the serial), with `formFactor` choosing phone or `wear`.
 - `simulator_command {simulator?, device?, cmd, …}` sends one control command
   (`find`, `tap`, `swipe`, `text`, `hierarchy`, `startActivity`, `permissions`
   with `policy: ask` and `answer`, `shell` for an adb line, `network` / `wifi` /
@@ -244,13 +247,18 @@ advertises.
   `simulator_update {apk, device?, keepData?}` replace the app with a fresh JVM
   (the same or a rebuilt APK), its data kept; `simulator_reload {full?, keepData?}`
   compiles an edit in `project` and restarts on the changed classes.
-  `simulator_stop` ends one.
+- `simulator_adb {simulator?, args | command, output?, timeoutMs?}`, with `adb`,
+  runs `adb -s <serial>` against it: `install`, `uninstall`, `shell` (including
+  Studio's Wear `DEBUG_SURFACE` tile launches), `push` / `pull`, and
+  `exec-out screencap -p` with `output`. Options that reach another device or
+  the adb server are refused.
+- `simulator_stop` ends one.
 
 Needs Java 21+ (`COMPOSE_PREVIEW_SIMULATOR_JAVA` in the server's environment)
 and an Android SDK. The worked flow, the command table and the limits are in
 [simulator.md](./simulator.md); network and radios in
 [simulator-network.md](./simulator-network.md), Wear and the Data Layer in
-[simulator-wear.md](./simulator-wear.md), restart, update and live reload in
+[simulator-wear.md](./simulator-wear.md), restart, update, live reload and `adb` in
 [simulator-iterate.md](./simulator-iterate.md).
 
 ### Draft viewer, prompts, and fallbacks

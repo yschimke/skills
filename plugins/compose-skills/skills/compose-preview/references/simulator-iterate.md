@@ -126,7 +126,46 @@ adb exec-out screencap -p > screen.png
 on the new package, installed but not started, with the adb connection kept. `adb shell` maps onto
 the [adb equivalents](./simulator.md#adb-equivalents); Studio finds the emulator gRPC endpoint and
 draws the screen in Running Devices. Use it when the tool driving the app speaks only adb. For an
-agent, `--control stdio` is still the richer channel.
+agent, `--control stdio` is still the richer channel; over MCP you get both at once (below).
+
+With `--control stdio` the device announces itself: `{"event":"device","serial":"emulator-5554",
+"adbPort":5555,"consolePort":5554,"grpcPort":8554,…}`, then `installed` / `uninstalled` as packages
+come and go, and `installFailed` (`apk`, `error`) for an APK given to `launch --adb` that will not
+install.
+
+### Over MCP: `simulator_adb`
+
+`simulator_launch` with `adb: true` runs `launch --adb`. `apk` is optional: without one the device
+boots to its home screen, or with `formFactor: "wear"` its watch face. An `apk` given is installed,
+not started, and the launch answers once it is (an install that fails fails the launch, with the
+device's reason). The result's `device` holds the `serial` and ports. Then `simulator_adb` runs the
+SDK's `adb -s <serial>` against it (from `ANDROID_HOME` / `ANDROID_SDK_ROOT` `platform-tools`, else
+`PATH`), waiting for the device first:
+
+```
+simulator_launch  {"adb":true, "formFactor":"wear"}
+simulator_adb     {"args":["install","/abs/path/wear-debug.apk"]}      # Success; boots on the app
+simulator_adb     {"command":"shell am broadcast -a com.google.android.wearable.app.DEBUG_SURFACE --es operation add-tile --ecn component com.example/.MyTileService"}
+simulator_adb     {"command":"shell am start -n com.example/.MainActivity"}
+simulator_command {"cmd":"tap","text":"Start"}                         # the control channel, same device
+simulator_adb     {"args":["exec-out","screencap","-p"], "output":"/tmp/screen.png"}
+simulator_stop    {}
+```
+
+Pass `args` (adb's arguments, without `-s`) or one `command` line, which is split as a shell
+splits words. `output` writes stdout to a file as bytes, for a command whose output is data
+(`exec-out screencap -p`, `exec-out run-as … cat`); a `pull` names its own local path instead. It
+returns `exitCode`, `stdout` (or `output` and `bytes`), `stderr` and the simulator's events; a
+non-zero exit is an error result. `timeoutMs` defaults to 10 minutes (at most 30), since the first
+install of an APK converts its dex. Options that point adb at another device or the server (`-s`,
+`-t`, `-d`, `-e`, `-H`, `-P`, `-L`, `connect`, `disconnect`, `devices`, `kill-server`,
+`start-server`, `pair`, `mdns`) are refused. `simulator_command`, `simulator_screenshot` and
+`simulator_logs` keep working on the same device, across installs.
+
+Reach for `simulator_adb` for what adb does and the control channel does not: installing and
+replacing APKs, Android Studio's Wear tile and widget launches, adb's own text output. Use
+`simulator_command` for the rest: `find`, `tap`, `hierarchy` and events are richer than their
+`adb shell` lines.
 
 Limits: one app at a time (a second install replaces the first), the base APK of a split install
 only, no `--pair`, second display or `--project`, no debugging (`jdwp`), no `adb reverse` /
