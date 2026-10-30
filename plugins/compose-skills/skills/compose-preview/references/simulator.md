@@ -22,7 +22,8 @@ UI, `--network` and the radios, `--data-layer agent`, Wear ambient mode, `--fing
 `--max-heap`, `--play-services`, the `ask` permission policy, `companion`, `restart` / `update` /
 `--standby`, live reload (`--project`, `reload`, `--live`) and `--adb` are on compose-ai-tools
 `main` and ship in the next CLI release after v2.75.0. The `simulator_*` MCP tools ship in the next
-[compose-preview-mcp](https://github.com/yschimke/compose-preview-mcp) release after v4.12.0.
+[compose-preview-mcp](https://github.com/yschimke/compose-preview-mcp) release after v4.12.0. `simulator_adb`, and `adb` / `formFactor` on `simulator_launch`, also need
+the CLI release that carries the `--adb` device event (compose-ai-tools #6313).
 Check `compose-preview launch --help` before relying on a flag.
 
 ## When to use it, and when not
@@ -105,16 +106,17 @@ with `--module`, `--variant`, `--live`, `--gradle-arg` ([simulator-iterate.md](.
 ## Driving it over MCP
 
 The local MCP server (`compose-preview mcp serve`; see [mcp.md](./mcp.md#apps-in-the-simulator-simulator_)) wraps
-`launch --control stdio` in eight tools:
+`launch --control stdio` in nine tools:
 
 | Tool | Does |
 | --- | --- |
-| `simulator_launch` `{apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?, playServices?, pair?, pairQualifiers?, standby?, project?, module?, variant?, live?, gradleArgs?}` | starts one and waits for `ready`: a simulator id, the package, display size, first activity |
+| `simulator_launch` `{apk?, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?, playServices?, pair?, pairQualifiers?, standby?, project?, module?, variant?, live?, gradleArgs?, adb?, formFactor?}` | starts one and waits for `ready`: a simulator id, the package, display size, first activity; with `adb`, the `device` (serial, ports) too. `apk` is required unless `project` or `adb` is given |
 | `simulator_command` `{simulator?, device?, cmd, …}` | one control command, arguments beside `cmd`; returns `result` plus the `events` since the last call |
 | `simulator_screenshot` `{simulator?, device?, path?}` | the display as an image; with `path`, written to disk instead of inlined |
 | `simulator_logs` `{simulator?, device?, contains?, lines?}` | the latest lines it logged (the app's logcat, Robolectric, stack traces), plus the events since the last call |
 | `simulator_restart` `{simulator?, device?, keepData?}`, `simulator_update` `{apk, device?, keepData?}` | the app in a fresh JVM, its data kept ([simulator-iterate.md](./simulator-iterate.md#restart-and-update)) |
 | `simulator_reload` `{simulator?, full?, keepData?}` | with `project`: compile the edit and restart on the changed classes ([simulator-iterate.md](./simulator-iterate.md#iterate-on-an-app-live-reload)) |
+| `simulator_adb` `{simulator?, args \| command, output?, timeoutMs?}` | with `adb`: runs the SDK's `adb -s <serial>` against it; `exitCode`, `stdout` (or bytes written to `output`), `stderr`, events ([simulator-iterate.md](./simulator-iterate.md#over-mcp-simulator_adb)) |
 | `simulator_stop` `{simulator?}` | ends it; every simulator also ends with the server |
 
 `network` takes the same value as `--network` (`"offline"`, `"cellular,airplane"`),
@@ -138,8 +140,8 @@ permission, `shell`, `display`, `network` / `wifi` / `bluetooth`, `dataLayer` an
 (`screen`, `ambient`, `tilt`, `wake`, `palm`, `sleep`), `companion` and `playServices`
 commands. Not in it yet: `rotary`, the fold and device commands (`device`, `resize`, `rotate`,
 `posture`, `fontScale`, `displays`, `battery`, `location`, `timezone`), the home-screen and Wear
-system UI commands, and the `--launcher`, `--device`, `--display`, `--form-factor`, `--max-heap`
-and `--adb` launch options. Reach them
+system UI commands, and the `--launcher`, `--device`, `--display` and `--max-heap` launch
+options. Reach them
 through `shell` where an adb line exists (`wm size`, `wm density`, `cmd uimode night yes`,
 `input keyevent KEYCODE_POWER`), or drive `launch --control stdio` directly.
 
