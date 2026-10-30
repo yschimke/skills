@@ -213,6 +213,30 @@ for the full table) cover the rest:
   heat-map, …) alongside the PNG. See
   [`references/data-products.md`](./data-products.md) for the kind catalogue.
 
+### Apps in the simulator: `simulator_*`
+
+The local server can also run a whole APK in Robolectric's simulator, over
+`compose-preview launch <apk> --control stdio`. These tools come from
+[compose-preview-mcp](https://github.com/yschimke/compose-preview-mcp/blob/main/docs/LOCAL_MCP.md),
+which `compose-preview mcp serve` resolves; they ship in its next release after
+v4.12.0 and need a CLI with `launch` (after v2.74.1). Use only what `tools/list`
+advertises.
+
+- `simulator_launch {apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?}`
+  starts one and waits for `ready`: a simulator id, package, display size and
+  first activity. The window stays up unless `headless`, with the agent's taps
+  drawn over it.
+- `simulator_command {simulator?, cmd, …}` sends one control command (`find`,
+  `tap`, `swipe`, `text`, `hierarchy`, `startActivity`, `permissions`, `shell`
+  for an adb line, …) and returns its result plus the app's `events` since the
+  last call.
+- `simulator_screenshot {simulator?, path?}` returns the display as an image
+  (never the overlay); `simulator_stop` ends one.
+
+Needs Java 21+ (`COMPOSE_PREVIEW_SIMULATOR_JAVA` in the server's environment)
+and an Android SDK. The worked flow, the command table and the limits are in
+[simulator.md](./simulator.md).
+
 ### Draft viewer, prompts, and fallbacks
 
 **Requires** a compose-preview-server release after v3.74.0 containing #1126

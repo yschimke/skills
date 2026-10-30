@@ -57,8 +57,10 @@ bundles, never both, or each skill appears twice.
   annotations, paused-clock animations, accessibility checks, display filters,
   Wear UI, resource previews, a token-frugal agent loop (semantic refs,
   `observe`/`diff_semantics`, crop, record-to-test, typed failure kinds),
-  editable **SVG** export, cloud sandboxes, and requesting scoped access to a
-  gated preview server.
+  editable **SVG** export, cloud sandboxes, requesting scoped access to a
+  gated preview server, and running a whole APK without an emulator
+  (`compose-preview launch` and the MCP `simulator_*` tools: driving an app,
+  adb equivalents, Wear, foldables, multiple displays).
 - [`compose-preview-review`](skills/compose-preview-review/SKILL.md) —
   review pull requests that change Compose UI by rendering `@Preview`
   composables on base and head and diffing them. Pairs with

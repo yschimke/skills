@@ -12,6 +12,10 @@ it covers only rendering and verification with `compose-preview`.
 If the platform skill is unavailable, say that current Wear API guidance was
 not loaded rather than treating this rendering reference as an API authority.
 
+To run the whole Wear app rather than one screen (navigation, the crown via
+`rotary`, a round 454×454 display), launch its APK in the simulator: see
+[simulator.md § Form factors](./simulator.md#form-factors).
+
 ## Verification workflow
 
 1. Before editing, run `find_previews_for_file` for each file you will change

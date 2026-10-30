@@ -39,6 +39,10 @@ Commands:
   extensions run a11y-annotated-preview.render
            One-shot a11y hierarchy + ATF + annotated overlay render
   doctor   Verify Java 17+ + project compatibility (run before Setup)
+  launch   Run an APK in Robolectric's simulator: a window, or with
+           --control stdio a JSON-lines channel an agent drives
+           (--headless, --form-factor, --device, --display, --prepare).
+           Next release after v2.74.1; see simulator.md
   rc       Remote Compose JSON codec, offline (compile | dump | header).
            `rc dump <doc.rc>` makes a captured .rc readable and diffable;
            `rc compile <doc.json>` builds one from AndroidX's authoring
