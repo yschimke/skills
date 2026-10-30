@@ -224,8 +224,9 @@ v4.12.0 and need a CLI with `launch` (v2.75.0 or later; `network`, `dataLayer`,
 `simulator_adb` also needs the CLI's `--adb` device event). Use only what `tools/list`
 advertises.
 
-- `simulator_launch {apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?, playServices?, pair?, pairQualifiers?, standby?, project?, module?, variant?, live?, gradleArgs?, adb?, formFactor?}`
-  starts one and waits for `ready`: a simulator id, package, display size and
+- `simulator_launch {apk?, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?, playServices?, pair?, pairQualifiers?, standby?, project?, module?, variant?, live?, gradleArgs?, adb?, formFactor?}`
+  starts one and waits for `ready` (`apk` is required unless `project` or `adb`
+  is given): a simulator id, package, display size and
   first activity. The window stays up unless `headless`, with the agent's taps
   drawn over it. `network` starts in a mode (`offline`, `cellular,airplane`, …);
   `dataLayer: "agent"` makes you the app's Wearable Data Layer peer; `pair` (a

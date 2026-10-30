@@ -110,7 +110,7 @@ The local MCP server (`compose-preview mcp serve`; see [mcp.md](./mcp.md#apps-in
 
 | Tool | Does |
 | --- | --- |
-| `simulator_launch` `{apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?, playServices?, pair?, pairQualifiers?, standby?, project?, module?, variant?, live?, gradleArgs?, adb?, formFactor?}` | starts one and waits for `ready`: a simulator id, the package, display size, first activity; with `adb`, the `device` (serial, ports) too |
+| `simulator_launch` `{apk?, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?, playServices?, pair?, pairQualifiers?, standby?, project?, module?, variant?, live?, gradleArgs?, adb?, formFactor?}` | starts one and waits for `ready`: a simulator id, the package, display size, first activity; with `adb`, the `device` (serial, ports) too. `apk` is required unless `project` or `adb` is given |
 | `simulator_command` `{simulator?, device?, cmd, …}` | one control command, arguments beside `cmd`; returns `result` plus the `events` since the last call |
 | `simulator_screenshot` `{simulator?, device?, path?}` | the display as an image; with `path`, written to disk instead of inlined |
 | `simulator_logs` `{simulator?, device?, contains?, lines?}` | the latest lines it logged (the app's logcat, Robolectric, stack traces), plus the events since the last call |
