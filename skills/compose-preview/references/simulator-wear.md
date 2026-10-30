@@ -10,9 +10,11 @@ and the design doc
 [`SIMULATOR_DATALAYER.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/design/SIMULATOR_DATALAYER.md).
 
 Everything here except `--pair` is newer than CLI v2.75.0: check `compose-preview launch --help`.
-Over MCP, `simulator_launch` takes `dataLayer: "agent"` and `fingerprint`, and `simulator_command`
-takes `dataLayer`, `screen`, `ambient`, `tilt`, `wake`, `palm` and `sleep`; the system UI
-commands, `rotary` and `--pair` need `launch --control stdio` directly.
+Over MCP, `simulator_launch` takes `pair` (the Wear APK), `dataLayer: "agent"` and `fingerprint`;
+`simulator_command`, `simulator_screenshot`, `simulator_logs`, `simulator_restart` and
+`simulator_update` take `device: "watch"`; and `simulator_command` takes `dataLayer`, `companion`,
+`screen`, `ambient`, `tilt`, `wake`, `palm` and `sleep`. The system UI commands and `rotary` need
+`launch --control stdio` directly.
 
 | You want to check | Use |
 | --- | --- |
@@ -22,6 +24,8 @@ commands, `rotary` and `--pair` need `launch --control stdio` directly.
 | the app's ambient UI, or that it pauses when the screen sleeps | `ambient`, `palm`, `tilt` |
 | phone ↔ watch sync with both real apps | `phone.apk --pair wear.apk` |
 | one app's sync against scripted peer data or errors | `--data-layer agent` |
+| a `ChannelClient` stream or file transfer | `--pair`, or `--data-layer agent` with `channelOpen` / `channelWrite` |
+| a companion-device association (`CompanionDeviceManager.associate`) | `companion` |
 
 ## The watch face, tiles and notifications
 
@@ -59,6 +63,13 @@ and `tap` reach them too.
 Limits: no Watch Face Format or `WatchFaceService` faces, no complications;
 `TileUpdateRequester` is not wired (use `tiles {op:"refresh"}`); widgets draw at their large
 container size only.
+
+**Back** on a watch: an app that opted in to `android:enableOnBackInvokedCallback` gets Back
+through its `OnBackInvokedCallback`, which is how `SwipeDismissableNavHost` and Horologist pop one
+screen; others get `KEYCODE_BACK`. The `back` reply's `via` says which path ran. An edge `swipe` is
+a plain touch: `SwipeToDismissBox` handles it in a window that has not opted in, but an opted-in
+window gets no predictive-back progress from it, so use `back`. From the launcher, notification
+stream or a tile, Back returns to the watch face.
 
 ## Ambient mode and screen power
 
@@ -102,9 +113,16 @@ Layer. `DataClient`, `MessageClient`, `NodeClient` and `CapabilityClient` answer
 simulator instead of Play services, so data items, messages, requests and capabilities reach the
 other app's listeners and manifest `WearableListenerService`s.
 
-- A command with `"device":"watch"` goes to the watch; without, to the phone. Every output line
+- A command with `"device":"watch"` goes to the watch; without, to the phone. Every JSON line
   carries its `device`, and each crossing is a `datalayer` event naming the path, size and who it
-  was `deliveredTo`.
+  was `deliveredTo`. Every other line either simulator prints (logcat, Robolectric, stack traces)
+  starts `[phone] ` or `[watch] `; over MCP, `simulator_logs {"device":"watch"}` keeps one side's.
+- `ChannelClient` works between the two: `openChannel`, the streams, `sendFile` / `receiveFile`,
+  `ChannelCallback`s and `CHANNEL_EVENT` services. `{"cmd":"dataLayer"}` lists the open channels.
+- As with Play services, a client's `Task` is never complete when returned: it completes on a later
+  turn of the main looper, so code that assumes a synchronous answer fails here as on a device.
+- Each peer is a `CompanionDeviceManager` association ([below](#companion-devices)), and on the
+  watch `RemoteActivityHelper.availabilityStatus` follows the peer connecting and disconnecting.
 - `{"cmd":"dataLayer"}` reports the node, its peers, their capabilities and every data item.
   `{"cmd":"dataLayer","addCapability":"horologist_phone"}` (or `removeCapability`) changes this
   node's capabilities as if its `android_wear_capabilities` declared it: the way to unblock a
@@ -122,10 +140,11 @@ other app's listeners and manifest `WearableListenerService`s.
   `unchanged` and not re-sent, and an empty item stays empty.
 - The watch gets a `TIME_TICK` every minute, so `TimeText` and other clocks move.
   `Build.DEVICE` / `Build.MODEL` name the node (`watch-sim`) rather than `robolectric`.
-- `--max-heap 2g` caps each of the two JVMs.
+- `restart` / `update` with `"device":"watch"` replace the watch's simulator, the phone's without.
+- Each JVM's heap defaults to an eighth of the machine (768 MB to 2 GB); `--max-heap 1g` suits
+  the phone, `768m` a watch.
 
-Not simulated: `ChannelClient` (`API_UNAVAILABLE`), the deprecated `GoogleApiClient` APIs, and
-R8-minified APKs (the shadow matches the `Wearable` class by name). A watch launched without
+Not simulated: the deprecated `GoogleApiClient` APIs, and R8-minified APKs (the shadow matches the `Wearable` class by name). A watch launched without
 `--pair` still has the Wear OS app's services, so `BridgingManager` binds and `RemoteAuthClient`
 answers `ERROR_PHONE_UNAVAILABLE`.
 
@@ -138,10 +157,12 @@ including errors and timeouts.
 
 What the app sends arrives as a `datalayer` event of kind `send`: `type` `hello`, `message` (a
 `requestId` when it is a `sendRequest`), `response`, `data`, `capabilities`, `activity` (a
-`startRemoteActivity`) or `oauth`, with the bytes as base64 `data`, a `text` preview, a decoded
+`startRemoteActivity`), `oauth`, or a channel's `channelOpen` (with its `token` and `path`),
+`channelData`, `channelEof` and `channelClose`, with the bytes as base64 `data`, a `text` preview, a decoded
 `dataMap` when the bytes are a `DataMap`, and a data item's `assets` (base64). That is the form
-`put` takes, so a captured item can be replayed as it was. Answer with `{"cmd":"dataLayer",
-"action":…}`:
+`put` takes, so a captured item can be replayed as it was. A channel's life on either side is also
+a `datalayer` event of kind `channel` (`state` `opened`, `data`, `inputClosed`, `outputClosed`,
+`closed`, with its `channel` token). Answer with `{"cmd":"dataLayer","action":…}`:
 
 | `action` | Arguments | The peer… |
 | --- | --- | --- |
@@ -152,6 +173,10 @@ What the app sends arrives as a `datalayer` event of kind `send`: `type` `hello`
 | `message` / `request` | `node`?, `path`, payload | sends a message, or a request the app answers (a `send` of type `response`) |
 | `reply` | `requestId`, payload or `error`; `result` (remote activity); `responseUrl` (OAuth) | answers the app's request |
 | `config` | `requestTimeoutMs` | how long the app's requests wait (default 30 s, then `TIMEOUT`) |
+| `channelOpen` | `node`?, `path`, `channel`? (a token; one is made up) | opens a `ChannelClient` channel to the app (`onChannelOpened`); answers the `channel` token |
+| `channelWrite` | `channel`, payload | writes bytes the app's input stream reads |
+| `channelEof` | `channel` | closes its output: the app's input ends (`onInputClosed`) |
+| `channelClose` | `channel`, `errorCode`? | closes the channel (`onChannelClosed`, remote close) |
 
 A payload is `text`, `data` (base64) or `dataMap` (JSON: strings, booleans and ints bare, others
 `{"type":"long"|"float"|"double"|"bytes"|"string[]"|"stringList"|…,"value":…}`). `node` defaults to
@@ -165,6 +190,31 @@ the only connected peer; with none, the app's `sendMessage` / `sendRequest` fail
 → {"cmd":"dataLayer","action":"put","path":"/wear/settings","dataMap":{"theme":"dark"}}
 → {"cmd":"screenshot","path":"/tmp/watch-synced.png"}
 ```
+
+```
+→ {"cmd":"dataLayer","action":"channelOpen","path":"/sync/log","channel":"log-1"}
+← {"id":…,"ok":true,"result":{"channel":"log-1","node":…}}
+→ {"cmd":"dataLayer","action":"channelWrite","channel":"log-1","text":"line 1\n"}
+→ {"cmd":"dataLayer","action":"channelEof","channel":"log-1"}    # the app's read loop ends
+→ {"cmd":"dataLayer","action":"channelClose","channel":"log-1"}
+```
+
+## Companion devices
+
+Each Data Layer peer (under `--pair` or `--data-layer agent`) is a `CompanionDeviceManager`
+association with a stable MAC; on the phone a watch has `DEVICE_PROFILE_WATCH`. The `companion`
+command lists the associations and sets how the app's `associate()` is answered:
+
+- `policy: "accept"` (default) picks the first candidate: a peer, or a Bluetooth device in range
+  ([simulator-network.md](./simulator-network.md)) that matches one of the request's device
+  filters (address, name pattern, service UUIDs). `"reject"` refuses.
+- `policy: "ask"` sends a `companion` event `{state:"chooser", request}` and waits for
+  `{"cmd":"companion","answer":"accept"}` (or `"reject"`), with `address` to pick a device and
+  `requestId` when several wait.
+- `disassociate` (an association id) removes one.
+
+API 33+ gets `onAssociationCreated`; on earlier APIs the chooser `IntentSender` is not driven, so
+the callback's `onFailure` runs.
 
 **`--fingerprint`.** Some apps check `Build.FINGERPRINT == "robolectric"` (Robolectric's value) to
 show canned preview data and never touch the Data Layer. If the app sends nothing, launch again

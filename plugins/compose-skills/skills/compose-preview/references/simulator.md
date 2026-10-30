@@ -12,12 +12,16 @@ this page is the agent's subset. Two companion pages cover the larger areas:
   the Wearable Data Layer peer.
 - [simulator-network.md](./simulator-network.md): offline, cellular, captive and VPN modes with
   the app's real traffic gated, Wi-Fi requests, and Bluetooth / BLE peripherals and GATT.
+- [simulator-iterate.md](./simulator-iterate.md): the edit-run loop. `restart` and `update` in
+  place, live reload from the app's Gradle project (`--project`, `reload`, `--live`), and
+  `--adb`, the simulator as a device adb and Android Studio see.
 
 **Availability.** `launch` ships in CLI v2.75.0 with the commands below, adb equivalents, form
 factors, folds, multiple displays and `--pair`. The home screen (`--launcher`), the Wear system
-UI, `--network` and the radios, `--data-layer agent`, Wear ambient mode, `--fingerprint` and
-`--max-heap` are on compose-ai-tools `main` and ship in the next CLI release after v2.75.0. The
-`simulator_*` MCP tools ship in the next
+UI, `--network` and the radios, `--data-layer agent`, Wear ambient mode, `--fingerprint`,
+`--max-heap`, `--play-services`, the `ask` permission policy, `companion`, `restart` / `update` /
+`--standby`, live reload (`--project`, `reload`, `--live`) and `--adb` are on compose-ai-tools
+`main` and ship in the next CLI release after v2.75.0. The `simulator_*` MCP tools ship in the next
 [compose-preview-mcp](https://github.com/yschimke/compose-preview-mcp) release after v4.12.0.
 Check `compose-preview launch --help` before relying on a flag.
 
@@ -39,15 +43,21 @@ round display, or "does this APK start at all". For one composable's look, a `@P
 | a Wear app's tiles, notifications, ambient UI | `--launcher`, `--tile <service>` | `tiles`, `notification`, `ambient` ([simulator-wear.md](./simulator-wear.md)) |
 | phone ↔ watch sync, both apps | `phone.apk --pair wear.apk` | `"device":"watch"` ([simulator-wear.md](./simulator-wear.md#a-paired-phone-and-watch)) |
 | one side of the sync, with scripted peer data | `--data-layer agent` | `dataLayer` actions ([simulator-wear.md](./simulator-wear.md#the-agent-as-the-peer)) |
+| a permission's deny, rationale or "don't ask again" path | `--control stdio` | `permissions {policy:"ask"}`, then `answer` ([below](#runtime-permissions)) |
+| the app's "Play services missing / outdated" path | `--play-services none` / `outdated` | `playServices` ([below](#google-play-services)) |
+| a code or resource edit, running | `--project <dir>` | `reload`, or `--live` ([simulator-iterate.md](./simulator-iterate.md#iterate-on-an-app-live-reload)) |
+| a cold start with existing data, a rebuilt APK | `--control stdio` | `restart`, `update` ([simulator-iterate.md](./simulator-iterate.md#restart-and-update)) |
+| an adb-only tool or Android Studio against it | `--adb` | `adb install`, `adb shell` ([simulator-iterate.md](./simulator-iterate.md#as-a-device---adb)) |
 
 What it cannot do (condensed from upstream's Constraints):
 
-- **No native code** (`.so`), **no Google Play services** beyond the Wearable Data Layer (Maps,
-  billing and the fused location provider report `SERVICE_INVALID`; the Data Layer is simulated
-  only under `--pair` or `--data-layer agent`), **no GPU content** (`SurfaceView`, `TextureView`,
-  video, camera, GL).
+- **No native code** (`.so`), **no Google Play services APIs** beyond the Wearable Data Layer.
+  Play services is reported installed ([below](#google-play-services)), but Maps, billing and the
+  fused location provider report `API_UNAVAILABLE`; the Data Layer is simulated only under `--pair`
+  or `--data-layer agent`. **No GPU content** (`SurfaceView`, `TextureView`, video, camera, GL).
 - **One process, one task.** `am force-stop` / `pm clear` are partial: the `Application` and its
-  singletons live on. For a truly clean start, quit and launch again.
+  singletons live on. For a truly clean start, `restart` (with `"keepData":false` for a clean
+  install; [simulator-iterate.md](./simulator-iterate.md#restart-and-update)).
 - **Little system UI**: share sheets and other system-only intents arrive as an `error` event;
   the Wi-Fi and Bluetooth dialogs and settings panels are answered for you. A home screen and
   widgets exist only with `--launcher`; on Wear, the face is a demo face (no Watch Face Format, no
@@ -69,11 +79,14 @@ compose-preview launch app-debug.apk --launcher                    # over a home
 compose-preview launch app-debug.apk --network offline             # start with no network
 compose-preview launch phone.apk --pair wear.apk --control stdio   # a phone and its watch, paired
 compose-preview launch wear.apk --data-layer agent --control stdio # the agent plays the phone
+compose-preview launch --project ~/src/myapp --live --control stdio # build, then reload on save
+compose-preview launch --adb                                       # a device adb and Studio see
 ```
 
 The first launch of an APK converts its dex to JVM classes (tens of seconds, about 40 s for a
 large app), cached by the APK's content; a warm launch reaches its first frame in about 7 s.
-`--prepare` does the conversion ahead of time and prints the cached classes jar.
+A rebuild of the same APK path reconverts only the classes that changed. `--prepare` does the
+conversion ahead of time and prints the cached classes jar.
 
 With `--control stdio` the window stays up so a person can watch: each tap is drawn as a ring,
 each swipe as a trail, and the command along the bottom. That overlay is never in the agent's
@@ -85,24 +98,29 @@ Other flags: `--form-factor phone|wear|glimmer|xr`, `--device <preset>`, `--disp
 `--no-providers`, `--java <jdk>`, `--verbose`; and, newer: `--network <mode>[,airplane]`,
 `--launcher`, `--widget <provider>`, `--tile <service>`, `--pair <wear.apk>`,
 `--pair-qualifiers <q>`, `--data-layer agent`, `--fingerprint <f>` (replaces `Build.FINGERPRINT`'s
-`robolectric`, which some apps check to skip real work) and `--max-heap <size>` (each simulator
-JVM's `-Xmx`, e.g. `2g`; useful with `--pair`, which runs two).
+`robolectric`, which some apps check to skip real work), `--max-heap <size>` (each simulator
+JVM's `-Xmx`, e.g. `1g`), `--play-services <state>`, `--standby`, `--adb`, and `--project <dir>`
+with `--module`, `--variant`, `--live`, `--gradle-arg` ([simulator-iterate.md](./simulator-iterate.md)).
 
 ## Driving it over MCP
 
 The local MCP server (`compose-preview mcp serve`; see [mcp.md](./mcp.md#apps-in-the-simulator-simulator_)) wraps
-`launch --control stdio` in four tools:
+`launch --control stdio` in eight tools:
 
 | Tool | Does |
 | --- | --- |
-| `simulator_launch` `{apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?}` | starts one and waits for `ready`: a simulator id, the package, display size, first activity |
-| `simulator_command` `{simulator?, cmd, …}` | one control command, arguments beside `cmd`; returns `result` plus the `events` since the last call |
-| `simulator_screenshot` `{simulator?, path?}` | the display as an image; with `path`, written to disk instead of inlined |
+| `simulator_launch` `{apk, headless?, showAgent?, qualifiers?, fontScale?, sdk?, java?, network?, dataLayer?, fingerprint?, playServices?, pair?, pairQualifiers?, standby?, project?, module?, variant?, live?, gradleArgs?}` | starts one and waits for `ready`: a simulator id, the package, display size, first activity |
+| `simulator_command` `{simulator?, device?, cmd, …}` | one control command, arguments beside `cmd`; returns `result` plus the `events` since the last call |
+| `simulator_screenshot` `{simulator?, device?, path?}` | the display as an image; with `path`, written to disk instead of inlined |
+| `simulator_logs` `{simulator?, device?, contains?, lines?}` | the latest lines it logged (the app's logcat, Robolectric, stack traces), plus the events since the last call |
+| `simulator_restart` `{simulator?, device?, keepData?}`, `simulator_update` `{apk, device?, keepData?}` | the app in a fresh JVM, its data kept ([simulator-iterate.md](./simulator-iterate.md#restart-and-update)) |
+| `simulator_reload` `{simulator?, full?, keepData?}` | with `project`: compile the edit and restart on the changed classes ([simulator-iterate.md](./simulator-iterate.md#iterate-on-an-app-live-reload)) |
 | `simulator_stop` `{simulator?}` | ends it; every simulator also ends with the server |
 
-`network` takes the same value as `--network` (`"offline"`, `"cellular,airplane"`), and
-`"dataLayer":"agent"` makes you the app's Data Layer peer. `simulator` is optional while only
-one runs. A worked flow:
+`network` takes the same value as `--network` (`"offline"`, `"cellular,airplane"`),
+`"dataLayer":"agent"` makes you the app's Data Layer peer, and `pair` (a Wear APK) runs a paired
+phone and watch under one id: `device: "watch"` addresses the watch, and `simulator_logs` with
+`device` keeps one side's lines. `simulator` is optional while only one runs. A worked flow:
 
 ```
 simulator_launch     {"apk":"/abs/path/app-debug.apk"}
@@ -117,10 +135,11 @@ simulator_stop       {}
 Prefer `find` / `hierarchy` (text) over screenshots to locate things; take a screenshot only to
 judge how something looks. `simulator_command`'s `cmd` list covers the interaction, component,
 permission, `shell`, `display`, `network` / `wifi` / `bluetooth`, `dataLayer` and screen-power
-(`screen`, `ambient`, `tilt`, `wake`, `palm`, `sleep`) commands. Not in it yet: `rotary`, the
-fold and device commands (`device`, `resize`, `rotate`, `posture`, `fontScale`, `displays`,
-`battery`, `location`, `timezone`), the home-screen and Wear system UI commands, and the
-`--pair`, `--launcher`, `--device`, `--display` and `--form-factor` launch options. Reach them
+(`screen`, `ambient`, `tilt`, `wake`, `palm`, `sleep`), `companion` and `playServices`
+commands. Not in it yet: `rotary`, the fold and device commands (`device`, `resize`, `rotate`,
+`posture`, `fontScale`, `displays`, `battery`, `location`, `timezone`), the home-screen and Wear
+system UI commands, and the `--launcher`, `--device`, `--display`, `--form-factor`, `--max-heap`
+and `--adb` launch options. Reach them
 through `shell` where an adb line exists (`wm size`, `wm density`, `cmd uimode night yes`,
 `input keyevent KEYCODE_POWER`), or drive `launch --control stdio` directly.
 
@@ -147,7 +166,8 @@ throws while handling a command becomes an error reply and the simulator keeps r
 arrive unasked: `ready`, `activity` (`resumed` / `newIntent` / `destroyed` / `stopped` /
 `empty`), `service`, `providers`, `permissions`, `notification`, `display`, `log` (while
 `logcat` follows), `error` for an intent nothing handles, and the newer `screen`, `datalayer`,
-`wifiRequest`, `bluetoothRequest`, `bleScan`, `gatt`, `systemUi`, and with `--launcher` `home`,
+`wifiRequest`, `bluetoothRequest`, `bleScan`, `gatt`, `systemUi`, `companion`, `conversion`,
+`reload` (with `--live`), and with `--launcher` `home`,
 `widget`, `shortcut` (phone) or `surface`, `tile` (watch). Commands run in order; UI-changing
 ones answer after `settleMs` of simulated time (default 250, any command takes it), so a `tap`
 then a `screenshot` sees the result.
@@ -163,12 +183,15 @@ matches. **Intents**: `{action, data, type, package, component, categories, flag
 | Family | Commands |
 | --- | --- |
 | Look | `screenshot` {`path`?, `display`?, `square`?}, `hierarchy` {`flat`?, `path`?}, `find` {selector}, `info`, `ping` |
-| Input | `tap` {x,y \| selector}, `longPress`, `swipe` {x1,y1,x2,y2, `durationMs`?, `holdMs`?}, `key` {`BACK` / `ENTER` / `POWER` / code / array}, `back`, `text`, `rotary` (Wear crown), `wait` {`ms`} |
+| Input | `tap` {x,y \| selector}, `longPress`, `swipe` {x1,y1,x2,y2, `durationMs`?, `holdMs`?}, `key` {`BACK` / `ENTER` / `POWER` / code / array}, `back` (reply `via`: below), `text`, `rotary` (Wear crown), `wait` {`ms`} |
 | Activities | `launch`, `finish`, `activities` (the back stack), `startActivity` {intent, `forceStop`?}, `forceStop`, `clearData` |
 | Services, broadcasts | `startService` / `stopService`, `bindService` / `unbindService`, `services`, `broadcast` {intent} |
 | Providers, data | `query` {uri, …}, `content` {op, uri, values?}, `settings` {op, namespace, key}, `files` {op, path}, `logcat` {op}, `getprop`, `package` / `packages`, `components` |
 | Notifications | `notifications` (what the app posted), `notification` {key, op: tap / action / reply / dismiss / snooze} |
-| Permissions | `permissions` {`policy`?: `grant`/`deny`, `grant`?, `deny`?, `reset`?} |
+| Permissions | `permissions` {`policy`?: `grant`/`deny`/`ask`, `grant`?, `deny`?, `answer`?, `requestId`?, `reset`?} ([below](#runtime-permissions)) |
+| Companion devices | `companion` {`policy`?: `accept`/`reject`/`ask`, `answer`?, `requestId`?, `address`?, `disassociate`?} ([simulator-wear.md](./simulator-wear.md#companion-devices)) |
+| Play services | `playServices` {`state`?: `installed`/`none`/`outdated`/`disabled`/`invalid`} ([below](#google-play-services)) |
+| Restart, reload | `restart` {`keepData`?}, `update` {`apk`, `keepData`?}, `reload` {`full`?, `keepData`?}, `snapshotData` {`to`} ([simulator-iterate.md](./simulator-iterate.md)) |
 | adb | `shell` {`command`: an adb shell line} |
 | Display, device | `qualifiers` {`+night`, `+fr-rFR`}, `resize`, `device`, `rotate`, `posture`, `fontScale`, `display`, `battery`, `location`, `timezone` |
 | Displays | `displays` {`action`: list / add / remove / change} |
@@ -179,11 +202,56 @@ matches. **Intents**: `{action, data, type, package, component, categories, flag
 | Wear system UI (`--launcher`) | `home`, `launcher`, `notifications` {op}, `ongoing`, `tiles` {op}, `health`, `quickSettings` |
 | End | `quit` |
 
-**Runtime permissions** are answered with no dialog: granted by default, as a user tapping
-"Allow". `{"cmd":"permissions","policy":"deny"}` refuses every later request;
-`{"cmd":"permissions","deny":["android.permission.CAMERA"]}` refuses (and revokes) named ones, and
-`grant` the reverse. Each request the app makes is reported as a `permissions` event. There is no
-"don't ask again".
+**Back** goes where a device sends it. A window that opted in to the callback API
+(`android:enableOnBackInvokedCallback`, API 33+) gets its `OnBackInvokedCallback` (Compose's
+`BackHandler`, Navigation, Wear's `SwipeDismissableNavHost`), so one Back pops one screen; any
+other window gets `KEYCODE_BACK`. The `back` reply's `via` says which: `key`,
+`OnBackInvokedCallback`, `Activity.onBackPressed` or `system`. The predictive back gesture is not
+simulated: use `back`, not an edge swipe, on an opted-in window.
+
+### Runtime permissions
+
+Requests are answered with no dialog on screen, the way a device's permission controller answers
+them. What a device decides without a dialog is decided the same way, and named in each result's
+`by`: `alreadyGranted`, `notInManifest`, `installTime`, `groupGranted`, `dontAskAgain`, or
+`ignored` for a permission the platform drops (newer than the simulated SDK, fine location without
+coarse, background location before foreground). The Android XR tracking permissions and
+`ACCESS_LOCAL_NETWORK` (Android 17) are runtime permissions, asked about like any other. The rest
+are the dialog's (`by: dialog`), answered by the policy:
+
+- `grant` (the default) or `deny`: every dialog answered at once. `grant` / `deny` with names set
+  per-permission answers and apply now (a deny revokes).
+- `ask`: the request waits, as a `permissions` event `{state:"waiting", requestId, ask:[…]}`,
+  until `permissions` with `answer`: `grant`, `deny`, `dismiss` (backed out, not counted),
+  `approximate` (coarse location only), `selected` (Android 14+ partial photo access), or an
+  object of permission → answer.
+
+```
+→ {"cmd":"permissions","policy":"ask"}
+→ {"cmd":"tap","text":"Find nearby"}
+← {"event":"permissions","state":"waiting","requestId":3,"ask":["android.permission.ACCESS_FINE_LOCATION","android.permission.ACCESS_COARSE_LOCATION"],…}
+→ {"cmd":"permissions","answer":"approximate"}
+← {"event":"permissions","state":"answered","requestId":3,"granted":["android.permission.ACCESS_COARSE_LOCATION"],"denied":["android.permission.ACCESS_FINE_LOCATION"],…}
+```
+
+Denials count as on a device: after one dialog deny `shouldShowRequestPermissionRationale` is
+true (test the rationale UI); after two the permission is denied without asking ("don't ask
+again", `dontAskAgain: true`) until `grant` (as from Settings) or `reset`. Every request ends with
+a `permissions` event, `state: "answered"`, with `granted`, `denied` and per permission `by`,
+`rationale` and `dontAskAgain`. `permissions` with no arguments returns the policy, waiting
+requests and each permission's state. The requesting activity is not paused while a request
+waits.
+
+### Google Play services
+
+The device reports Google Play services installed, so `isGooglePlayServicesAvailable` is
+`SUCCESS` and an app takes its Play-services path. Only availability is simulated: every API but
+the Wearable Data Layer (under `--pair` / `--data-layer agent`) fails with `API_UNAVAILABLE`. To
+test the app's error paths, `launch --play-services none|outdated|disabled|invalid` (MCP
+`playServices`), or while it runs `{"cmd":"playServices","state":"outdated"}`: every check then
+reports `SERVICE_MISSING`, `SERVICE_VERSION_UPDATE_REQUIRED`, `SERVICE_DISABLED` or
+`SERVICE_INVALID`, `getErrorDialog` builds Play services' own dialog, and the package broadcast a
+device sends goes out. An app that cached an earlier answer keeps it.
 
 ## adb equivalents
 
@@ -328,11 +396,14 @@ Wear app, `--launcher` gives the watch's system UI instead: see
 - **Java 21.** The simulator JVM needs Java 21+ even though the CLI runs on 17. Pass `--java <jdk>`
   or set `COMPOSE_PREVIEW_SIMULATOR_JAVA` (for the MCP server, in its environment). It also needs
   an Android SDK platform's `android.jar`: `ANDROID_HOME`, or `local.properties` `sdk.dir`.
-- **First run is slow.** The dex conversion takes tens of seconds per new APK build, and the first
-  use of an SDK level downloads Robolectric's `android-all`. Run `--prepare` ahead if a timeout
-  matters; later launches hit the cache.
-- **Memory.** Each simulator JVM takes the JVM default heap, a quarter of the machine's memory;
-  `--pair` runs two. Cap them with `--max-heap 2g` on a small sandbox.
+- **First run is slow.** The dex conversion takes tens of seconds per new APK, and the first use
+  of an SDK level downloads Robolectric's `android-all` (about 200 MB), provisioned before the
+  simulator starts so parallel launches share one download. Run `--prepare` ahead if a timeout
+  matters. A rebuilt APK at the same path reconverts only the classes that changed. The cache
+  is pruned to eight APKs or 2 GB, least recently used first, never one a running simulator uses.
+- **Memory.** Each simulator JVM's heap is an eighth of the machine, between 768 MB and 2 GB;
+  `--pair` runs two, and `--standby` a third. `--max-heap` overrides it: `1g` suits a phone app,
+  `768m` a watch. The conversion itself fits in about 1 GB.
 - **Keep stdin open until `ready`.** EOF on stdin ends the simulator, so `echo '{…}' | compose-preview
   launch …` exits before the app starts. Hold the pipe open and read stdout for `ready` first.
 - **Use a debug APK.** A debug build works best; that is what was tested (Now in Android's demo

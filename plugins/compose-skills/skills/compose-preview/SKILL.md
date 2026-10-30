@@ -1,6 +1,6 @@
 ---
 name: compose-preview
-description: Render a Jetpack Compose or Compose Multiplatform @Preview to PNG in one call (MCP render_preview, or the compose-preview CLI) and look at it. Use whenever someone asks to render, show, or see what a composable, @Preview or Compose component looks like (including library components such as Material 3 or Wear M3 EdgeButton, which come from the hosted catalog), after editing Compose UI to verify it, to compare before/after, or to review previews against catalog design guidelines. Also use to run a whole Android APK without an emulator (`compose-preview launch`, MCP `simulator_*`): driving or testing an app, emulator-like testing of navigation, deep links, permissions, foldable postures and multiple displays, offline and network conditions, Wi-Fi and Bluetooth/BLE peripherals, home-screen widgets, or running a Wear OS app on a round display (tiles, notifications, ambient mode, phone-watch Data Layer sync).
+description: Render a Jetpack Compose or Compose Multiplatform @Preview to PNG in one call (MCP render_preview, or the compose-preview CLI) and look at it. Use whenever someone asks to render, show, or see what a composable, @Preview or Compose component looks like (including library components such as Material 3 or Wear M3 EdgeButton, which come from the hosted catalog), after editing Compose UI to verify it, to compare before/after, or to review previews against catalog design guidelines. Also use to run a whole Android APK without an emulator (`compose-preview launch`, MCP `simulator_*`): driving or testing an app, emulator-like testing of navigation, deep links, permissions, foldable postures and multiple displays, offline and network conditions, Wi-Fi and Bluetooth/BLE peripherals, home-screen widgets, or running a Wear OS app on a round display (tiles, notifications, ambient mode, phone-watch Data Layer sync), and iterating on a running app (restart, live reload from the Gradle project).
 ---
 
 # Compose Preview
@@ -106,7 +106,8 @@ render with its error.
 **Running the whole app, not one composable?** To drive or test an APK the
 way an emulator would (navigation, deep links, runtime permissions, foldable
 postures, a second display, offline or slow networks, BLE peripherals, home-screen
-widgets, a Wear app with its tiles, ambient mode and phone sync), use
+widgets, a Wear app with its tiles, ambient mode and phone sync), or to see an
+edit running with live reload (`launch --project`, `reload`), use
 `compose-preview launch <app.apk>` or the MCP `simulator_*` tools: Robolectric's
 simulator, no emulator or device. Read [simulator.md](./references/simulator.md)
 first; a `@Preview` render stays the cheaper check for a single screen.
@@ -160,9 +161,10 @@ Read only what the task needs.
 | Accessibility (ATF, `compose-preview a11y`) | [a11y.md](./references/a11y.md) |
 | Per-render data (a11y, layout, recomposition, SVG) | [data-products.md](./references/data-products.md) |
 | Multi-preview, GIFs, `@SettledPreview`, scrolling captures | [capture-modes.md](./references/capture-modes.md) |
-| Run an APK in the simulator (`launch`, `simulator_*`): drive an app, adb equivalents, form factors, folds, multiple displays, home screen and widgets | [simulator.md](./references/simulator.md) |
+| Run an APK in the simulator (`launch`, `simulator_*`): drive an app, adb equivalents, form factors, folds, multiple displays, home screen and widgets, permission `ask` policy, Play services state | [simulator.md](./references/simulator.md) |
 | Simulator network modes, real-traffic gating, Wi-Fi requests, Bluetooth / BLE / GATT | [simulator-network.md](./references/simulator-network.md) |
-| Simulator on Wear: watch face, tiles, notifications, ambient and screen power, `--pair`, `--data-layer agent` | [simulator-wear.md](./references/simulator-wear.md) |
+| Simulator on Wear: watch face, tiles, notifications, ambient and screen power, `--pair`, `--data-layer agent`, `ChannelClient`, companion devices | [simulator-wear.md](./references/simulator-wear.md) |
+| Simulator edit-run loop: `restart`, `update`, live reload (`--project`, `reload`, `--live`), `--adb` | [simulator-iterate.md](./references/simulator-iterate.md) |
 | Wear Compose UI / Wear Tiles | [wear-ui.md](./references/wear-ui.md), [wear-tiles.md](./references/wear-tiles.md) |
 | CMP `:shared` modules | [cmp-shared.md](./references/cmp-shared.md) |
 | Android XML drawables / icons | [resource-previews.md](./references/resource-previews.md) |

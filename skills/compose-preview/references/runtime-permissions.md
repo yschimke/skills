@@ -86,8 +86,10 @@ combine with other evidence, and how much confidence the result supports.
 
 - [`references/simulator.md`](./simulator.md) — in a running APK
   (`compose-preview launch`), the `permissions` command (`policy: deny`,
-  or `grant` / `deny` by name; `pm grant` / `revoke` through `shell`)
-  sets how the app's real runtime permission requests are answered. The
+  `grant` / `deny` by name, or `policy: ask` to answer each request,
+  including rationale and "don't ask again" paths; `pm grant` / `revoke`
+  through `shell`) sets how the app's real runtime permission requests
+  are answered. The
   Wi-Fi connect and Bluetooth enable dialogs are answered separately, by the
   `wifi` / `bluetooth` `request` policy: see
   [`references/simulator-network.md`](./simulator-network.md).
