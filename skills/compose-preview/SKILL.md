@@ -71,7 +71,9 @@ against Android design guidance, read
 [design-guidelines.md](./references/design-guidelines.md). It covers keyless
 agent review, published results and the CLI's `compose-preview review` loop,
 including explicit surface selection, required pictures and incomplete
-coverage. It is in the default
+coverage. A project with no guidelines of its own reviews against the shared
+rule packs chosen by what each preview draws (widgets need the widget packs
+and a `@LauncherWidgetPreview`), not a component catalog. It is in the default
 skill bundle; the optional PR-review bundle is not required.
 
 **Hand multi-render reviews to `design-reviewer`.** If a `design-reviewer`
