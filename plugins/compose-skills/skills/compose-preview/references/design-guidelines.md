@@ -84,9 +84,13 @@ the account. Read `skipped`; the absence of a model key is not a clean review.
 ### Local previews: select rules and surface explicitly
 
 Use the module's discovered `build/compose-previews/ui-builder.guidelines.json`
-or pass `guidelines` with the project's chosen catalog file or URL. Look for a
-committed `ui-builder.guidelines.json` (module, then repository root) and the
-project's agent notes before choosing rules yourself.
+or pass `guidelines` with the project's chosen catalog file or URL. Before
+choosing rules yourself, look for one the project already uses: a committed
+`ui-builder.guidelines.json` (module, then repository root), a
+`*.guidelines.json` that a CI workflow passes to `compose-preview review` (for
+example a preview-audit workflow), and the project's agent notes. Reuse that
+file, adding packs to it, rather than committing a second one, so local and CI
+reviews ask the same rules.
 
 An app with no guidelines of its own uses compose-ai-tools' shared rule packs
 under [`guidelines/packs/`](https://github.com/yschimke/compose-ai-tools/tree/main/guidelines/packs),
@@ -103,7 +107,8 @@ is not a pass. Pick packs by what each preview draws, layered in this order:
 | Wear widget (Remote Compose) | `remote-compose`, `wear-widgets` |
 
 Identify the packs and their commit in the report. To make the choice
-repeatable, propose committing it: a `ui-builder.guidelines.json` whose
+repeatable, propose committing it (or extending the file CI already uses): a
+guidelines file whose
 `includes` pin each pack's raw URL at a release tag or commit with its
 `sha256`, and an agent-notes line with the exact `review --guidelines`
 command. The CLI resolves `includes` itself. Discovery publishes the file into
