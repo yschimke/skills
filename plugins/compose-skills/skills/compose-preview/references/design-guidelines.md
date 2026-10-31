@@ -84,17 +84,63 @@ the account. Read `skipped`; the absence of a model key is not a clean review.
 ### Local previews: select rules and surface explicitly
 
 Use the module's discovered `build/compose-previews/ui-builder.guidelines.json`
-or pass `guidelines` with the project's chosen catalog file or URL. An app
-that does not publish a catalog can use the appropriate upstream catalog's
-published rules explicitly; identify that source in the report. Do not silently
-substitute another platform's rules or create a catalog file in the app.
+or pass `guidelines` with the project's chosen catalog file or URL. Before
+choosing rules yourself, look for one the project already uses: a committed
+`ui-builder.guidelines.json` (module, then repository root), a
+`*.guidelines.json` that a CI workflow passes to `compose-preview review` (for
+example a preview-audit workflow), and the project's agent notes. Reuse that
+file, adding packs to it, rather than committing a second one, so local and CI
+reviews ask the same rules.
+
+An app with no guidelines of its own uses compose-ai-tools' shared rule packs
+under [`guidelines/packs/`](https://github.com/yschimke/compose-ai-tools/tree/main/guidelines/packs),
+not an unrelated catalog: a component catalog such as `m3-catalog` carries no
+widget rules, so a widget reviewed against it reports "no rule applies", which
+is not a pass. Pick packs by what each preview draws, layered in this order:
+
+| Preview draws | Packs |
+| --- | --- |
+| Phone or tablet Compose screen or component | `compose-ui` (add `m3-catalog`'s file for Material 3 component rules) |
+| Wear OS Compose screen | `compose-ui`, `wear-compose` |
+| Remote Compose home-screen (launcher) widget | `remote-compose`, `launcher-widgets` |
+| Glance or `RemoteViews` launcher widget | `launcher-widgets` |
+| Wear widget (Remote Compose) | `remote-compose`, `wear-widgets` |
+
+Identify the packs and their commit in the report. To make the choice
+repeatable, propose committing it (or extending the file CI already uses): a
+guidelines file whose
+`includes` pin each pack's raw URL at a release tag or commit with its
+`sha256`, and an agent-notes line with the exact `review --guidelines`
+command. The CLI resolves `includes` itself. Discovery publishes the file into
+`build/compose-previews/` (so a plain `review` finds it) only beside a
+`ui-builder.policy.json`, which also turns on a UI Builder catalog; that is the
+project's call, so without one keep passing `--guidelines`. Do not silently
+substitute another platform's rules or create these files without asking.
 
 Pass `surface: "screen"` for screens, `"widget"` for widget hosts and
 `"component"` for isolated component stickers. The preview MCP currently
-defaults to `component`; the CLI infers screen from a declared preview device.
-Set it explicitly in either lane when reviewing screens so screen-only Wear
-rules are not silently filtered out. Batch related previews with the same
-surface and rules; separate batches for different surfaces or catalogs.
+defaults to `component`; the CLI infers screen from a declared preview device
+and widget from a widget capture. Set it explicitly in either lane when
+reviewing screens so screen-only Wear rules are not silently filtered out.
+Batch related previews with the same surface and rules; separate batches for
+different surfaces or catalogs.
+
+A launcher widget is only a `widget` subject when its preview says so: a
+Glance app-widget preview, or `@LauncherWidgetPreview(width, height)` from
+`ee.schimke.composeai:preview-annotations` on a preview that draws the widget's
+content (for Remote Compose, `RemoteContentPreview` around the widget
+composable). A plain `@Preview` of widget content is a `component`, and every
+widget rule is skipped. Give each footprint the widget adapts to its own
+`@LauncherWidgetPreview`, so size rules (minimum size, breakpoints, blank
+space) have one picture per size to compare. Propose adding the annotation
+rather than forcing `--surface widget` on every run.
+
+Two evidence gaps to cover yourself. A request's `source` shows the preview
+function and one level of callee, so when the preview wraps a widget or screen
+composable defined elsewhere, read that composable's source before judging code
+rules (sizes, colours, units, semantics) and cite file and line. Remote
+Compose renders carry no accessibility nodes, so judge touch targets and
+content descriptions from that source rather than asking for `a11y`.
 
 `preview_guidelines_prompt` spends no provider key. Judge every asked rule for
 every subject using the response schema, preserving subject IDs, node IDs and
