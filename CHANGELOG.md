@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.13](https://github.com/yschimke/skills/compare/v0.1.12...v0.1.13) (2026-10-31)
+
+
+### Bug Fixes
+
+* **install:** don't exit 1 after a successful update; consolidate setup and MCP docs ([#153](https://github.com/yschimke/skills/issues/153)) ([b72f81d](https://github.com/yschimke/skills/commit/b72f81d5a1fde76b342a127b69102dfbed59d1e0))
+* **install:** keep an old CLI version that running processes still use ([#165](https://github.com/yschimke/skills/issues/165)) ([9fad519](https://github.com/yschimke/skills/commit/9fad5193665de94f2cc19d6cce3546ac336ddcdc))
+
 ## [0.1.12](https://github.com/yschimke/skills/compare/v0.1.11...v0.1.12) (2026-10-11)
 
 
