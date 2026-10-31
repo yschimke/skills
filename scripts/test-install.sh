@@ -306,6 +306,26 @@ CLI_DEST="$CLI_DEST" VERSION=2.28.0 prune_old_cli_versions 2>/dev/null
 check "prune_old_cli_versions keeps only the current CLI" \
   "compose-preview-2.28.0 other" "$(ls "$CLI_DEST" | tr '\n' ' ' | sed 's/ $//')"
 
+# A version a running process still uses (an MCP server started from its
+# launcher) is kept, and the log names the process; the next prune, once it
+# has exited, removes it.
+mkdir -p "$CLI_DEST/compose-preview-2.78.0/lib"
+( exec -a "$CLI_DEST/compose-preview-2.78.0/lib/java-mcp-serve" sleep 30 ) &
+busy=$!
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  [[ -n "$(processes_using "$CLI_DEST/compose-preview-2.78.0")" ]] && break
+  sleep 0.2
+done
+kept_log="$(CLI_DEST="$CLI_DEST" VERSION=2.79.0 prune_old_cli_versions 2>&1)"
+check "prune_old_cli_versions keeps a version a running process uses" \
+  "yes" "$([[ -d "$CLI_DEST/compose-preview-2.78.0" ]] && echo yes || echo no)"
+check "and says which process" \
+  "1" "$(grep -c 'java-mcp-serve' <<<"$kept_log")"
+kill "$busy" 2>/dev/null; wait "$busy" 2>/dev/null
+CLI_DEST="$CLI_DEST" VERSION=2.79.0 prune_old_cli_versions 2>/dev/null
+check "and removes it once nothing uses it" \
+  "no" "$([[ -d "$CLI_DEST/compose-preview-2.78.0" ]] && echo yes || echo no)"
+
 # ---- wanted_companion_skills ----------------------------------------------
 eval "$(sed -n '/^COMPANION_SKILLS=(/,/^)/p; /^DEFAULT_COMPANION_SKILLS=(/,/^)/p' "$INSTALL_SH")"
 WS_ROOT="$WORK/ws"; mkdir -p "$WS_ROOT/compose-preview"

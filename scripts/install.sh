@@ -1142,15 +1142,38 @@ ensure_bin_on_path() {
   fi
 }
 
+# The processes whose command line runs from <dir> (a CLI version's
+# launcher, its java -cp lib/*.jar, an MCP server it started), one
+# "pid args" line each, args cut to 120 characters. `ps -A -o pid=,args=`
+# works on macOS and Linux alike.
+processes_using() { # processes_using <dir>
+  # The path goes through the environment, not awk's arguments, so awk's own
+  # command line does not match.
+  ps -A -o pid=,args= 2>/dev/null | PREVIEW_DIR="$1/" awk '
+    index($0, ENVIRON["PREVIEW_DIR"]) { sub(/^ +/, ""); print substr($0, 1, 120) }'
+}
+
 # Remove CLI versions other than the one just linked. Old versions otherwise
 # pile up, and a stale MCP config can keep launching one (a 2.7.0 `mcp serve`
-# kept running alongside 2.28.0).
+# kept running alongside 2.28.0). A version that running processes still use
+# (an MCP server an agent host started, `browse`, a build host) is kept:
+# deleting its jars under a live JVM fails its next class load with
+# NoClassDefFoundError. The next install removes it once they have exited.
 prune_old_cli_versions() {
-  local keep="compose-preview-$VERSION" d
+  local keep="compose-preview-$VERSION" d users count
   [[ -d "$CLI_DEST" ]] || return 0
   for d in "$CLI_DEST"/compose-preview-*; do
     [[ -d "$d" ]] || continue
     [[ "$(basename "$d")" == "$keep" ]] && continue
+    users="$(processes_using "$d")"
+    if [[ -n "$users" ]]; then
+      count="$(printf '%s\n' "$users" | wc -l | tr -d ' ')"
+      log "kept old CLI $(basename "$d"): $count running process(es) still use it:"
+      printf '%s\n' "$users" | head -5 | sed 's/^/    /' >&2
+      log "restart them to move to $VERSION (in Claude Code run /mcp and reconnect compose-preview;" \
+        "restart other agent hosts' MCP servers); the next install removes $(basename "$d")"
+      continue
+    fi
     rm -rf "$d"
     log "removed old CLI $(basename "$d")"
   done
