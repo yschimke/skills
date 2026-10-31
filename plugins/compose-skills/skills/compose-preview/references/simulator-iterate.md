@@ -8,18 +8,21 @@ Studio see. Upstream reference:
 and [As a device](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md#as-a-device-adb-and-android-studio).
 
 All of it is newer than CLI v2.75.0, and the MCP tools are newer than compose-preview-mcp v4.12.0:
-check `compose-preview launch --help` and `tools/list` before relying on one.
+check `compose-preview launch --help` and `tools/list` before relying on one. [Hot swap](#hot-swap)
+needs CLI v2.78.0, `reload {"compile":false}` v2.79.0, and `simulator_reload`'s `files` the
+compose-preview-mcp release after v4.13.0.
 
 | You have | Use | Takes |
 | --- | --- | --- |
-| the app's Gradle project, and an edit to its Kotlin, Java or resources | `launch --project <dir>`, then `reload` (or `--live`) | seconds for code; a cold restart for resources |
+| the app's Gradle project, and an edit to its Kotlin, Java or resources | `launch --project <dir>`, then `reload` (or `--live`) | about 2 s for a composable edit that [hot-swaps](#hot-swap), 5 to 6 s for other code; a cold restart for resources |
 | a rebuilt APK | `update {apk}` | seconds when that APK is in the conversion cache, else only its changed classes convert |
 | a need for a fresh process: statics, singletons, cold start, with the app's data | `restart` | about 4 to 6 s with `--standby`, 7 to 11 s without |
 | a need for a clean install | `restart {"keepData":false}` | as `restart` |
 | a tool that only talks adb (Android Studio, a test runner, a script) | `launch --adb` | |
 
-All three keep the session, the simulator id and the client's connection. None keeps UI state:
-the app comes back at its launcher activity, as after `adb install -r`.
+All three keep the session, the simulator id and the client's connection. Only a hot-swapped
+`reload` keeps UI state; otherwise the app comes back at its launcher activity, as after
+`adb install -r`.
 
 ## Iterate on an app: live reload
 
@@ -46,18 +49,26 @@ Over MCP:
 ```
 simulator_launch     {"project":"/abs/path/myapp","module":"app","variant":"debug"}
    (edit, save)
-simulator_reload     {}
-simulator_command    {"cmd":"tap","text":"Garden"}
+simulator_reload     {"files":["/abs/path/myapp/app/src/main/java/com/example/EmptyGarden.kt"]}
+simulator_command    {"cmd":"tap","text":"Garden"}       # only if it restarted
 simulator_screenshot {"path":"/tmp/garden.png"}
 ```
+
+Over MCP, pass the files you edited as `files`. The preview build compiles them (as
+`notify_file_changed` does, so their previews refresh too), and the reload takes those classes
+instead of running Gradle: about 1.7 to 2.5 s from edit to pixels on ComposeStarter, against 5 to
+6.6 s without. Anything it cannot do that way (a resource or other non-Kotlin/Java file, a failed
+compile, a module the preview build does not compile) reloads through Gradle as before, and the
+answer's `precompiled` says which happened. On the CLI, the same is `{"cmd":"reload","compile":false}`
+after compiling the edit yourself.
 
 - With no APK given, the CLI builds one first (`apk` is optional on `simulator_launch` with
   `project`). `--project` turns `--standby` on, so each reload takes over a prepared JVM.
 - `reload` compiles the module through Gradle (Kotlin, KSP or kapt, and aapt2's resource link; no
   dexing or packaging), overlays the classes that changed since launch, and restarts the app on
   them with its data kept. A three-line composable edit came back in about 6 s.
-- The reply's `mode` says what happened: `classes`, `resources` (a layout, string or drawable
-  changed), `apk` (a rebuilt APK was needed), or `unchanged`. `build` carries `ok`, `ms`, `tasks`
+- The reply's `mode` says what happened: `hotswap` (see below), `classes`, `resources` (a
+  layout, string or drawable changed), `apk` (a rebuilt APK was needed), or `unchanged`. `build` carries `ok`, `ms`, `tasks`
   and `errors`.
 - **A compile error is the command's error**, with the compiler's `e:` lines, and the running app
   is left alone. Fix and `reload` again.
@@ -68,11 +79,32 @@ simulator_screenshot {"path":"/tmp/garden.png"}
   and `update`s to the APK. Use it for assets, native libraries, a module outside the project
   directory or in an included build, or when an overlay misbehaves.
 
+### Hot swap
+
+A composable edit can reach the running app without a restart: `reload` redefines the changed
+classes in the simulator's JVM and re-creates the activity from its saved state, as a rotation
+does. The app keeps its process, data, `ViewModel`s, `rememberSaveable` state and a saveable
+navigation back stack, so it stays on the screen you are changing; plain `remember` state starts
+over. The reply's `mode` is `hotswap`.
+
+It restarts instead, and says why in `hotswapSkipped`, when:
+
+- a resource or resource id changed;
+- this is the first edit of a class since the launch (the app runs it from the converted APK; its
+  later edits can swap);
+- a field or method was added or removed, or a declaration changed;
+- a method that does not take a `Composer` changed (an `onCreate`, an initializer: it has already
+  run, so a swap would hide the edit);
+- more than one activity is alive, or one is on another display;
+- a class went back to its launch version.
+
+`{"cmd":"reload","hotswap":false}` always restarts.
+
 Limits:
 
-- **UI state is lost.** The back stack, scroll positions and anything not on disk go; the app
-  starts at its launcher activity. Script the navigation back to the screen, or deep-link to it
-  with `startActivity`. This is not Compose hot reload.
+- **UI state is lost on a restart.** The back stack, scroll positions and anything not on disk go;
+  the app starts at its launcher activity. Script the navigation back to the screen, or deep-link
+  to it with `startActivity`. A hot swap keeps what a rotation keeps.
 - **Debug, unshrunk variants only.** R8 renames classes, so a release build cannot be overlaid.
 - **A resource change is a cold restart.** The standby JVM holds the old resources, so a string or
   layout edit takes about twice as long as a code edit (about 11 s against 6 s).

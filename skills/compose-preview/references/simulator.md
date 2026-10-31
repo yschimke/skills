@@ -115,7 +115,7 @@ The local MCP server (`compose-preview mcp serve`; see [mcp.md](./mcp.md#apps-in
 | `simulator_screenshot` `{simulator?, device?, path?}` | the display as an image; with `path`, written to disk instead of inlined |
 | `simulator_logs` `{simulator?, device?, contains?, lines?}` | the latest lines it logged (the app's logcat, Robolectric, stack traces), plus the events since the last call |
 | `simulator_restart` `{simulator?, device?, keepData?}`, `simulator_update` `{apk, device?, keepData?}` | the app in a fresh JVM, its data kept ([simulator-iterate.md](./simulator-iterate.md#restart-and-update)) |
-| `simulator_reload` `{simulator?, full?, keepData?}` | with `project`: compile the edit and restart on the changed classes ([simulator-iterate.md](./simulator-iterate.md#iterate-on-an-app-live-reload)) |
+| `simulator_reload` `{simulator?, files?, full?, keepData?}` | with `project`: compile the edit (through the preview build when `files` names it) and hot-swap or restart on the changed classes ([simulator-iterate.md](./simulator-iterate.md#iterate-on-an-app-live-reload)) |
 | `simulator_adb` `{simulator?, args \| command, output?, timeoutMs?}` | with `adb`: runs the SDK's `adb -s <serial>` against it; `exitCode`, `stdout` (or bytes written to `output`), `stderr`, events ([simulator-iterate.md](./simulator-iterate.md#over-mcp-simulator_adb)) |
 | `simulator_stop` `{simulator?}` | ends it; every simulator also ends with the server |
 
@@ -193,7 +193,7 @@ matches. **Intents**: `{action, data, type, package, component, categories, flag
 | Permissions | `permissions` {`policy`?: `grant`/`deny`/`ask`, `grant`?, `deny`?, `answer`?, `requestId`?, `reset`?} ([below](#runtime-permissions)) |
 | Companion devices | `companion` {`policy`?: `accept`/`reject`/`ask`, `answer`?, `requestId`?, `address`?, `disassociate`?} ([simulator-wear.md](./simulator-wear.md#companion-devices)) |
 | Play services | `playServices` {`state`?: `installed`/`none`/`outdated`/`disabled`/`invalid`} ([below](#google-play-services)) |
-| Restart, reload | `restart` {`keepData`?}, `update` {`apk`, `keepData`?}, `reload` {`full`?, `keepData`?}, `snapshotData` {`to`} ([simulator-iterate.md](./simulator-iterate.md)) |
+| Restart, reload | `restart` {`keepData`?}, `update` {`apk`, `keepData`?}, `reload` {`full`?, `keepData`?, `hotswap`?, `compile`?}, `snapshotData` {`to`} ([simulator-iterate.md](./simulator-iterate.md)) |
 | adb | `shell` {`command`: an adb shell line} |
 | Display, device | `qualifiers` {`+night`, `+fr-rFR`}, `resize`, `device`, `rotate`, `posture`, `fontScale`, `display`, `battery`, `location`, `timezone` |
 | Displays | `displays` {`action`: list / add / remove / change} |

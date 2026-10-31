@@ -246,8 +246,10 @@ advertises.
   the latest log lines (paired lines start `[phone]` / `[watch]`).
 - `simulator_restart {simulator?, device?, keepData?}` and
   `simulator_update {apk, device?, keepData?}` replace the app with a fresh JVM
-  (the same or a rebuilt APK), its data kept; `simulator_reload {full?, keepData?}`
-  compiles an edit in `project` and restarts on the changed classes.
+  (the same or a rebuilt APK), its data kept; `simulator_reload {files?, full?, keepData?}`
+  compiles an edit in `project` and hot-swaps or restarts on the changed classes. Pass the
+  edited paths as `files` and the preview build compiles them, so no Gradle runs (about 2 s
+  from edit to pixels).
 - `simulator_adb {simulator?, args | command, output?, timeoutMs?}`, with `adb`,
   runs `adb -s <serial>` against it: `install`, `uninstall`, `shell` (including
   Studio's Wear `DEBUG_SURFACE` tile launches), `push` / `pull`, and
