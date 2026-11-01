@@ -1,7 +1,7 @@
 # Setup: install, update, and apply the plugin
 
 The one install reference for the `compose-preview` CLI and these skills.
-People setting up for the first time: **start at <https://yschimke.github.io/compose-ai-tools/>**.
+People setting up for the first time: **start at <https://preview.coo.ee/start/>**.
 Agents: only read this when `compose-preview` is actually missing; if a render
 tool is attached, render first.
 
@@ -123,7 +123,7 @@ doctor` first, never re-install or kill the daemon to "refresh"), and the
 The plugin is on Maven Central; most projects already have `mavenCentral()`
 in their plugin repositories, so no credentials or extra registry config.
 The full human-facing configuration reference is the
-[compose-ai-tools site](https://yschimke.github.io/compose-ai-tools/).
+[compose-ai-tools site](https://preview.coo.ee/start/).
 
 Apply the plugin in `<module>/build.gradle.kts` (replace the version with
 the latest from
