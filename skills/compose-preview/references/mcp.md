@@ -39,9 +39,10 @@ that one URL and nothing else.
 - Browser links on `ui.coo.ee` (the start page, a UI Builder design page) are
   web pages, not MCP configuration, and are fine to share as they are.
 
-The `compose-catalogs` plugin from
+The `compose-preview` plugin from
 [compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins#install)
-already wires this URL. To add it by hand, per-host commands are in its
+already wires this URL (on a host with no shell or Java, its `compose-catalogs`
+plugin wires it alone). To add it by hand, per-host commands are in its
 [host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md).
 People new to the UI Builder start at <https://ui.coo.ee/start>.
 
@@ -121,8 +122,7 @@ compose-preview mcp doctor    # verifies per-module state (descriptor present, e
 
 Use **one** registration route. The `compose-preview` plugin from
 [compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins#install)
-registers this server itself (and its `compose-catalogs` plugin wires the hosted
-one); with it installed, don't also let `mcp install` register hosts. Two
+registers this server and the hosted one itself; with it installed, don't also let `mcp install` register hosts. Two
 registrations of the same server give you two copies of every tool. Which hosts
 `mcp install` detects, the flags that force or skip one, and where each entry is
 written are in the

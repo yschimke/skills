@@ -52,7 +52,7 @@ fails.
 
 **Library components come from the catalog.** When the person names a
 library component (Material 3, Wear M3 `EdgeButton`, …) rather than one of
-their own previews, use the hosted catalog (`compose-catalogs`):
+their own previews, use the hosted catalog server (`compose-preview-catalog`):
 `catalog_list_previews`, then read the published snapshot with
 `resources/read`. Request `live` access only to change knobs with
 `catalog_render_preview`. **Never** add preview files to the person's project
