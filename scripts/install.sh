@@ -259,7 +259,7 @@ require tar
 
 # ---- Who manages the skill content? --------------------------------------
 #
-# `npx skills add yschimke/skills` and the plugin marketplaces install the skill
+# `npx skills add yschimke/skills` and the compose-agent-plugins plugins install the skill
 # markdown themselves; only this script writes `.skill-version`. When the
 # compose-preview skill is on disk without that marker, another tool owns it,
 # so refresh only the CLI. Otherwise `compose-preview update` (which re-runs

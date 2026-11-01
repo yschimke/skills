@@ -12,8 +12,7 @@ tell the agent how to drive it.
 These are the generic skills, written to work in any agent host. The
 per-harness integrations (plugin manifests, MCP wiring, hooks and setup) live
 in [yschimke/compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins),
-whose single marketplace also installs these skill bundles for Claude Code and
-Codex.
+whose marketplace vendors these skills for Claude Code and Codex.
 
 [Jetpack Compose]: https://developer.android.com/jetpack/compose
 [Compose Multiplatform]: https://www.jetbrains.com/compose-multiplatform/
@@ -33,19 +32,6 @@ Wiring MCP, including which of the two servers you want and the one hosted URL
 (`https://preview.coo.ee/mcp`), is in
 **[mcp.md](skills/compose-preview/references/mcp.md)**. Per-harness wiring lives in
 [compose-agent-plugins' host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md).
-
-### Bundles
-
-`plugins/` holds two bundles generated from `skills/`, so a host can install
-the default pair without the rest:
-
-| Bundle | Skills |
-|---|---|
-| `compose-skills` | `compose-preview`, `compose-ui-builder` (the default pair) |
-| `compose-review-skills` | `compose-preview-review`, `compose-preview-ci` |
-
-The root `yschimke-skills` plugin carries all four. Install either it or the
-bundles, never both, or each skill appears twice.
 
 ## Skills
 

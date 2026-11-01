@@ -9,24 +9,7 @@
       "package-name": "yschimke-skills",
       "include-component-in-tag": false,
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
-      "extra-files": [
-        {
-          "type": "json",
-          "path": ".claude-plugin/plugin.json",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "json",
-          "path": "plugins/compose-skills/.claude-plugin/plugin.json",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "json",
-          "path": "plugins/compose-review-skills/.claude-plugin/plugin.json",
-          "jsonpath": "$.version"
-        }
-      ]
+      "bump-patch-for-minor-pre-major": true
     }
   }
 }
