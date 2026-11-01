@@ -58,9 +58,9 @@ skill twice.
 
 The default is two skills: `compose-preview` (render, inspect, CLI and MCP) and
 `compose-ui-builder` (author designs over MCP). Every installed skill's
-description loads into each agent session, so the rest are opt-in:
-`compose-preview-review`, `compose-preview-ci`, `compose-preview-design-board`,
-`compose-design-catalog`, `figma-catalog-import`, `design-parity-review`.
+description loads into each agent session, so the other two are opt-in:
+`compose-preview-review` (review a UI pull request) and `compose-preview-ci`
+(CI that posts before/after renders on PRs).
 
 - skills CLI: add another `--skill <name>`, or drop the `--skill` flags to
   pick from the list.

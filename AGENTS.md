@@ -85,8 +85,7 @@ where it actually is rather than where the code is.)
 - `plugins/<bundle>/` holds **generated copies** of skills, grouped so a
   harness can install the default pair (`compose-skills`: `compose-preview`
   and `compose-ui-builder`, matching `install.sh`'s defaults) without the
-  review (`compose-review-skills`) and design (`compose-design-skills`)
-  skills. Never edit them; edit `skills/` and regenerate.
+  review (`compose-review-skills`) skills. Never edit them; edit `skills/` and regenerate.
 
 ## Manifests
 

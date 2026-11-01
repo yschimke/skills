@@ -1,6 +1,6 @@
 {
   "name": "compose-review-skills",
-  "description": "Review Compose UI pull requests, set up preview CI, and check design parity.",
+  "description": "Review Compose UI pull requests and set up preview CI.",
   "version": "0.1.13",
   "author": {
     "name": "Yuri Schimke",

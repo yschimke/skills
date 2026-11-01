@@ -38,12 +38,8 @@ BUNDLES = {
         "skills": ["compose-preview", "compose-ui-builder"],
     },
     "compose-review-skills": {
-        "description": "Review Compose UI pull requests, set up preview CI, and check design parity.",
-        "skills": ["compose-preview-review", "compose-preview-ci", "design-parity-review"],
-    },
-    "compose-design-skills": {
-        "description": "Export Compose renders to design tools: design boards, sticker-sheet catalogs, and Figma import.",
-        "skills": ["compose-preview-design-board", "compose-design-catalog", "figma-catalog-import"],
+        "description": "Review Compose UI pull requests and set up preview CI.",
+        "skills": ["compose-preview-review", "compose-preview-ci"],
     },
 }
 DEFAULT_BUNDLE = "compose-skills"

@@ -36,16 +36,15 @@ Wiring MCP, including which of the two servers you want and the one hosted URL
 
 ### Bundles
 
-`plugins/` holds three bundles generated from `skills/`, so a host can install
+`plugins/` holds two bundles generated from `skills/`, so a host can install
 the default pair without the rest:
 
 | Bundle | Skills |
 |---|---|
 | `compose-skills` | `compose-preview`, `compose-ui-builder` (the default pair) |
-| `compose-review-skills` | `compose-preview-review`, `compose-preview-ci`, `design-parity-review` |
-| `compose-design-skills` | `compose-preview-design-board`, `compose-design-catalog`, `figma-catalog-import` |
+| `compose-review-skills` | `compose-preview-review`, `compose-preview-ci` |
 
-The root `yschimke-skills` plugin carries all eight. Install either it or the
+The root `yschimke-skills` plugin carries all four. Install either it or the
 bundles, never both, or each skill appears twice.
 
 ## Skills
@@ -78,23 +77,6 @@ bundles, never both, or each skill appears twice.
   fails silently there). Also covers CLI/plugin version skew, migrating
   off the four legacy actions, and making runs cheap — parallel pipeline
   jobs, change-scoped rendering, A/B variant comparison.
-- [`compose-preview-design-board`](skills/compose-preview-design-board/SKILL.md)
-  — assemble rendered `@Preview` PNGs into a single self-contained HTML
-  design board (categories, groups, captions, layout) for import into
-  Claude Design and other design tools. Pairs with `compose-preview`;
-  turns a set of renders into one coherent brief rather than loose
-  screenshots.
-- [`compose-design-catalog`](skills/compose-design-catalog/SKILL.md) —
-  generate an importable design-artifact **sticker sheet** for a whole
-  Compose component system (Compose M3, Wear Compose M3, Glimmer,
-  Glance/Wear widgets): each component in its primary modes, in two
-  variants (ideal render + bordered layout), with extracted design
-  tokens and accessibility greenlines, laid out for Figma / Stitch /
-  Claude Design import, and served at `preview.coo.ee/<system>/`. Covers
-  authoring and **validating** the `catalog.spec.json` inventory
-  (`init-catalog-spec` / `validate-catalog-spec` + its JSON schema) before
-  rendering. Code-led — the published Figma kits are seed only. Pairs with
-  `compose-preview` and `compose-preview-design-board`.
 - [`compose-ui-builder`](skills/compose-ui-builder/SKILL.md) — **author** a
   Compose screen or Wear widget over MCP against a `compose-preview serve`
   deployment, with no checkout: create a design, insert and edit nodes in the
@@ -105,88 +87,15 @@ bundles, never both, or each skill appears twice.
   (`ui-builder --no-project`, `--agent-grant-capabilities`, the two MCP
   surfaces), the reference overlay, and working with a person through comment
   threads and progress links.
-- [`figma-catalog-import`](skills/figma-catalog-import/SKILL.md) — import
-  a published `design-artifacts/<system>` catalog (from
-  `compose-design-catalog`) into a **Figma** file as authoritative,
-  code-derived renders: grouped, with a11y greenlines, spacing redlines,
-  a token→variable collection, and a `design-map.json` correspondence.
-  Decides the import case first (code-led vs design-led × new vs existing
-  file), never delete-and-rebuilds, and reconciles in place keyed by
-  `componentId`. Prefers the `@design-parity/figma-plugin`; documents the
-  Figma-MCP runbook as fallback. Pairs with `compose-design-catalog`.
-- [`design-parity-review`](skills/design-parity-review/SKILL.md) — the
-  **design → code** direction: prove a UI pull request matches its
-  intended design by diffing the rendered candidate against a Figma /
-  Stitch / Claude Design reference and posting a parity verdict.
-  Covers the committed direction policy, `design-map.json`
-  correspondence, the **reference cache** that makes a parity run cost
-  zero Figma calls (and why skipping it silently reports on a quarter of
-  a catalog), sharding an exhaustive run, and round-tripping both
-  directions on one project including opt-in Code-to-Canvas push-back.
-  Drives [`design-parity`](https://github.com/yschimke/design-parity).
 
 The CLI, Gradle plugin, renderer, and local daemon MCP server live in
 [yschimke/compose-ai-tools]; the preview server behind `compose-preview
 serve` — including its own catalog MCP endpoint — lives in
-[yschimke/compose-preview-server]; the parity bot and catalog exporter
-live in [yschimke/design-parity]; the VS Code extension lives in
+[yschimke/compose-preview-server]; the VS Code extension lives in
 [yschimke/compose-preview-vscode]. This repo is content-only.
 
-[yschimke/design-parity]: https://github.com/yschimke/design-parity
 [yschimke/compose-preview-server]: https://github.com/yschimke/compose-preview-server
 [yschimke/compose-preview-vscode]: https://github.com/yschimke/compose-preview-vscode
-
-### How these relate
-
-Two stages — **render**, then **arrange & deliver**. `compose-preview` is the
-shared foundation; the rest split by *what you're arranging* (a curated subset
-vs a whole system) and *where it lands*:
-
-```
-render              arrange                        deliver
-──────              ───────                        ───────
-compose-preview ─┬─ compose-preview-review ──────→ a PR base/head diff
-                 │    └─ compose-preview-ci ─────→ …the same, posted by CI
-                 │       (incl. the two-stage
-                 │        split for fork PRs)
-                 │
-                 ├─ compose-preview-design-board ─┐  (curated subset → HTML)
-                 │                                 ├─→ Claude Design  (light HTML/PNG
-                 └─ compose-design-catalog ───────┤                    drop-in, in-skill)
-                    (whole system → bundle)        └─→ Figma → figma-catalog-import
-                                                            (the one heavy destination:
-                                                             plugin + in-place reconcile
-                                                             + design-map correspondence)
-
-                          ◀── design-parity-review ──── Figma / Stitch / Claude Design
-                              (the return leg: is the code at parity with the design?)
-```
-
-- **board vs catalog** — `design-board` arranges a *curated subset* of renders
-  for a feature/PR into one HTML brief; `compose-design-catalog` catalogs a
-  *whole component system* into a durable, tool-neutral bundle. Different
-  granularity, same next step.
-- **Claude Design vs Figma** — Claude Design is a light drop-in (open the HTML /
-  upload the PNGs), so it stays a *step inside* board/catalog. Figma is heavy (a
-  plugin, reconcile-by-`componentId`, a `design-map.json`), so it's factored out
-  into **`figma-catalog-import`** — the single Figma delegate for *both*
-  arrangers, never duplicated in either.
-- **review vs ci** — `compose-preview-review` is about *reading* a diff (as a
-  human or an agent); `compose-preview-ci` is about *standing up the pipeline*
-  that produces it. Different task, different trigger, so they're separate.
-- **the two directions** — everything above the return leg is **code → design**
-  (the code is authored, the design artifact is generated). `design-parity-review`
-  is **design → code**: the design is the reference and the code is checked
-  against it. Which one is canonical is a committed decision (`.design-parity.json`),
-  not a per-run choice — and a project running both should read
-  [round-trip.md](skills/design-parity-review/references/round-trip.md) before
-  wiring the second one.
-- **authoring is a different axis** — everything in that diagram starts from
-  code you already have. **`compose-ui-builder`** starts from nothing: a design
-  is authored in the builder's own catalog vocabulary, on a server, with no
-  checkout, and *produces* the Kotlin. It feeds the same destinations (its PNG
-  and SVG exports are a design board's or a parity run's input) but its input is
-  a person's intent rather than a `@Preview`.
 
 ### Common routes
 
@@ -197,12 +106,8 @@ compose-preview ─┬─ compose-preview-review ──────→ a PR base
 | Review a UI PR | `compose-preview-review` |
 | Have CI post before/after diffs on every PR | `compose-preview-ci` |
 | …and the repo takes **fork** PRs | `compose-preview-ci` → [fork-prs.md](skills/compose-preview-ci/references/fork-prs.md) |
-| Get an app's screens in front of a designer, once | `compose-preview` → `compose-preview-design-board` |
-| Publish a component system into Figma, refreshed on every change | `compose-preview` → `compose-design-catalog` → `figma-catalog-import` |
-| Check a PR against its Figma design | `design-parity-review` (wire the reference cache **before** the run) |
 | Build or change a screen with no checkout, and get Kotlin out | `compose-ui-builder` (start at its core creation loop) |
 | Work on a design a designer is editing right now | `compose-ui-builder` → its comment and `await_design` loop |
-| Run both directions on one project | `design-parity-review` → [round-trip.md](skills/design-parity-review/references/round-trip.md) |
 
 ## Contributing
 

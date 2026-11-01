@@ -17,12 +17,7 @@
     {
       "name": "compose-review-skills",
       "source": "./plugins/compose-review-skills",
-      "description": "Review Compose UI pull requests, set up preview CI, and check design parity."
-    },
-    {
-      "name": "compose-design-skills",
-      "source": "./plugins/compose-design-skills",
-      "description": "Export Compose renders to design tools: design boards, sticker-sheet catalogs, and Figma import."
+      "description": "Review Compose UI pull requests and set up preview CI."
     }
   ]
 }

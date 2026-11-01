@@ -25,11 +25,6 @@
           "type": "json",
           "path": "plugins/compose-review-skills/.claude-plugin/plugin.json",
           "jsonpath": "$.version"
-        },
-        {
-          "type": "json",
-          "path": "plugins/compose-design-skills/.claude-plugin/plugin.json",
-          "jsonpath": "$.version"
         }
       ]
     }
