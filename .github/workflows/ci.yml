@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate skills
+    name: Validate manifests and skills
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
