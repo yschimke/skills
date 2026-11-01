@@ -69,14 +69,24 @@ git worktree add ../_pr_base "origin/$BASE"
 
 (cd ../_pr_base && compose-preview show --json) > base.json
 compose-preview show --json > head.json
-
-git worktree remove ../_pr_base
 ```
 
 Diff by preview `id` + `sha256`. Bucket into **changed**, **new**, and
 **removed**. Read the PNGs for each entry in `changed` and `new` directly
 from the paths in the JSON — this is what the human invoking you will read
 too.
+
+**Keep the worktree until the review is finished.** `base.json`'s `pngPath`
+values are absolute paths into `../_pr_base`'s build output, and
+`git worktree remove` deletes that output, so removing it now would break
+reading the base images and any upload in §3. Remove it last:
+
+```bash
+git worktree remove ../_pr_base   # after the comment is posted
+```
+
+If the base images must outlive the worktree (for example as committed
+evidence), copy them out first and use the copies' paths.
 
 ### 2. Default: show the human the diffs inline, post a text comment
 

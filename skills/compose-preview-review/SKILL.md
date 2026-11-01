@@ -64,8 +64,10 @@ Pick the workflow that matches the task:
    git worktree add ../_pr_base "origin/$BASE"
    (cd ../_pr_base && compose-preview show --json) > base.json
    compose-preview show --json > head.json
-   git worktree remove ../_pr_base
    ```
+
+   Keep `../_pr_base` until step 5 is done: `base.json`'s `pngPath`s point
+   into it, and `git worktree remove ../_pr_base` deletes them.
 
 3. **Diff** by `id` + `sha256`. Bucket into changed / new / removed.
 
@@ -81,6 +83,7 @@ Pick the workflow that matches the task:
 5. **Post a text-only review comment** summarising deltas. Image upload
    only with explicit consent — see
    [references/agent-pr.md § Uploading images](./references/agent-pr.md#3-uploading-images--only-with-explicit-consent).
+   Then `git worktree remove ../_pr_base`.
 
 ## Reference docs
 
