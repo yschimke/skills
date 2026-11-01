@@ -154,7 +154,7 @@ controls are absent merely because the central canvas resembles the target.
 
 When asked to review a design, follow the shared
 [catalog guidelines checklist](../../compose-preview/references/design-guidelines.md).
-It ships beside this skill in the default bundle and works without a reviewer
+It ships beside this skill in the default skill pair and works without a reviewer
 agent or an OpenRouter key. Use advertised `ui_builder_guidelines_prompt`,
 `ui_builder_get_guidelines` and `ui_builder_record_guidelines` tools; preserve
 the prompt's revision and rules version, inspect its required pictures and
