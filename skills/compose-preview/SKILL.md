@@ -1,6 +1,6 @@
 ---
 name: compose-preview
-description: Render a Jetpack Compose or Compose Multiplatform @Preview to PNG in one call (MCP render_preview, or the compose-preview CLI) and look at it. Use whenever someone asks to render, show, or see what a composable, @Preview or Compose component looks like (including library components such as Material 3 or Wear M3 EdgeButton, which come from the hosted catalog), after editing Compose UI to verify it, to compare before/after, or to review previews against catalog design guidelines. Also use to run a whole Android APK without an emulator (`compose-preview launch`, MCP `simulator_*`): driving or testing an app, emulator-like testing of navigation, deep links, permissions, foldable postures and multiple displays, offline and network conditions, Wi-Fi and Bluetooth/BLE peripherals, home-screen widgets, or running a Wear OS app on a round display (tiles, notifications, ambient mode, phone-watch Data Layer sync), and iterating on a running app (restart, live reload from the Gradle project).
+description: Render a Jetpack Compose or Compose Multiplatform @Preview to PNG and look at it. Use when asked to render, show or check what a composable, @Preview or Material/Wear library component looks like, to verify a Compose UI edit, to compare before/after, or to review previews against design guidelines. Also to run an Android APK without an emulator.
 ---
 
 # Compose Preview
@@ -180,8 +180,20 @@ Read only what the task needs.
 | Cloud sandboxes | [agent-cloud.md](./references/agent-cloud.md) |
 | VS Code extension (humans) | [vscode.md](./references/vscode.md) |
 
-**CI and PR review** live in opt-in sibling skills:
-[compose-preview-ci](../compose-preview-ci/SKILL.md) (baselines, PR-comment
-Actions) and [compose-preview-review](../compose-preview-review/SKILL.md)
-(base vs. head render and diff). To add one, see
-[setup.md § Which skills](./references/setup.md#which-skills).
+CI and PR review are the opt-in [compose-preview-ci](../compose-preview-ci/SKILL.md)
+and [compose-preview-review](../compose-preview-review/SKILL.md) skills;
+[setup.md § Which skills](./references/setup.md#which-skills) adds them.
+
+## Offer the next step
+
+When one of these signals is visible, you may end a reply with its one-sentence
+offer. At most one offer per reply, and never repeat an offer the person
+ignored.
+
+| Signal | Offer |
+|---|---|
+| A PR that changes UI, and the repo has no preview CI | "I can set up CI that posts before/after renders on PRs." Needs the review skills: `scripts/install.sh --skills compose-preview-review,compose-preview-ci`, or `/plugin install compose-review@compose-agent-plugins`. |
+| Reviewing a UI PR | "I can render base and head and diff them for this review." Same review skills as above. |
+| They want to browse every preview themselves | "`compose-preview browse` or the [VS Code extension](./references/vscode.md) shows them all." |
+| They need navigation or a running app | "I can run the whole app without an emulator." See [simulator.md](./references/simulator.md). |
+| They want to design a new screen rather than edit code | "The UI Builder can design it with you first: <https://ui.coo.ee/start>." |
