@@ -205,8 +205,7 @@ instead of a fixed raster, both built from the same captured trees as the PNG:
   instead of a per-preview request, pass `-Dcomposeai.svg.background=<mode>` (or
   `-PcomposePreview.svgBackground=<mode>` through the Gradle plugin); `true` and
   `false` remain aliases for `device` and `none`. This is the vector
-  that **figma-catalog-import** inserts as an SVG (scales crisply) and that
-  **compose-design-catalog** bakes into the bundle.
+  that design tools import as an SVG (it scales crisply).
 
 `test/failure` is daemon fetch-only. After a `renderFailed`
 notification, call `get_preview_data(..., kind = "test/failure")` to

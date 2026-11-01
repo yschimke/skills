@@ -1,8 +1,8 @@
 name: Release Please
 
-# Opens / updates a Release PR that bumps the plugin version in
-# `.claude-plugin/plugin.json` from conventional-commit messages on `main`.
-# Merging that PR cuts a GitHub Release + tag.
+# Opens / updates a Release PR that bumps the version and CHANGELOG.md from
+# conventional-commit messages on `main`. Merging that PR cuts a GitHub
+# Release + tag.
 #
 # This is a content-only repo — no release assets are built or uploaded.
 # The tag is the artifact: consumers can pin to it via

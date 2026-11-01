@@ -336,9 +336,9 @@ check "--skills adds to the default set" \
   "compose-preview-review compose-preview-ci compose-ui-builder" "$(ALL_SKILLS=0 SKILLS_REQUESTED=compose-preview-ci,compose-preview-review ws)"
 check "--all-skills installs every companion" \
   "${COMPANION_SKILLS[*]}" "$(ALL_SKILLS=1 SKILLS_REQUESTED= ws)"
-mkdir -p "$WS_ROOT/figma-catalog-import"; echo abc >"$WS_ROOT/figma-catalog-import/.skill-version"
+mkdir -p "$WS_ROOT/compose-preview-ci"; echo abc >"$WS_ROOT/compose-preview-ci/.skill-version"
 check "previously installed companions keep updating" \
-  "compose-ui-builder figma-catalog-import" "$(ALL_SKILLS=0 SKILLS_REQUESTED= ws)"
+  "compose-preview-ci compose-ui-builder" "$(ALL_SKILLS=0 SKILLS_REQUESTED= ws)"
 check "an unknown --skills name is rejected" \
   "1" "$(bash "$INSTALL_SH" --skills nope --cli-only >/dev/null 2>&1; echo $?)"
 # ---- skills_managed_elsewhere ---------------------------------------------

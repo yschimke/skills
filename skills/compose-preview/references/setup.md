@@ -48,24 +48,41 @@ Take the first route that applies:
    curl -fsSL https://raw.githubusercontent.com/yschimke/skills/main/scripts/install.sh | bash
    ```
 
-A **plugin marketplace** (Claude Code, Codex, Gemini, …) is the alternative to
-all three: [compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins#install)
-installs these skills plus the MCP servers and host wiring, and its stub
-downloads the CLI on first use. Pick one route per host; two give you every
-skill twice.
+On Claude Code, Codex and Antigravity, install the `compose-preview` **plugin**
+from [compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins#install)
+instead of any of the three (plugins come only from there). It carries the two
+default skills plus the MCP servers and host wiring, and its stub downloads the
+CLI on first use. Claude Code:
+
+```text
+/plugin marketplace add yschimke/compose-agent-plugins
+/plugin install compose-preview@compose-agent-plugins
+```
+
+Codex: `codex plugin marketplace add yschimke/compose-agent-plugins`, then
+enable `compose-preview` from `/plugins`. Antigravity:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/yschimke/compose-agent-plugins/main/scripts/antigravity-install.py | python3 -
+```
+
+Pick one route per host; two give you every skill twice. Other hosts: the
+[host setup notes](https://github.com/yschimke/compose-agent-plugins/blob/main/docs/host-setup.md).
 
 ### Which skills
 
 The default is two skills: `compose-preview` (render, inspect, CLI and MCP) and
 `compose-ui-builder` (author designs over MCP). Every installed skill's
-description loads into each agent session, so the rest are opt-in:
-`compose-preview-review`, `compose-preview-ci`, `compose-preview-design-board`,
-`compose-design-catalog`, `figma-catalog-import`, `design-parity-review`.
+description loads into each agent session, so the other two are opt-in:
+`compose-preview-review` (review a UI pull request) and `compose-preview-ci`
+(CI that posts before/after renders on PRs).
 
 - skills CLI: add another `--skill <name>`, or drop the `--skill` flags to
   pick from the list.
 - installer: `… | bash -s -- --skills compose-preview-review,compose-preview-ci`,
-  or `--all-skills` for every skill.
+  or `--all-skills` for all four.
+- plugin: `/plugin install compose-review@compose-agent-plugins` (Claude Code)
+  adds the optional `compose-review` plugin, which carries both.
 
 ### Installer options
 
@@ -76,7 +93,7 @@ of [`scripts/install.sh`](https://github.com/yschimke/skills/blob/main/scripts/i
 | Option | Effect |
 | --- | --- |
 | `1.79.0` (a bare version) | Pin a CLI version instead of the latest release. |
-| `--skills a,b` / `--all-skills` | Add skills to the default pair / install every skill. |
+| `--skills a,b` / `--all-skills` | Add skills to the default pair / install all four. |
 | `--cli-only` | Skip skill content (already on disk via a plugin or npx); the stub passes this. |
 | `--with-skills` | Refresh skill content even when another tool installed it. |
 | `--cli-home DIR` | Unpack the CLI under `DIR` (also `COMPOSE_PREVIEW_HOME`). |

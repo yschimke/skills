@@ -65,13 +65,9 @@ where it actually is rather than where the code is.)
 1. **Update `README.md`** — keep the skills list in sync. Each entry links
    to the skill's `SKILL.md` and summarises what it covers. If you add a
    skill and don't update the README, the change is incomplete.
-2. **Put it in one bundle and regenerate.** Add the skill to exactly one entry
-   of `BUNDLES` in `scripts/generate-bundles.py`, then run
-   `python3 scripts/generate-bundles.py`. CI fails while `plugins/` is stale.
-3. **Do not bump the plugin version unless explicitly asked.** When you
-   are asked for a release, edit `.claude-plugin/plugin.json` using
-   semver: patch for wording/docs, minor for a new skill or new triggers,
-   major for removals or breaking renames.
+2. **Keep `scripts/install.sh` in sync.** Add the name to `COMPANION_SKILLS`
+   (and to the `--skills` / `--all-skills` help text) so the curl installer
+   can install it.
 
 ## Skill layout
 
@@ -82,19 +78,15 @@ where it actually is rather than where the code is.)
   name** exactly. Use lowercase kebab-case for both.
 - Supporting files (design notes, scripts) sit alongside `SKILL.md` in
   the skill dir.
-- `plugins/<bundle>/` holds **generated copies** of skills, grouped so a
-  harness can install the default pair (`compose-skills`: `compose-preview`
-  and `compose-ui-builder`, matching `install.sh`'s defaults) without the
-  review (`compose-review-skills`) and design (`compose-design-skills`)
-  skills. Never edit them; edit `skills/` and regenerate.
 
-## Manifests
+## Harness plugins
 
-- `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json` are
-  both JSON (not JSONC). Validate with `jq . <file>` before committing.
-- The plugin `name` in both manifests must stay `yschimke-skills`.
-- The bundle entries in `marketplace.json`, and every file under `plugins/`,
-  are written by `scripts/generate-bundles.py`; don't hand-edit them.
+Harness plugins live in
+[yschimke/compose-agent-plugins](https://github.com/yschimke/compose-agent-plugins),
+which vendors `compose-preview` and `compose-ui-builder` into its
+`compose-preview` plugin and `compose-preview-review` + `compose-preview-ci`
+into an optional `compose-review` plugin. This repo publishes no plugin or
+marketplace.
 
 ## Cross-repo references
 
@@ -103,13 +95,13 @@ The `compose-preview` skill documents the CLI shipped from the
 `v1.79.0`) and links into that repo. Keep those links stable. When the
 CLI gets a new version, update referenced version strings here; do not
 introduce a release-please marker in this repo — versions in skill text
-track the upstream CLI, not this plugin.
+track the upstream CLI, not this repo.
 
 ## What not to do
 
 - Don't add CI, build tooling, or Gradle config here — this is a content
-  repo. The exceptions are `scripts/generate-bundles.py` (stdlib Python)
-  and its `--check` step in CI, and the merge-policy checks shared with the
+  repo. The exceptions are `scripts/install.sh` and its self-test, the
+  skill-name check in CI, and the merge-policy checks shared with the
   sibling repositories (the PR-title and agent-attribution workflows, their
   scanner and tests, and the `.githooks`). CI, packaging, and the renderer live in `compose-ai-tools`.
 - Don't rename existing skill directories "for consistency" without a

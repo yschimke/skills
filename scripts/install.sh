@@ -48,10 +48,14 @@
 #                                              # disk via a plugin or npx); the
 #                                              # bundled scripts/compose-preview
 #                                              # stub passes this on first run
-#   scripts/install.sh --skills compose-preview-ci,compose-preview-review
-#                                              # add skills to the default set
-#                                              # (compose-preview, compose-ui-builder)
-#   scripts/install.sh --all-skills            # install every skill in the repo
+#   scripts/install.sh --skills compose-preview-review,compose-preview-ci
+#                                              # add the optional skills to the
+#                                              # default set (compose-preview,
+#                                              # compose-ui-builder)
+#   scripts/install.sh --all-skills            # install all four: compose-preview,
+#                                              # compose-ui-builder,
+#                                              # compose-preview-review,
+#                                              # compose-preview-ci
 #   scripts/install.sh --with-skills           # refresh skill content even when
 #                                              # another tool (npx skills, a
 #                                              # plugin) installed it
@@ -132,11 +136,7 @@ SKILL_DIR="${SKILL_DIR:-}"
 COMPANION_SKILLS=(
   compose-preview-review
   compose-preview-ci
-  compose-preview-design-board
-  compose-design-catalog
   compose-ui-builder
-  figma-catalog-import
-  design-parity-review
 )
 # Installed by default next to compose-preview. The rest are opt-in: each
 # skill's description loads into every agent session, and a long list of
@@ -259,7 +259,7 @@ require tar
 
 # ---- Who manages the skill content? --------------------------------------
 #
-# `npx skills add yschimke/skills` and the plugin marketplaces install the skill
+# `npx skills add yschimke/skills` and the compose-agent-plugins plugins install the skill
 # markdown themselves; only this script writes `.skill-version`. When the
 # compose-preview skill is on disk without that marker, another tool owns it,
 # so refresh only the CLI. Otherwise `compose-preview update` (which re-runs
@@ -361,7 +361,7 @@ cleanup_legacy_gemini_skill_links() {
       [[ -L "$entry" ]] || continue
       local target; target="$(readlink "$entry" 2>/dev/null || true)"
       case "$target" in
-        *compose-preview*|*compose-design-catalog*|*figma-catalog-import*|*design-parity-review*)
+        *compose-preview*|*compose-ui-builder*)
           log "removing legacy gemini skill link: $entry (was -> $target)"
           rm -f "$entry"
           ;;
