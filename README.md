@@ -1,6 +1,6 @@
 # Skills
 
-**Let your agent see your Compose UI:** <https://yschimke.github.io/compose-ai-tools/>
+**Let your agent see your Compose UI:** <https://preview.coo.ee/start/>
 
 **Design a new screen with an agent:** <https://ui.coo.ee/start>
 
