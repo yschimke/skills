@@ -15,7 +15,7 @@ call.
 
 The pin has no stable alias: copy `catalogPin` from `ui_builder_list_catalogs`
 (see [Pins](./m3-catalog.md#pins)). The starter document is in the skill under
-[A document that works](../SKILL.md#a-document-that-works).
+[A document that works](./documents-and-vocabulary.md#a-document-that-works).
 
 <!-- wear-m3 sha256:b37fb7ace974e9cd4b5a068d623487fe, 89 components -->
 | `componentId` | role | slots | required | other properties |

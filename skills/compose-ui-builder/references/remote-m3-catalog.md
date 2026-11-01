@@ -11,7 +11,7 @@ root is `remote-m3/widget-container-small` (216×76 dp),
 `remote-m3/widget-container-adaptive`. The pin is
 `{"systemId": "remote-m3", "catalogRevision": "wear-widget-scaffolds-v1", "capabilityDigest": "candidate", "nativeRuntimeId": "candidate"}`
 (see [Pins](./m3-catalog.md#pins)). The starter document is in the skill under
-[A document that works](../SKILL.md#a-document-that-works).
+[A document that works](./documents-and-vocabulary.md#a-document-that-works).
 
 **Exporting is not the same as running in a widget.** Some components here export
 Kotlin with no diagnostic yet sit outside the Glance Wear widget profile, and
