@@ -46,6 +46,11 @@ fails.
    read when `changed` or `sha256` already answers the question, such as
    "did my edit land?". Describe only what you saw. If you can't view images
    here, say so plainly.
+   **Never claim a visual check you didn't make.** `changed` only means the
+   pixels differ from an earlier render; it can be `true` on the first render
+   of a session and it says nothing about *how* they changed. To say an edit
+   looks right ("the title is bigger", "verified", "fixed"), read `pngPath`
+   first. If you didn't, or a render failed, say the result is unverified.
 3. **Reply** briefly, with `pngPath` so the person can open the same image.
    Don't write "the image above": in a terminal or print-mode harness the
    person doesn't see images your tools return. Point at `pngPath` instead.
