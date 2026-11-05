@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0](https://github.com/yschimke/skills/compare/v0.1.13...v0.2.0) (2026-11-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* four skills, no marketplace, one install path ([#167](https://github.com/yschimke/skills/issues/167))
+
+### Features
+
+* four skills, no marketplace, one install path ([#167](https://github.com/yschimke/skills/issues/167)) ([c6e32f6](https://github.com/yschimke/skills/commit/c6e32f6834d29bd55a7631478ff54bf6244b8415))
+
+
+### Bug Fixes
+
+* **compose-preview:** never claim a visual check without reading the PNG ([#170](https://github.com/yschimke/skills/issues/170)) ([b686c03](https://github.com/yschimke/skills/commit/b686c0308e3aeee405e6f8a3c21f769c6bb9b0af))
+
 ## [0.1.13](https://github.com/yschimke/skills/compare/v0.1.12...v0.1.13) (2026-10-31)
 
 
