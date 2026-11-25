@@ -118,6 +118,9 @@ edit running with live reload (`launch --project`, `reload`), use
 `compose-preview launch <app.apk>` or the MCP `simulator_*` tools: Robolectric's
 simulator, no emulator or device. Read [simulator.md](./references/simulator.md)
 first; a `@Preview` render stays the cheaper check for a single screen.
+To run the app's existing instrumentation tests (`src/androidTest`) the same
+way, use `./gradlew :app:simulatorDebugAndroidTest` and read its
+`results.json` ([simulator-tests.md](./references/simulator-tests.md)).
 
 **Not previewable** (takes a ViewModel or injected service)? Propose extracting
 a stateless inner composable and preview that
@@ -172,6 +175,7 @@ Read only what the task needs.
 | Simulator network modes, real-traffic gating, Wi-Fi requests, Bluetooth / BLE / GATT | [simulator-network.md](./references/simulator-network.md) |
 | Simulator on Wear: watch face, tiles, notifications, ambient and screen power, `--pair`, `--data-layer agent`, `ChannelClient`, companion devices | [simulator-wear.md](./references/simulator-wear.md) |
 | Simulator edit-run loop: `restart`, `update`, live reload (`--project`, `reload`, `--live`), `--adb` | [simulator-iterate.md](./references/simulator-iterate.md) |
+| Run the app's existing androidTest suite in the simulator: `simulatorDebugAndroidTest`, `--instrument`, `--tests`, JSON results, `--pool`, `--shards` | [simulator-tests.md](./references/simulator-tests.md) |
 | Wear Compose UI / Wear Tiles | [wear-ui.md](./references/wear-ui.md), [wear-tiles.md](./references/wear-tiles.md) |
 | CMP `:shared` modules | [cmp-shared.md](./references/cmp-shared.md) |
 | Android XML drawables / icons | [resource-previews.md](./references/resource-previews.md) |
