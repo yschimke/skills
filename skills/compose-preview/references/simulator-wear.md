@@ -3,9 +3,9 @@
 The Wear half of [simulator.md](./simulator.md). A Wear APK (a required
 `android.hardware.type.watch` feature) launches on a 454×454 round display with the crown as
 `rotary`; this page covers what goes around the app. Upstream reference:
-[Wear system UI](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md#wear-system-ui),
-[Screen power and ambient mode](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md#screen-power-and-ambient-mode),
-[A paired phone and watch](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md#a-paired-phone-and-watch),
+[Wear system UI](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md#wear-system-ui),
+[Screen power and ambient mode](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md#screen-power-and-ambient-mode),
+[A paired phone and watch](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md#a-paired-phone-and-watch),
 and the design doc
 [`SIMULATOR_DATALAYER.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/design/SIMULATOR_DATALAYER.md).
 

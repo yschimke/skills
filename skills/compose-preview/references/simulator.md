@@ -3,9 +3,9 @@
 `compose-preview launch <app.apk>` runs an Android APK in Robolectric's simulator: a desktop
 window showing the app, or, with `--control stdio`, a JSON-lines channel an agent drives. No
 emulator, no device, no `adb`. The full reference (the protocol, every argument, how the dex
-conversion works) is compose-ai-tools'
-[`docs/SIMULATOR.md`](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md);
-this page is the agent's subset. Two companion pages cover the larger areas:
+conversion works) is android-simulator's
+[`docs/SIMULATOR.md`](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md);
+this page is the agent's subset. Companion pages cover the larger areas:
 
 - [simulator-wear.md](./simulator-wear.md): a Wear OS app with its watch face, tiles and
   notifications, ambient mode and screen power, a paired phone and watch, and the agent playing
@@ -19,10 +19,13 @@ this page is the agent's subset. Two companion pages cover the larger areas:
 **Availability.** `launch` ships in CLI v2.75.0 with the commands below, adb equivalents, form
 factors, folds, multiple displays and `--pair`. The home screen (`--launcher`), the Wear system
 UI, `--network` and the radios, `--data-layer agent`, Wear ambient mode, `--fingerprint`,
-`--max-heap`, `--play-services`, the `ask` permission policy, `companion`, `restart` / `update` /
-`--standby`, live reload (`--project`, `reload`, `--live`) and `--adb` are on compose-ai-tools
-`main` and ship in the next CLI release after v2.75.0. The `simulator_*` MCP tools ship in the next
-[compose-preview-mcp](https://github.com/yschimke/compose-preview-mcp) release after v4.12.0. `simulator_adb`, and `adb` / `formFactor` on `simulator_launch`, also need
+`--max-heap`, `--play-services`, `--firebase-emulator` / `--firebase-project`, the `ask`
+permission policy, `companion`, `restart` / `update` / `--standby`, live reload (`--project`,
+`reload`, `--live`) and `--adb` live in
+[yschimke/android-simulator](https://github.com/yschimke/android-simulator). The `simulator_*` MCP
+tools ship in the next
+[compose-preview-mcp](https://github.com/yschimke/compose-preview-mcp) release after v4.12.0.
+`simulator_adb`, and `adb` / `formFactor` on `simulator_launch`, also need
 the CLI release that carries the `--adb` device event (compose-ai-tools #6313).
 Check `compose-preview launch --help` before relying on a flag.
 
@@ -46,6 +49,7 @@ round display, or "does this APK start at all". For one composable's look, a `@P
 | one side of the sync, with scripted peer data | `--data-layer agent` | `dataLayer` actions ([simulator-wear.md](./simulator-wear.md#the-agent-as-the-peer)) |
 | a permission's deny, rationale or "don't ask again" path | `--control stdio` | `permissions {policy:"ask"}`, then `answer` ([below](#runtime-permissions)) |
 | the app's "Play services missing / outdated" path | `--play-services none` / `outdated` | `playServices` ([below](#google-play-services)) |
+| Firebase Auth/Firestore/RTDB/Storage/Functions, FCM, Remote Config | `--firebase-emulator auto` or `firebase.json` | `firebase` ([below](#firebase)) |
 | a code or resource edit, running | `--project <dir>` | `reload`, or `--live` ([simulator-iterate.md](./simulator-iterate.md#iterate-on-an-app-live-reload)) |
 | a cold start with existing data, a rebuilt APK | `--control stdio` | `restart`, `update` ([simulator-iterate.md](./simulator-iterate.md#restart-and-update)) |
 | an adb-only tool or Android Studio against it | `--adb` | `adb install`, `adb shell` ([simulator-iterate.md](./simulator-iterate.md#as-a-device---adb)) |
@@ -55,7 +59,9 @@ What it cannot do (condensed from upstream's Constraints):
 - **No native code** (`.so`), **no Google Play services APIs** beyond the Wearable Data Layer.
   Play services is reported installed ([below](#google-play-services)), but Maps, billing and the
   fused location provider report `API_UNAVAILABLE`; the Data Layer is simulated only under `--pair`
-  or `--data-layer agent`. **No GPU content** (`SurfaceView`, `TextureView`, video, camera, GL).
+  or `--data-layer agent`. Firebase works against the real Local Emulator Suite
+  (`--firebase-emulator`) plus local FCM, Remote Config, Analytics and Crashlytics support
+  ([below](#firebase)). **No GPU content** (`SurfaceView`, `TextureView`, video, camera, GL).
 - **One process, one task.** `am force-stop` / `pm clear` are partial: the `Application` and its
   singletons live on. For a truly clean start, `restart` (with `"keepData":false` for a clean
   install; [simulator-iterate.md](./simulator-iterate.md#restart-and-update)).
@@ -78,6 +84,7 @@ compose-preview launch app-debug.apk --control stdio --headless    # the agent, 
 compose-preview launch app-debug.apk --prepare                     # convert and cache only
 compose-preview launch app-debug.apk --launcher                    # over a home screen, with widgets
 compose-preview launch app-debug.apk --network offline             # start with no network
+compose-preview launch app-debug.apk --firebase-emulator auto      # wire to running Firebase emulators
 compose-preview launch phone.apk --pair wear.apk --control stdio   # a phone and its watch, paired
 compose-preview launch wear.apk --data-layer agent --control stdio # the agent plays the phone
 compose-preview launch --project ~/src/myapp --live --control stdio # build, then reload on save
@@ -255,6 +262,39 @@ reports `SERVICE_MISSING`, `SERVICE_VERSION_UPDATE_REQUIRED`, `SERVICE_DISABLED`
 `SERVICE_INVALID`, `getErrorDialog` builds Play services' own dialog, and the package broadcast a
 device sends goes out. An app that cached an earlier answer keeps it.
 
+### Firebase
+
+The simulator supports both **real Firebase Local Emulator Suite backends** and **local emulation**
+for Firebase services without an official emulator. Upstream:
+[Firebase](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md#firebase).
+
+- **Local Emulator Suite (`--firebase-emulator`).** Pass `--firebase-emulator auto` (discovers
+  running emulators via Emulator Hub `127.0.0.1:4400`), `hub=host:port`, explicit ports
+  (`auth=9099,firestore=8080,database=9000,storage=9199,functions=5001`), or a `firebase.json`
+  path (reuses a running Hub on its configured port, or starts `firebase emulators:start` and
+  tears it down on exit). `--firebase-project <id>` overrides the project ID (defaults to
+  `.firebaserc`, the app's `FirebaseOptions`, or `demo-simulator`). Bundled `FirebaseAuth`,
+  `FirebaseFirestore`, `FirebaseDatabase`, `FirebaseStorage`, and `FirebaseFunctions` (including
+  regional `FirebaseFunctions.getInstance("europe-west1")` clients) are wired via `useEmulator()`
+  before `Application.onCreate()`. Connections to `10.0.2.2` are also rewritten to `127.0.0.1`
+  automatically.
+- **Control channel (`firebase`).**
+  - Emulator admin: `status`, `connect`, `clear` (`service: "all"|"firestore"|"auth"|"database"`),
+    `authCreateUser`, `authListUsers`, `authOobCodes`, `authVerificationCodes`, `firestoreGet`,
+    `firestoreSet`, `firestoreDelete`, `databaseGet`, `databaseSet`.
+  - **FCM (local IPC):** `fcmToken`, `fcmRotateToken`, `fcmSend` (delivers `RECEIVE` / `NEW_TOKEN`
+    to the app's `FirebaseMessagingService`), `fcmMessages`, `fcmClear`.
+  - **Remote Config, Analytics, Crashlytics:** `remoteConfigSet`, `remoteConfigGet`,
+    `remoteConfigClear`, `analyticsEvents`, `analyticsClear`, `crashlytics`, `crashlyticsClear`.
+
+```
+→ {"cmd":"firebase","action":"authCreateUser","email":"test@example.com","password":"password123"}
+→ {"cmd":"firebase","action":"firestoreSet","path":"items/1","fields":{"title":"Hello"}}
+→ {"cmd":"firebase","action":"fcmSend","data":{"type":"promo"},"notification":{"title":"Hi"}}
+→ {"cmd":"firebase","action":"remoteConfigSet","key":"new_home","value":true}
+→ {"cmd":"firebase","action":"analyticsEvents"}
+```
+
 ## adb equivalents
 
 `{"cmd":"shell","command":"am start -a android.intent.action.VIEW -d https://…"}` runs the control
@@ -363,7 +403,7 @@ display's configuration; removing the display finishes its activities.
 and its **app widgets** and **shortcuts** exercised the way a launcher does. Use it to check a
 widget's sizes, updates and taps, or the app's behavior across `onStop` / `onRestart`, with no
 emulator. `--widget <provider>` (repeatable; implies `--launcher`) starts with one placed. Upstream:
-[Home screen and widgets](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md#home-screen-and-widgets).
+[Home screen and widgets](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md#home-screen-and-widgets).
 
 ```
 → {"cmd":"home"}                                                    # app stops; the grid shows

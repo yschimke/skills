@@ -4,7 +4,7 @@ An existing instrumentation suite (`src/androidTest`, `AndroidJUnit4`, `Activity
 Espresso, Compose test rules) runs in Robolectric's simulator, with no emulator or device, and
 reports per-test results as JSON. Use it to check an app change against the tests it already has,
 somewhere an emulator can't run, such as a cloud sandbox or CI without KVM. Upstream reference:
-[Instrumentation tests](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md#instrumentation-tests).
+[Instrumentation tests](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md#instrumentation-tests).
 
 **Availability.**
 

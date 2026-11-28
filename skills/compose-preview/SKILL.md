@@ -171,7 +171,7 @@ Read only what the task needs.
 | Accessibility (ATF, `compose-preview a11y`) | [a11y.md](./references/a11y.md) |
 | Per-render data (a11y, layout, recomposition, SVG) | [data-products.md](./references/data-products.md) |
 | Multi-preview, GIFs, `@SettledPreview`, scrolling captures | [capture-modes.md](./references/capture-modes.md) |
-| Run an APK in the simulator (`launch`, `simulator_*`): drive an app, adb equivalents, form factors, folds, multiple displays, home screen and widgets, permission `ask` policy, Play services state | [simulator.md](./references/simulator.md) |
+| Run an APK in the simulator (`launch`, `simulator_*`): drive an app, adb equivalents, form factors, folds, multiple displays, home screen and widgets, permission `ask` policy, Play services state, Firebase (Local Emulator Suite, FCM, Remote Config, Analytics, Crashlytics) | [simulator.md](./references/simulator.md) |
 | Simulator network modes, real-traffic gating, Wi-Fi requests, Bluetooth / BLE / GATT | [simulator-network.md](./references/simulator-network.md) |
 | Simulator on Wear: watch face, tiles, notifications, ambient and screen power, `--pair`, `--data-layer agent`, `ChannelClient`, companion devices | [simulator-wear.md](./references/simulator-wear.md) |
 | Simulator edit-run loop: `restart`, `update`, live reload (`--project`, `reload`, `--live`), `--adb` | [simulator-iterate.md](./references/simulator-iterate.md) |

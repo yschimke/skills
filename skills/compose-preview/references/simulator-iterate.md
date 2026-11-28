@@ -3,9 +3,9 @@
 The edit-run loop half of [simulator.md](./simulator.md): getting a change into a running
 simulator without ending the session, and running the simulator as a device that adb and Android
 Studio see. Upstream reference:
-[Restart and update](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md#restart-and-update),
-[Live reload](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md#live-reload)
-and [As a device](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md#as-a-device-adb-and-android-studio).
+[Restart and update](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md#restart-and-update),
+[Live reload](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md#live-reload)
+and [As a device](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md#as-a-device-adb-and-android-studio).
 
 All of it is newer than CLI v2.75.0, and the MCP tools are newer than compose-preview-mcp v4.12.0:
 check `compose-preview launch --help` and `tools/list` before relying on one. [Hot swap](#hot-swap)

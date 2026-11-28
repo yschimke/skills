@@ -3,7 +3,7 @@
 The radios half of [simulator.md](./simulator.md): what the app sees from `ConnectivityManager`,
 `WifiManager` and the Bluetooth adapter, and what happens to its real traffic. Upstream
 reference:
-[Network, Wi-Fi and Bluetooth](https://github.com/yschimke/compose-ai-tools/blob/main/docs/SIMULATOR.md#network-wi-fi-and-bluetooth).
+[Network, Wi-Fi and Bluetooth](https://github.com/yschimke/android-simulator/blob/main/docs/SIMULATOR.md#network-wi-fi-and-bluetooth).
 Newer than CLI v2.75.0: check `compose-preview launch --help` for `--network`. Over MCP,
 `simulator_launch` takes `network` and `simulator_command` takes `network`, `wifi` and
 `bluetooth` with the same arguments.
